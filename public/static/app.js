@@ -138,10 +138,16 @@ async function loadDashboard() {
 
 // ==================== PATIENTS ====================
 
-async function loadPatients() {
+async function loadPatients(search = '', gender = '') {
   try {
     showLoading();
-    const res = await axios.get(`${API_BASE}/patients`);
+    let url = `${API_BASE}/patients`;
+    const params = [];
+    if (search) params.push(`search=${encodeURIComponent(search)}`);
+    if (gender) params.push(`gender=${encodeURIComponent(gender)}`);
+    if (params.length > 0) url += '?' + params.join('&');
+    
+    const res = await axios.get(url);
     if (res.data.success) {
       currentPatients = res.data.data;
       renderPatients();
@@ -158,11 +164,36 @@ function renderPatients() {
   section.innerHTML = `
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-3xl font-bold text-gray-800">
-        <i class="fas fa-users mr-3 text-ayurveda-600"></i>Patients
+        <i class="fas fa-users mr-3 text-ayurveda-600"></i>Patients (${currentPatients.length})
       </h2>
       <button onclick="showPatientForm()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg shadow">
         <i class="fas fa-plus mr-2"></i>Add Patient
       </button>
+    </div>
+    
+    <!-- Search and Filter -->
+    <div class="bg-white rounded-lg shadow p-4 mb-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="md:col-span-2">
+          <input type="text" id="patient-search" placeholder="Search by name, phone, patient ID, email..." 
+            class="w-full border border-gray-300 rounded px-3 py-2"
+            onkeyup="if(event.key==='Enter') applyPatientFilter()">
+        </div>
+        <div class="flex gap-2">
+          <select id="patient-gender-filter" class="flex-1 border border-gray-300 rounded px-3 py-2">
+            <option value="">All Genders</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+          <button onclick="applyPatientFilter()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded">
+            <i class="fas fa-search"></i>
+          </button>
+          <button onclick="clearPatientFilter()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded" title="Clear">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
     </div>
     
     <div class="bg-white rounded-lg shadow-lg overflow-hidden">
@@ -170,6 +201,7 @@ function renderPatients() {
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Patient ID</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Age/Gender</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
@@ -180,6 +212,9 @@ function renderPatients() {
           <tbody class="bg-white divide-y divide-gray-200">
             ${currentPatients.map(patient => `
               <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 py-1 text-xs font-mono bg-blue-100 text-blue-800 rounded">${patient.patient_id || 'N/A'}</span>
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="font-medium text-gray-900">${patient.name}</div>
                 </td>
@@ -329,6 +364,18 @@ async function deletePatient(id) {
     alert('Error deleting patient');
     hideLoading();
   }
+}
+
+function applyPatientFilter() {
+  const search = document.getElementById('patient-search').value;
+  const gender = document.getElementById('patient-gender-filter').value;
+  loadPatients(search, gender);
+}
+
+function clearPatientFilter() {
+  document.getElementById('patient-search').value = '';
+  document.getElementById('patient-gender-filter').value = '';
+  loadPatients();
 }
 
 async function viewPatientDetails(id) {
@@ -687,6 +734,9 @@ function renderPrescriptions() {
                   <button onclick="viewPrescription(${presc.id})" class="text-blue-600 hover:text-blue-800" title="View">
                     <i class="fas fa-eye"></i>
                   </button>
+                  <button onclick="editPrescription(${presc.id})" class="text-purple-600 hover:text-purple-800" title="Edit">
+                    <i class="fas fa-edit"></i>
+                  </button>
                   <button onclick="printPrescription(${presc.id})" class="text-green-600 hover:text-green-800" title="Print">
                     <i class="fas fa-print"></i>
                   </button>
@@ -969,9 +1019,14 @@ function renderPharmacy() {
       <h2 class="text-3xl font-bold text-gray-800">
         <i class="fas fa-pills mr-3 text-ayurveda-600"></i>Pharmacy Inventory
       </h2>
-      <button onclick="showMedicineForm()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg shadow">
-        <i class="fas fa-plus mr-2"></i>Add Medicine
-      </button>
+      <div class="flex gap-2">
+        <button onclick="showPharmacyStockReport()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow">
+          <i class="fas fa-chart-bar mr-2"></i>Stock Report
+        </button>
+        <button onclick="showMedicineForm()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg shadow">
+          <i class="fas fa-plus mr-2"></i>Add Medicine
+        </button>
+      </div>
     </div>
     
     <div class="bg-white rounded-lg shadow-lg overflow-hidden">

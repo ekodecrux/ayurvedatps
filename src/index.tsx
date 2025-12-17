@@ -16,12 +16,29 @@ app.use('/static/*', serveStatic({ root: './public' }))
 
 // ==================== PATIENTS API ====================
 
-// Get all patients
+// Get all patients with search and filter
 app.get('/api/patients', async (c) => {
   try {
-    const { results } = await c.env.DB.prepare(
-      'SELECT * FROM patients ORDER BY created_at DESC'
-    ).all()
+    const search = c.req.query('search') || ''
+    const gender = c.req.query('gender') || ''
+    
+    let query = 'SELECT * FROM patients WHERE 1=1'
+    const params: any[] = []
+    
+    if (search) {
+      query += ' AND (name LIKE ? OR phone LIKE ? OR patient_id LIKE ? OR email LIKE ?)'
+      const searchParam = `%${search}%`
+      params.push(searchParam, searchParam, searchParam, searchParam)
+    }
+    
+    if (gender) {
+      query += ' AND gender = ?'
+      params.push(gender)
+    }
+    
+    query += ' ORDER BY created_at DESC'
+    
+    const { results } = await c.env.DB.prepare(query).bind(...params).all()
     return c.json({ success: true, data: results })
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
@@ -46,17 +63,25 @@ app.get('/api/patients/:id', async (c) => {
   }
 })
 
-// Create patient
+// Create patient with auto-generated patient_id
 app.post('/api/patients', async (c) => {
   try {
     const body = await c.req.json()
     const { name, age, gender, phone, email, address, medical_history } = body
     
-    const result = await c.env.DB.prepare(
-      'INSERT INTO patients (name, age, gender, phone, email, address, medical_history) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).bind(name, age, gender, phone, email, address, medical_history).run()
+    // Get the next patient number
+    const lastPatient = await c.env.DB.prepare(
+      'SELECT id FROM patients ORDER BY id DESC LIMIT 1'
+    ).first()
     
-    return c.json({ success: true, data: { id: result.meta.last_row_id } }, 201)
+    const nextId = lastPatient ? (lastPatient as any).id + 1 : 1
+    const patientId = 'PAT' + String(nextId).padStart(5, '0')
+    
+    const result = await c.env.DB.prepare(
+      'INSERT INTO patients (patient_id, name, age, gender, phone, email, address, medical_history) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(patientId, name, age, gender, phone, email, address, medical_history).run()
+    
+    return c.json({ success: true, data: { id: result.meta.last_row_id, patient_id: patientId } }, 201)
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
   }
@@ -92,15 +117,40 @@ app.delete('/api/patients/:id', async (c) => {
 
 // ==================== APPOINTMENTS API ====================
 
-// Get all appointments
+// Get all appointments with search and filter
 app.get('/api/appointments', async (c) => {
   try {
-    const { results } = await c.env.DB.prepare(`
-      SELECT a.*, p.name as patient_name, p.phone as patient_phone
+    const search = c.req.query('search') || ''
+    const status = c.req.query('status') || ''
+    const date = c.req.query('date') || ''
+    
+    let query = `
+      SELECT a.*, p.name as patient_name, p.phone as patient_phone, p.patient_id
       FROM appointments a
       LEFT JOIN patients p ON a.patient_id = p.id
-      ORDER BY a.appointment_date DESC
-    `).all()
+      WHERE 1=1
+    `
+    const params: any[] = []
+    
+    if (search) {
+      query += ' AND (p.name LIKE ? OR p.phone LIKE ? OR p.patient_id LIKE ?)'
+      const searchParam = `%${search}%`
+      params.push(searchParam, searchParam, searchParam)
+    }
+    
+    if (status) {
+      query += ' AND a.status = ?'
+      params.push(status)
+    }
+    
+    if (date) {
+      query += ' AND DATE(a.appointment_date) = ?'
+      params.push(date)
+    }
+    
+    query += ' ORDER BY a.appointment_date DESC'
+    
+    const { results } = await c.env.DB.prepare(query).bind(...params).all()
     return c.json({ success: true, data: results })
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
@@ -166,12 +216,34 @@ app.delete('/api/appointments/:id', async (c) => {
 
 // ==================== MEDICINES API ====================
 
-// Get all medicines
+// Get all medicines with search and filter
 app.get('/api/medicines', async (c) => {
   try {
-    const { results } = await c.env.DB.prepare(
-      'SELECT * FROM medicines ORDER BY name ASC'
-    ).all()
+    const search = c.req.query('search') || ''
+    const category = c.req.query('category') || ''
+    const lowStock = c.req.query('lowStock') || ''
+    
+    let query = 'SELECT * FROM medicines WHERE 1=1'
+    const params: any[] = []
+    
+    if (search) {
+      query += ' AND (name LIKE ? OR manufacturer LIKE ? OR category LIKE ?)'
+      const searchParam = `%${search}%`
+      params.push(searchParam, searchParam, searchParam)
+    }
+    
+    if (category) {
+      query += ' AND category = ?'
+      params.push(category)
+    }
+    
+    if (lowStock === 'true') {
+      query += ' AND quantity < 20'
+    }
+    
+    query += ' ORDER BY name ASC'
+    
+    const { results } = await c.env.DB.prepare(query).bind(...params).all()
     return c.json({ success: true, data: results })
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
@@ -240,17 +312,85 @@ app.delete('/api/medicines/:id', async (c) => {
   }
 })
 
+// Get pharmacy stock report
+app.get('/api/pharmacy/stock-report', async (c) => {
+  try {
+    const { results: medicines } = await c.env.DB.prepare(
+      'SELECT * FROM medicines ORDER BY quantity ASC'
+    ).all()
+    
+    const totalMedicines = medicines.length
+    const lowStockCount = medicines.filter((m: any) => m.quantity < 20).length
+    const outOfStockCount = medicines.filter((m: any) => m.quantity === 0).length
+    const totalValue = medicines.reduce((sum: number, m: any) => sum + (m.price * m.quantity || 0), 0)
+    
+    // Get expiring soon (within 3 months)
+    const threeMonthsFromNow = new Date()
+    threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3)
+    const expiringSoon = medicines.filter((m: any) => {
+      if (!m.expiry_date) return false
+      return new Date(m.expiry_date) <= threeMonthsFromNow && new Date(m.expiry_date) >= new Date()
+    })
+    
+    // Get categories
+    const categories = [...new Set(medicines.map((m: any) => m.category).filter(Boolean))]
+    
+    return c.json({ 
+      success: true, 
+      data: {
+        totalMedicines,
+        lowStockCount,
+        outOfStockCount,
+        totalValue: totalValue.toFixed(2),
+        expiringSoonCount: expiringSoon.length,
+        categories: categories.length,
+        categoryList: categories,
+        lowStockItems: medicines.filter((m: any) => m.quantity < 20 && m.quantity > 0),
+        outOfStockItems: medicines.filter((m: any) => m.quantity === 0),
+        expiringSoonItems: expiringSoon
+      }
+    })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
 // ==================== PRESCRIPTIONS API ====================
 
-// Get all prescriptions
+// Get all prescriptions with search and filter
 app.get('/api/prescriptions', async (c) => {
   try {
-    const { results } = await c.env.DB.prepare(`
-      SELECT p.*, pt.name as patient_name, pt.phone as patient_phone
+    const search = c.req.query('search') || ''
+    const dateFrom = c.req.query('dateFrom') || ''
+    const dateTo = c.req.query('dateTo') || ''
+    
+    let query = `
+      SELECT p.*, pt.name as patient_name, pt.phone as patient_phone, pt.patient_id
       FROM prescriptions p
       LEFT JOIN patients pt ON p.patient_id = pt.id
-      ORDER BY p.created_at DESC
-    `).all()
+      WHERE 1=1
+    `
+    const params: any[] = []
+    
+    if (search) {
+      query += ' AND (pt.name LIKE ? OR pt.phone LIKE ? OR pt.patient_id LIKE ? OR p.diagnosis LIKE ?)'
+      const searchParam = `%${search}%`
+      params.push(searchParam, searchParam, searchParam, searchParam)
+    }
+    
+    if (dateFrom) {
+      query += ' AND DATE(p.created_at) >= ?'
+      params.push(dateFrom)
+    }
+    
+    if (dateTo) {
+      query += ' AND DATE(p.created_at) <= ?'
+      params.push(dateTo)
+    }
+    
+    query += ' ORDER BY p.created_at DESC'
+    
+    const { results } = await c.env.DB.prepare(query).bind(...params).all()
     return c.json({ success: true, data: results })
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
@@ -350,6 +490,38 @@ app.post('/api/prescriptions', async (c) => {
   }
 })
 
+// Update prescription
+app.put('/api/prescriptions/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const body = await c.req.json()
+    const { patient_id, appointment_id, diagnosis, notes, next_followup_date, medicines } = body
+    
+    // Update prescription
+    await c.env.DB.prepare(
+      'UPDATE prescriptions SET patient_id = ?, appointment_id = ?, diagnosis = ?, notes = ?, next_followup_date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(patient_id, appointment_id, diagnosis, notes, next_followup_date, id).run()
+    
+    // Delete existing medicines
+    await c.env.DB.prepare(
+      'DELETE FROM prescription_medicines WHERE prescription_id = ?'
+    ).bind(id).run()
+    
+    // Insert updated medicines
+    if (medicines && medicines.length > 0) {
+      for (const med of medicines) {
+        await c.env.DB.prepare(
+          'INSERT INTO prescription_medicines (prescription_id, medicine_id, dosage, frequency, duration, instructions) VALUES (?, ?, ?, ?, ?, ?)'
+        ).bind(id, med.medicine_id, med.dosage, med.frequency, med.duration, med.instructions).run()
+      }
+    }
+    
+    return c.json({ success: true })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
 // Delete prescription
 app.delete('/api/prescriptions/:id', async (c) => {
   try {
@@ -363,15 +535,40 @@ app.delete('/api/prescriptions/:id', async (c) => {
 
 // ==================== REMINDERS API ====================
 
-// Get all reminders
+// Get all reminders with search and filter
 app.get('/api/reminders', async (c) => {
   try {
-    const { results } = await c.env.DB.prepare(`
-      SELECT r.*, p.name as patient_name, p.phone as patient_phone
+    const search = c.req.query('search') || ''
+    const status = c.req.query('status') || ''
+    const type = c.req.query('type') || ''
+    
+    let query = `
+      SELECT r.*, p.name as patient_name, p.phone as patient_phone, p.patient_id
       FROM reminders r
       LEFT JOIN patients p ON r.patient_id = p.id
-      ORDER BY r.reminder_date ASC
-    `).all()
+      WHERE 1=1
+    `
+    const params: any[] = []
+    
+    if (search) {
+      query += ' AND (p.name LIKE ? OR p.phone LIKE ? OR p.patient_id LIKE ?)'
+      const searchParam = `%${search}%`
+      params.push(searchParam, searchParam, searchParam)
+    }
+    
+    if (status) {
+      query += ' AND r.status = ?'
+      params.push(status)
+    }
+    
+    if (type) {
+      query += ' AND r.reminder_type = ?'
+      params.push(type)
+    }
+    
+    query += ' ORDER BY r.reminder_date ASC'
+    
+    const { results } = await c.env.DB.prepare(query).bind(...params).all()
     return c.json({ success: true, data: results })
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
@@ -671,6 +868,7 @@ app.get('/', (c) => {
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/app.js"></script>
+        <script src="/static/app-enhancements.js"></script>
     </body>
     </html>
   `)
