@@ -16,7 +16,17 @@ A comprehensive, professional full-stack Progressive Web Application (PWA) for A
 
 ## ✨ Completed Features
 
+### 🆕 NEW ENHANCEMENTS (Latest Update)
+1. **Auto-Generated Patient IDs** - Unique patient identifiers (PAT00001, PAT00002, etc.)
+2. **Search Functionality** - Search across all sections (patients, appointments, prescriptions, pharmacy, reminders)
+3. **Advanced Filters** - Filter by gender, status, category, date ranges, low stock
+4. **Pharmacy Stock Report** - Comprehensive stock analysis with low stock alerts, expiring items, and total value
+5. **Prescription Edit** - Full edit capability for prescriptions including medicines
+
 ### 1. Patient Management ✅
+- **Auto-generated Patient IDs** (PAT00001, PAT00002, etc.)
+- **Search by name, phone, patient ID, or email**
+- **Filter by gender**
 - Create, read, update, delete patient records
 - Track medical history
 - Store contact information (phone, email, address)
@@ -24,6 +34,9 @@ A comprehensive, professional full-stack Progressive Web Application (PWA) for A
 - Quick access to create prescriptions from patient list
 
 ### 2. Appointment Scheduling ✅
+- **Search by patient name, phone, or patient ID**
+- **Filter by status (scheduled, completed, cancelled)**
+- **Filter by date**
 - Schedule appointments with date & time
 - Track appointment status (scheduled, completed, cancelled)
 - Link appointments to patients
@@ -31,6 +44,9 @@ A comprehensive, professional full-stack Progressive Web Application (PWA) for A
 - View today's appointments on dashboard
 
 ### 3. Prescription Management ✅
+- **Search by patient name, phone, patient ID, or diagnosis**
+- **Filter by date range (from/to dates)**
+- **Edit existing prescriptions** - Full edit capability including medicines
 - Create comprehensive prescriptions with multiple medicines
 - Link prescriptions to patients and appointments
 - Record diagnosis and treatment notes
@@ -40,6 +56,15 @@ A comprehensive, professional full-stack Progressive Web Application (PWA) for A
 - Beautiful prescription details view
 
 ### 4. Pharmacy Inventory Management ✅
+- **Search by name, manufacturer, or category**
+- **Filter by category**
+- **Filter by low stock (< 20 units)**
+- **Comprehensive Stock Report** with:
+  - Total medicines, low stock count, out of stock count
+  - Total inventory value calculation
+  - Expiring soon items (within 3 months)
+  - Category breakdown
+  - Detailed lists of low stock and out of stock items
 - Complete medicine inventory system
 - Track stock quantities with low-stock alerts (< 20 units)
 - Record medicine details (category, price, expiry date, manufacturer)
@@ -48,6 +73,9 @@ A comprehensive, professional full-stack Progressive Web Application (PWA) for A
 - Visual indicators for low stock items
 
 ### 5. Reminder & Notification System ✅
+- **Search by patient name, phone, or patient ID**
+- **Filter by status (pending/sent)**
+- **Filter by reminder type (followup/medicine/other)**
 - Automated reminder creation for follow-up appointments
 - Manual reminder creation with custom messages
 - Separate tracking for pending and sent reminders
