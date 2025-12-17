@@ -1000,7 +1000,17 @@ async function deletePrescription(id) {
 async function loadPharmacy() {
   try {
     showLoading();
-    const res = await axios.get(`${API_BASE}/medicines`);
+    
+    const searchQuery = document.getElementById('pharmacy-search')?.value || '';
+    const categoryFilter = document.getElementById('pharmacy-category-filter')?.value || '';
+    const stockFilter = document.getElementById('pharmacy-stock-filter')?.value || '';
+    
+    let url = `${API_BASE}/medicines?`;
+    if (searchQuery) url += `search=${encodeURIComponent(searchQuery)}&`;
+    if (categoryFilter) url += `category=${encodeURIComponent(categoryFilter)}&`;
+    if (stockFilter) url += `lowStock=${stockFilter === 'low' ? 'true' : ''}&`;
+    
+    const res = await axios.get(url);
     if (res.data.success) {
       currentMedicines = res.data.data;
       renderPharmacy();
@@ -1026,6 +1036,36 @@ function renderPharmacy() {
         <button onclick="showMedicineForm()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg shadow">
           <i class="fas fa-plus mr-2"></i>Add Medicine
         </button>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-lg p-4 mb-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <input type="text" id="pharmacy-search" placeholder="Search medicines..." 
+            class="w-full border border-gray-300 rounded px-3 py-2" 
+            onkeyup="loadPharmacy()">
+        </div>
+        <div>
+          <select id="pharmacy-category-filter" class="w-full border border-gray-300 rounded px-3 py-2" onchange="loadPharmacy()">
+            <option value="">All Categories</option>
+            <option value="Immunity">Immunity</option>
+            <option value="Digestive">Digestive</option>
+            <option value="Cardiac">Cardiac</option>
+            <option value="Brain Tonic">Brain Tonic</option>
+            <option value="Blood Purifier">Blood Purifier</option>
+            <option value="Respiratory">Respiratory</option>
+            <option value="Skin Care">Skin Care</option>
+            <option value="Joint Care">Joint Care</option>
+          </select>
+        </div>
+        <div>
+          <select id="pharmacy-stock-filter" class="w-full border border-gray-300 rounded px-3 py-2" onchange="loadPharmacy()">
+            <option value="">All Stock Levels</option>
+            <option value="low">Low Stock (< 20)</option>
+            <option value="good">Good Stock (≥ 20)</option>
+          </select>
+        </div>
       </div>
     </div>
     
