@@ -716,7 +716,7 @@ app.get('/', (c) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Ayurveda Clinic Management System</title>
+        <title>TPS DHANVANTRI AYURVEDA - Management System</title>
         <meta name="description" content="Professional Ayurveda clinic management system">
         <meta name="theme-color" content="#059669">
         <link rel="manifest" href="/static/manifest.json">
@@ -753,7 +753,7 @@ app.get('/', (c) => {
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3">
                         <i class="fas fa-leaf text-2xl"></i>
-                        <span class="text-xl font-bold">Ayurveda Clinic</span>
+                        <span class="text-xl font-bold">TPS DHANVANTRI AYURVEDA</span>
                     </div>
                     <div class="flex items-center space-x-4">
                         <button onclick="showSection('dashboard')" class="nav-btn hover:bg-ayurveda-800 px-3 py-2 rounded transition">
@@ -766,10 +766,7 @@ app.get('/', (c) => {
                             <i class="fas fa-calendar-alt mr-2"></i>Appointments
                         </button>
                         <button onclick="showSection('prescriptions')" class="nav-btn hover:bg-ayurveda-800 px-3 py-2 rounded transition">
-                            <i class="fas fa-file-prescription mr-2"></i>Prescriptions
-                        </button>
-                        <button onclick="showSection('pharmacy')" class="nav-btn hover:bg-ayurveda-800 px-3 py-2 rounded transition">
-                            <i class="fas fa-pills mr-2"></i>Pharmacy
+                            <i class="fas fa-leaf mr-2"></i>Herbs & Routes
                         </button>
                         <button onclick="showSection('reminders')" class="nav-btn hover:bg-ayurveda-800 px-3 py-2 rounded transition">
                             <i class="fas fa-bell mr-2"></i>Reminders
@@ -853,7 +850,7 @@ app.get('/', (c) => {
             <div id="patients-section" class="section hidden"></div>
             <div id="appointments-section" class="section hidden"></div>
             <div id="prescriptions-section" class="section hidden"></div>
-            <div id="pharmacy-section" class="section hidden"></div>
+
             <div id="reminders-section" class="section hidden"></div>
             <div id="settings-section" class="section hidden"></div>
         </div>
