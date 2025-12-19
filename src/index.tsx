@@ -21,6 +21,7 @@ app.get('/api/patients', async (c) => {
   try {
     const search = c.req.query('search') || ''
     const gender = c.req.query('gender') || ''
+    const country = c.req.query('country') || ''
     
     let query = 'SELECT * FROM patients WHERE 1=1'
     const params: any[] = []
@@ -34,6 +35,11 @@ app.get('/api/patients', async (c) => {
     if (gender) {
       query += ' AND gender = ?'
       params.push(gender)
+    }
+    
+    if (country) {
+      query += ' AND country = ?'
+      params.push(country)
     }
     
     query += ' ORDER BY created_at DESC'
@@ -63,23 +69,48 @@ app.get('/api/patients/:id', async (c) => {
   }
 })
 
-// Create patient with auto-generated patient_id
+// Create patient with auto-generated COUNTRYNAME0001 patient_id
 app.post('/api/patients', async (c) => {
   try {
     const body = await c.req.json()
-    const { name, age, gender, phone, email, address, medical_history } = body
     
-    // Get the next patient number
-    const lastPatient = await c.env.DB.prepare(
-      'SELECT id FROM patients ORDER BY id DESC LIMIT 1'
-    ).first()
+    // Generate patient ID based on country
+    const country = body.country || 'INDIA'
+    const countryUpper = country.toUpperCase()
     
-    const nextId = lastPatient ? (lastPatient as any).id + 1 : 1
-    const patientId = 'PAT' + String(nextId).padStart(5, '0')
+    const lastPatientWithCountry = await c.env.DB.prepare(
+      'SELECT patient_id FROM patients WHERE patient_id LIKE ? ORDER BY patient_id DESC LIMIT 1'
+    ).bind(`${countryUpper}%`).first()
     
-    const result = await c.env.DB.prepare(
-      'INSERT INTO patients (patient_id, name, age, gender, phone, email, address, medical_history) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    ).bind(patientId, name, age, gender, phone, email, address, medical_history).run()
+    let patientId
+    if (lastPatientWithCountry) {
+      const lastNumber = parseInt((lastPatientWithCountry as any).patient_id.replace(countryUpper, ''))
+      patientId = countryUpper + String(lastNumber + 1).padStart(4, '0')
+    } else {
+      patientId = countryUpper + '0001'
+    }
+    
+    const result = await c.env.DB.prepare(`
+      INSERT INTO patients (
+        patient_id, name, age, gender, phone, email, address, medical_history,
+        country, country_code, weight, height,
+        referred_by_name, referred_by_phone, referred_by_address,
+        address_hno, address_street, address_apartment, address_area, 
+        address_district, address_state, address_pincode,
+        address_latitude, address_longitude,
+        photo_url, present_health_issue, present_medicine, mg_value,
+        additional_phones
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      patientId, body.name, body.age, body.gender, body.phone, body.email || null, body.address || null, body.medical_history || null,
+      body.country || 'India', body.country_code || '+91', body.weight || null, body.height || null,
+      body.referred_by_name || null, body.referred_by_phone || null, body.referred_by_address || null,
+      body.address_hno || null, body.address_street || null, body.address_apartment || null, body.address_area || null,
+      body.address_district || null, body.address_state || null, body.address_pincode || null,
+      body.address_latitude || null, body.address_longitude || null,
+      body.photo_url || null, body.present_health_issue || null, body.present_medicine || null, body.mg_value || null,
+      body.additional_phones || null
+    ).run()
     
     return c.json({ success: true, data: { id: result.meta.last_row_id, patient_id: patientId } }, 201)
   } catch (error: any) {
@@ -92,11 +123,30 @@ app.put('/api/patients/:id', async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
-    const { name, age, gender, phone, email, address, medical_history } = body
     
-    await c.env.DB.prepare(
-      'UPDATE patients SET name = ?, age = ?, gender = ?, phone = ?, email = ?, address = ?, medical_history = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
-    ).bind(name, age, gender, phone, email, address, medical_history, id).run()
+    await c.env.DB.prepare(`
+      UPDATE patients SET 
+        name = ?, age = ?, gender = ?, phone = ?, email = ?, address = ?, medical_history = ?,
+        country = ?, country_code = ?, weight = ?, height = ?,
+        referred_by_name = ?, referred_by_phone = ?, referred_by_address = ?,
+        address_hno = ?, address_street = ?, address_apartment = ?, address_area = ?,
+        address_district = ?, address_state = ?, address_pincode = ?,
+        address_latitude = ?, address_longitude = ?,
+        photo_url = ?, present_health_issue = ?, present_medicine = ?, mg_value = ?,
+        additional_phones = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(
+      body.name, body.age, body.gender, body.phone, body.email || null, body.address || null, body.medical_history || null,
+      body.country || null, body.country_code || null, body.weight || null, body.height || null,
+      body.referred_by_name || null, body.referred_by_phone || null, body.referred_by_address || null,
+      body.address_hno || null, body.address_street || null, body.address_apartment || null, body.address_area || null,
+      body.address_district || null, body.address_state || null, body.address_pincode || null,
+      body.address_latitude || null, body.address_longitude || null,
+      body.photo_url || null, body.present_health_issue || null, body.present_medicine || null, body.mg_value || null,
+      body.additional_phones || null,
+      id
+    ).run()
     
     return c.json({ success: true })
   } catch (error: any) {
@@ -110,6 +160,105 @@ app.delete('/api/patients/:id', async (c) => {
     const id = c.req.param('id')
     await c.env.DB.prepare('DELETE FROM patients WHERE id = ?').bind(id).run()
     return c.json({ success: true })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Get patient diseases
+app.get('/api/patients/:id/diseases', async (c) => {
+  try {
+    const patientId = c.req.param('id')
+    const { results } = await c.env.DB.prepare(
+      'SELECT * FROM patient_diseases WHERE patient_id = ? ORDER BY created_at DESC'
+    ).bind(patientId).all()
+    return c.json({ success: true, data: results })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Add patient disease
+app.post('/api/patients/:id/diseases', async (c) => {
+  try {
+    const patientId = c.req.param('id')
+    const body = await c.req.json()
+    
+    const result = await c.env.DB.prepare(`
+      INSERT INTO patient_diseases (patient_id, disease_name, attacked_by, notes)
+      VALUES (?, ?, ?, ?)
+    `).bind(patientId, body.disease_name, body.attacked_by || null, body.notes || null).run()
+    
+    return c.json({ success: true, id: result.meta.last_row_id })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Delete patient disease
+app.delete('/api/patient-diseases/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    await c.env.DB.prepare('DELETE FROM patient_diseases WHERE id = ?').bind(id).run()
+    return c.json({ success: true })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Export patients to CSV
+app.get('/api/patients/export/csv', async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare('SELECT * FROM patients ORDER BY created_at DESC').all()
+    
+    if (results.length === 0) {
+      return c.text('No patients to export', 404)
+    }
+    
+    // CSV headers
+    const headers = [
+      'Patient ID', 'Name', 'Age', 'Gender', 'Country', 'Phone', 'Country Code',
+      'Email', 'Weight', 'Height', 'Address H.No', 'Street', 'Apartment', 'Area',
+      'District', 'State', 'Pin Code', 'Present Health Issue', 'Present Medicine',
+      'MG Value', 'Referred By Name', 'Referred By Phone', 'Medical History', 'Created At'
+    ].join(',')
+    
+    // CSV rows
+    const rows = results.map((patient: any) => {
+      return [
+        patient.patient_id || '',
+        `"${(patient.name || '').replace(/"/g, '""')}"`,
+        patient.age || '',
+        patient.gender || '',
+        patient.country || '',
+        patient.phone || '',
+        patient.country_code || '',
+        patient.email || '',
+        patient.weight || '',
+        patient.height || '',
+        patient.address_hno || '',
+        `"${(patient.address_street || '').replace(/"/g, '""')}"`,
+        `"${(patient.address_apartment || '').replace(/"/g, '""')}"`,
+        `"${(patient.address_area || '').replace(/"/g, '""')}"`,
+        patient.address_district || '',
+        patient.address_state || '',
+        patient.address_pincode || '',
+        `"${(patient.present_health_issue || '').replace(/"/g, '""')}"`,
+        `"${(patient.present_medicine || '').replace(/"/g, '""')}"`,
+        patient.mg_value || '',
+        patient.referred_by_name || '',
+        patient.referred_by_phone || '',
+        `"${(patient.medical_history || '').replace(/"/g, '""')}"`,
+        patient.created_at || ''
+      ].join(',')
+    }).join('\n')
+    
+    const csv = `${headers}\n${rows}`
+    
+    return c.text(csv, 200, {
+      'Content-Type': 'text/csv',
+      'Content-Disposition': `attachment; filename="patients_export_${new Date().toISOString().split('T')[0]}.csv"`
+    })
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
   }
