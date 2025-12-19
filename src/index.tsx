@@ -365,7 +365,7 @@ app.delete('/api/appointments/:id', async (c) => {
 
 // ==================== HERBS & ROUTES API ====================
 
-// Get all prescriptions with search and filter
+// Get all herbs & routes with search and filter
 app.get('/api/prescriptions', async (c) => {
   try {
     const search = c.req.query('search') || ''
@@ -373,30 +373,30 @@ app.get('/api/prescriptions', async (c) => {
     const dateTo = c.req.query('dateTo') || ''
     
     let query = `
-      SELECT p.*, pt.name as patient_name, pt.phone as patient_phone, pt.patient_id
-      FROM prescriptions p
-      LEFT JOIN patients pt ON p.patient_id = pt.id
+      SELECT h.*, p.name as patient_name, p.phone as patient_phone, p.patient_id, p.country
+      FROM herbs_routes h
+      LEFT JOIN patients p ON h.patient_id = p.id
       WHERE 1=1
     `
     const params: any[] = []
     
     if (search) {
-      query += ' AND (pt.name LIKE ? OR pt.phone LIKE ? OR pt.patient_id LIKE ? OR p.diagnosis LIKE ?)'
+      query += ' AND (p.name LIKE ? OR p.phone LIKE ? OR p.patient_id LIKE ? OR h.diagnosis LIKE ?)'
       const searchParam = `%${search}%`
       params.push(searchParam, searchParam, searchParam, searchParam)
     }
     
     if (dateFrom) {
-      query += ' AND DATE(p.created_at) >= ?'
+      query += ' AND DATE(h.created_at) >= ?'
       params.push(dateFrom)
     }
     
     if (dateTo) {
-      query += ' AND DATE(p.created_at) <= ?'
+      query += ' AND DATE(h.created_at) <= ?'
       params.push(dateTo)
     }
     
-    query += ' ORDER BY p.created_at DESC'
+    query += ' ORDER BY h.created_at DESC'
     
     const { results } = await c.env.DB.prepare(query).bind(...params).all()
     return c.json({ success: true, data: results })
@@ -405,12 +405,12 @@ app.get('/api/prescriptions', async (c) => {
   }
 })
 
-// Get prescriptions by patient
+// Get herbs & routes by patient
 app.get('/api/patients/:id/prescriptions', async (c) => {
   try {
     const patientId = c.req.param('id')
     const { results } = await c.env.DB.prepare(
-      'SELECT * FROM prescriptions WHERE patient_id = ? ORDER BY created_at DESC'
+      'SELECT * FROM herbs_routes WHERE patient_id = ? ORDER BY created_at DESC'
     ).bind(patientId).all()
     return c.json({ success: true, data: results })
   } catch (error: any) {
@@ -418,35 +418,34 @@ app.get('/api/patients/:id/prescriptions', async (c) => {
   }
 })
 
-// Get single prescription with medicines
+// Get single herbs & routes with medicines
 app.get('/api/prescriptions/:id', async (c) => {
   try {
     const id = c.req.param('id')
     
-    // Get prescription details
-    const prescription = await c.env.DB.prepare(`
-      SELECT p.*, pt.name as patient_name, pt.phone as patient_phone, pt.email as patient_email
-      FROM prescriptions p
-      LEFT JOIN patients pt ON p.patient_id = pt.id
-      WHERE p.id = ?
+    // Get herbs & routes details
+    const herbsRoute = await c.env.DB.prepare(`
+      SELECT h.*, p.name as patient_name, p.phone as patient_phone, p.email as patient_email, 
+             p.patient_id, p.age, p.gender, p.country, p.weight, p.height,
+             p.present_health_issue, p.present_medicine, p.mg_value
+      FROM herbs_routes h
+      LEFT JOIN patients p ON h.patient_id = p.id
+      WHERE h.id = ?
     `).bind(id).first()
     
-    if (!prescription) {
-      return c.json({ success: false, error: 'Prescription not found' }, 404)
+    if (!herbsRoute) {
+      return c.json({ success: false, error: 'Herbs & Routes not found' }, 404)
     }
     
-    // Get medicines for this prescription
-    const { results: medicines } = await c.env.DB.prepare(`
-      SELECT pm.*, m.name as medicine_name, m.category
-      FROM prescription_medicines pm
-      LEFT JOIN medicines m ON pm.medicine_id = m.id
-      WHERE pm.prescription_id = ?
-    `).bind(id).all()
+    // Get medicines for this herbs & routes
+    const { results: medicines } = await c.env.DB.prepare(
+      'SELECT * FROM medicines_tracking WHERE herbs_route_id = ? ORDER BY roman_id'
+    ).bind(id).all()
     
     return c.json({ 
       success: true, 
       data: { 
-        ...prescription, 
+        ...herbsRoute, 
         medicines 
       } 
     })
@@ -455,72 +454,141 @@ app.get('/api/prescriptions/:id', async (c) => {
   }
 })
 
-// Create prescription
+// Create herbs & routes with medicines
 app.post('/api/prescriptions', async (c) => {
   try {
     const body = await c.req.json()
-    const { patient_id, appointment_id, diagnosis, notes, next_followup_date, medicines } = body
     
-    // Insert prescription
-    const result = await c.env.DB.prepare(
-      'INSERT INTO prescriptions (patient_id, appointment_id, diagnosis, notes, next_followup_date) VALUES (?, ?, ?, ?, ?)'
-    ).bind(patient_id, appointment_id, diagnosis, notes, next_followup_date).run()
+    // Insert herbs_routes record
+    const result = await c.env.DB.prepare(`
+      INSERT INTO herbs_routes (
+        patient_id, given_date, treatment_months, follow_up_date,
+        diagnosis, notes, payment_amount, advance_payment, 
+        due_balance, payment_notes, course
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      body.patient_id,
+      body.given_date,
+      body.treatment_months,
+      body.follow_up_date,
+      body.diagnosis || null,
+      body.notes || null,
+      body.payment_amount || 0,
+      body.advance_payment || 0,
+      body.due_balance || 0,
+      body.payment_notes || null,
+      body.course || null
+    ).run()
     
-    const prescriptionId = result.meta.last_row_id
+    const herbsRouteId = result.meta.last_row_id
     
-    // Insert medicines if provided
-    if (medicines && medicines.length > 0) {
-      for (const med of medicines) {
-        await c.env.DB.prepare(
-          'INSERT INTO prescription_medicines (prescription_id, medicine_id, dosage, frequency, duration, instructions) VALUES (?, ?, ?, ?, ?, ?)'
-        ).bind(prescriptionId, med.medicine_id, med.dosage, med.frequency, med.duration, med.instructions).run()
+    // Insert medicines
+    if (body.medicines && body.medicines.length > 0) {
+      for (const med of body.medicines) {
+        await c.env.DB.prepare(`
+          INSERT INTO medicines_tracking (
+            herbs_route_id, roman_id, medicine_name, given_date, treatment_months,
+            morning_before, morning_after, afternoon_before, afternoon_after,
+            evening_before, evening_after, night_before, night_after
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          herbsRouteId,
+          med.roman_id,
+          med.medicine_name,
+          med.given_date,
+          med.treatment_months,
+          med.morning_before ? 1 : 0,
+          med.morning_after ? 1 : 0,
+          med.afternoon_before ? 1 : 0,
+          med.afternoon_after ? 1 : 0,
+          med.evening_before ? 1 : 0,
+          med.evening_after ? 1 : 0,
+          med.night_before ? 1 : 0,
+          med.night_after ? 1 : 0
+        ).run()
       }
     }
     
-    // Create follow-up reminder if date is set
-    if (next_followup_date) {
-      await c.env.DB.prepare(
-        'INSERT INTO reminders (patient_id, prescription_id, reminder_type, reminder_date, message, send_whatsapp, send_sms) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).bind(
-        patient_id, 
-        prescriptionId, 
-        'followup', 
-        next_followup_date, 
-        'Follow-up appointment reminder', 
-        1, 
-        1
+    // Create follow-up reminder
+    if (body.follow_up_date) {
+      await c.env.DB.prepare(`
+        INSERT INTO reminders (
+          patient_id, type, scheduled_date, title, message, status
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(
+        body.patient_id,
+        'Follow-up',
+        body.follow_up_date,
+        'Follow-up Consultation',
+        'Time for your follow-up consultation',
+        'Pending'
       ).run()
     }
     
-    return c.json({ success: true, data: { id: prescriptionId } }, 201)
+    return c.json({ success: true, data: { id: herbsRouteId } }, 201)
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
   }
 })
 
-// Update prescription
+// Update herbs & routes
 app.put('/api/prescriptions/:id', async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
-    const { patient_id, appointment_id, diagnosis, notes, next_followup_date, medicines } = body
     
-    // Update prescription
-    await c.env.DB.prepare(
-      'UPDATE prescriptions SET patient_id = ?, appointment_id = ?, diagnosis = ?, notes = ?, next_followup_date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
-    ).bind(patient_id, appointment_id, diagnosis, notes, next_followup_date, id).run()
+    // Update herbs_routes record
+    await c.env.DB.prepare(`
+      UPDATE herbs_routes SET 
+        patient_id = ?, given_date = ?, treatment_months = ?, follow_up_date = ?,
+        diagnosis = ?, notes = ?, payment_amount = ?, advance_payment = ?, 
+        due_balance = ?, payment_notes = ?, course = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(
+      body.patient_id,
+      body.given_date,
+      body.treatment_months,
+      body.follow_up_date,
+      body.diagnosis || null,
+      body.notes || null,
+      body.payment_amount || 0,
+      body.advance_payment || 0,
+      body.due_balance || 0,
+      body.payment_notes || null,
+      body.course || null,
+      id
+    ).run()
     
     // Delete existing medicines
     await c.env.DB.prepare(
-      'DELETE FROM prescription_medicines WHERE prescription_id = ?'
+      'DELETE FROM medicines_tracking WHERE herbs_route_id = ?'
     ).bind(id).run()
     
     // Insert updated medicines
-    if (medicines && medicines.length > 0) {
-      for (const med of medicines) {
-        await c.env.DB.prepare(
-          'INSERT INTO prescription_medicines (prescription_id, medicine_id, dosage, frequency, duration, instructions) VALUES (?, ?, ?, ?, ?, ?)'
-        ).bind(id, med.medicine_id, med.dosage, med.frequency, med.duration, med.instructions).run()
+    if (body.medicines && body.medicines.length > 0) {
+      for (const med of body.medicines) {
+        await c.env.DB.prepare(`
+          INSERT INTO medicines_tracking (
+            herbs_route_id, roman_id, medicine_name, given_date, treatment_months,
+            morning_before, morning_after, afternoon_before, afternoon_after,
+            evening_before, evening_after, night_before, night_after
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          id,
+          med.roman_id,
+          med.medicine_name,
+          med.given_date,
+          med.treatment_months,
+          med.morning_before ? 1 : 0,
+          med.morning_after ? 1 : 0,
+          med.afternoon_before ? 1 : 0,
+          med.afternoon_after ? 1 : 0,
+          med.evening_before ? 1 : 0,
+          med.evening_after ? 1 : 0,
+          med.night_before ? 1 : 0,
+          med.night_after ? 1 : 0
+        ).run()
       }
     }
     
@@ -530,11 +598,11 @@ app.put('/api/prescriptions/:id', async (c) => {
   }
 })
 
-// Delete prescription
+// Delete herbs & routes
 app.delete('/api/prescriptions/:id', async (c) => {
   try {
     const id = c.req.param('id')
-    await c.env.DB.prepare('DELETE FROM prescriptions WHERE id = ?').bind(id).run()
+    await c.env.DB.prepare('DELETE FROM herbs_routes WHERE id = ?').bind(id).run()
     return c.json({ success: true })
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
