@@ -85,7 +85,6 @@ async function loadDashboard() {
       document.getElementById('stat-patients').textContent = stats.totalPatients;
       document.getElementById('stat-appointments').textContent = stats.todayAppointments;
       document.getElementById('stat-reminders').textContent = stats.pendingReminders;
-      document.getElementById('stat-lowstock').textContent = stats.lowStockMedicines;
     }
     
     // Load recent appointments

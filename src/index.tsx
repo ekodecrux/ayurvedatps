@@ -214,148 +214,7 @@ app.delete('/api/appointments/:id', async (c) => {
   }
 })
 
-// ==================== MEDICINES API ====================
-
-// Get all medicines with search and filter
-app.get('/api/medicines', async (c) => {
-  try {
-    const search = c.req.query('search') || ''
-    const category = c.req.query('category') || ''
-    const lowStock = c.req.query('lowStock') || ''
-    
-    let query = 'SELECT * FROM medicines WHERE 1=1'
-    const params: any[] = []
-    
-    if (search) {
-      query += ' AND (name LIKE ? OR manufacturer LIKE ? OR category LIKE ?)'
-      const searchParam = `%${search}%`
-      params.push(searchParam, searchParam, searchParam)
-    }
-    
-    if (category) {
-      query += ' AND category = ?'
-      params.push(category)
-    }
-    
-    if (lowStock === 'true') {
-      query += ' AND quantity < 20'
-    }
-    
-    query += ' ORDER BY name ASC'
-    
-    const { results } = await c.env.DB.prepare(query).bind(...params).all()
-    return c.json({ success: true, data: results })
-  } catch (error: any) {
-    return c.json({ success: false, error: error.message }, 500)
-  }
-})
-
-// Get single medicine
-app.get('/api/medicines/:id', async (c) => {
-  try {
-    const id = c.req.param('id')
-    const medicine = await c.env.DB.prepare(
-      'SELECT * FROM medicines WHERE id = ?'
-    ).bind(id).first()
-    
-    if (!medicine) {
-      return c.json({ success: false, error: 'Medicine not found' }, 404)
-    }
-    
-    return c.json({ success: true, data: medicine })
-  } catch (error: any) {
-    return c.json({ success: false, error: error.message }, 500)
-  }
-})
-
-// Create medicine
-app.post('/api/medicines', async (c) => {
-  try {
-    const body = await c.req.json()
-    const { name, category, quantity, unit, price, description, expiry_date, manufacturer } = body
-    
-    const result = await c.env.DB.prepare(
-      'INSERT INTO medicines (name, category, quantity, unit, price, description, expiry_date, manufacturer) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    ).bind(name, category, quantity, unit, price, description, expiry_date, manufacturer).run()
-    
-    return c.json({ success: true, data: { id: result.meta.last_row_id } }, 201)
-  } catch (error: any) {
-    return c.json({ success: false, error: error.message }, 500)
-  }
-})
-
-// Update medicine
-app.put('/api/medicines/:id', async (c) => {
-  try {
-    const id = c.req.param('id')
-    const body = await c.req.json()
-    const { name, category, quantity, unit, price, description, expiry_date, manufacturer } = body
-    
-    await c.env.DB.prepare(
-      'UPDATE medicines SET name = ?, category = ?, quantity = ?, unit = ?, price = ?, description = ?, expiry_date = ?, manufacturer = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
-    ).bind(name, category, quantity, unit, price, description, expiry_date, manufacturer, id).run()
-    
-    return c.json({ success: true })
-  } catch (error: any) {
-    return c.json({ success: false, error: error.message }, 500)
-  }
-})
-
-// Delete medicine
-app.delete('/api/medicines/:id', async (c) => {
-  try {
-    const id = c.req.param('id')
-    await c.env.DB.prepare('DELETE FROM medicines WHERE id = ?').bind(id).run()
-    return c.json({ success: true })
-  } catch (error: any) {
-    return c.json({ success: false, error: error.message }, 500)
-  }
-})
-
-// Get pharmacy stock report
-app.get('/api/pharmacy/stock-report', async (c) => {
-  try {
-    const { results: medicines } = await c.env.DB.prepare(
-      'SELECT * FROM medicines ORDER BY quantity ASC'
-    ).all()
-    
-    const totalMedicines = medicines.length
-    const lowStockCount = medicines.filter((m: any) => m.quantity < 20).length
-    const outOfStockCount = medicines.filter((m: any) => m.quantity === 0).length
-    const totalValue = medicines.reduce((sum: number, m: any) => sum + (m.price * m.quantity || 0), 0)
-    
-    // Get expiring soon (within 3 months)
-    const threeMonthsFromNow = new Date()
-    threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3)
-    const expiringSoon = medicines.filter((m: any) => {
-      if (!m.expiry_date) return false
-      return new Date(m.expiry_date) <= threeMonthsFromNow && new Date(m.expiry_date) >= new Date()
-    })
-    
-    // Get categories
-    const categories = [...new Set(medicines.map((m: any) => m.category).filter(Boolean))]
-    
-    return c.json({ 
-      success: true, 
-      data: {
-        totalMedicines,
-        lowStockCount,
-        outOfStockCount,
-        totalValue: totalValue.toFixed(2),
-        expiringSoonCount: expiringSoon.length,
-        categories: categories.length,
-        categoryList: categories,
-        lowStockItems: medicines.filter((m: any) => m.quantity < 20 && m.quantity > 0),
-        outOfStockItems: medicines.filter((m: any) => m.quantity === 0),
-        expiringSoonItems: expiringSoon
-      }
-    })
-  } catch (error: any) {
-    return c.json({ success: false, error: error.message }, 500)
-  }
-})
-
-// ==================== PRESCRIPTIONS API ====================
+// ==================== HERBS & ROUTES API ====================
 
 // Get all prescriptions with search and filter
 app.get('/api/prescriptions', async (c) => {
@@ -688,18 +547,12 @@ app.get('/api/stats', async (c) => {
       "SELECT COUNT(*) as count FROM reminders WHERE status = 'pending' AND reminder_date <= datetime('now', '+3 days')"
     ).first()
     
-    // Get low stock medicines (less than 20 units)
-    const lowStockMedicines = await c.env.DB.prepare(
-      'SELECT COUNT(*) as count FROM medicines WHERE quantity < 20'
-    ).first()
-    
     return c.json({ 
       success: true, 
       data: {
         totalPatients: (patientsCount as any)?.count || 0,
         todayAppointments: (todayAppointments as any)?.count || 0,
-        pendingReminders: (pendingReminders as any)?.count || 0,
-        lowStockMedicines: (lowStockMedicines as any)?.count || 0
+        pendingReminders: (pendingReminders as any)?.count || 0
       }
     })
   } catch (error: any) {
@@ -787,7 +640,7 @@ app.get('/', (c) => {
                     <i class="fas fa-chart-line mr-3 text-ayurveda-600"></i>Dashboard
                 </h2>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                     <div class="bg-white rounded-lg shadow-lg p-6 border-l-4 border-blue-500">
                         <div class="flex items-center justify-between">
                             <div>
@@ -815,16 +668,6 @@ app.get('/', (c) => {
                                 <p id="stat-reminders" class="text-3xl font-bold text-gray-800">0</p>
                             </div>
                             <i class="fas fa-bell text-4xl text-yellow-500"></i>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white rounded-lg shadow-lg p-6 border-l-4 border-red-500">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-gray-600 text-sm">Low Stock Items</p>
-                                <p id="stat-lowstock" class="text-3xl font-bold text-gray-800">0</p>
-                            </div>
-                            <i class="fas fa-exclamation-triangle text-4xl text-red-500"></i>
                         </div>
                     </div>
                 </div>
