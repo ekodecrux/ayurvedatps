@@ -433,7 +433,6 @@ function showPatientModal(patient = null) {
     // Set default country
     selectCountry('India', '+91', 'IND');
   }
-  }
   
   modal.classList.remove('hidden');
 }
