@@ -55,17 +55,40 @@ async function logout() {
   }
 }
 
-// Country data with codes
+// Country data with codes and 3-letter ISO codes
 const countries = [
-  { name: 'India', code: '+91' },
-  { name: 'USA', code: '+1' },
-  { name: 'UK', code: '+44' },
-  { name: 'Australia', code: '+61' },
-  { name: 'Canada', code: '+1' },
-  { name: 'UAE', code: '+971' },
-  { name: 'Singapore', code: '+65' },
-  { name: 'Malaysia', code: '+60' },
-  { name: 'Saudi Arabia', code: '+966' }
+  { name: 'India', code: '+91', iso3: 'IND' },
+  { name: 'USA', code: '+1', iso3: 'USA' },
+  { name: 'United Kingdom', code: '+44', iso3: 'GBR' },
+  { name: 'Australia', code: '+61', iso3: 'AUS' },
+  { name: 'Canada', code: '+1', iso3: 'CAN' },
+  { name: 'UAE', code: '+971', iso3: 'ARE' },
+  { name: 'Singapore', code: '+65', iso3: 'SGP' },
+  { name: 'Malaysia', code: '+60', iso3: 'MYS' },
+  { name: 'Saudi Arabia', code: '+966', iso3: 'SAU' },
+  { name: 'China', code: '+86', iso3: 'CHN' },
+  { name: 'Japan', code: '+81', iso3: 'JPN' },
+  { name: 'Germany', code: '+49', iso3: 'DEU' },
+  { name: 'France', code: '+33', iso3: 'FRA' },
+  { name: 'Italy', code: '+39', iso3: 'ITA' },
+  { name: 'Spain', code: '+34', iso3: 'ESP' },
+  { name: 'Brazil', code: '+55', iso3: 'BRA' },
+  { name: 'Mexico', code: '+52', iso3: 'MEX' },
+  { name: 'South Africa', code: '+27', iso3: 'ZAF' },
+  { name: 'Pakistan', code: '+92', iso3: 'PAK' },
+  { name: 'Bangladesh', code: '+880', iso3: 'BGD' },
+  { name: 'Sri Lanka', code: '+94', iso3: 'LKA' },
+  { name: 'Nepal', code: '+977', iso3: 'NPL' },
+  { name: 'Indonesia', code: '+62', iso3: 'IDN' },
+  { name: 'Thailand', code: '+66', iso3: 'THA' },
+  { name: 'Philippines', code: '+63', iso3: 'PHL' },
+  { name: 'Vietnam', code: '+84', iso3: 'VNM' },
+  { name: 'South Korea', code: '+82', iso3: 'KOR' },
+  { name: 'New Zealand', code: '+64', iso3: 'NZL' },
+  { name: 'Qatar', code: '+974', iso3: 'QAT' },
+  { name: 'Kuwait', code: '+965', iso3: 'KWT' },
+  { name: 'Bahrain', code: '+973', iso3: 'BHR' },
+  { name: 'Oman', code: '+968', iso3: 'OMN' }
 ];
 
 const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
@@ -190,6 +213,96 @@ function renderPatients() {
   document.getElementById('patients-table-body').innerHTML = html;
 }
 
+// Country search and selection functions
+function initCountryDropdown() {
+  const dropdown = document.getElementById('country-dropdown');
+  const html = countries.map(c => `
+    <div class="px-3 py-2 hover:bg-ayurveda-50 cursor-pointer country-option" 
+         onclick="selectCountry('${c.name}', '${c.code}', '${c.iso3}')"
+         data-country="${c.name.toLowerCase()}">
+      <span class="font-medium">${c.name}</span>
+      <span class="text-gray-500 text-sm ml-2">${c.code}</span>
+    </div>
+  `).join('');
+  dropdown.innerHTML = html;
+}
+
+function showCountryDropdown() {
+  document.getElementById('country-dropdown').classList.remove('hidden');
+  initCountryDropdown();
+}
+
+function hideCountryDropdown() {
+  setTimeout(() => {
+    document.getElementById('country-dropdown').classList.add('hidden');
+  }, 200);
+}
+
+function filterCountries() {
+  const search = document.getElementById('patient-country-search').value.toLowerCase();
+  const options = document.querySelectorAll('.country-option');
+  
+  options.forEach(option => {
+    const countryName = option.dataset.country;
+    if (countryName.includes(search)) {
+      option.style.display = 'block';
+    } else {
+      option.style.display = 'none';
+    }
+  });
+}
+
+function selectCountry(name, code, iso3) {
+  document.getElementById('patient-country-search').value = name;
+  document.getElementById('patient-country').value = name;
+  document.getElementById('patient-country-code').value = code;
+  document.getElementById('patient-country-iso3').value = iso3;
+  document.getElementById('phone-country-code-display').textContent = code;
+  hideCountryDropdown();
+}
+
+// Dynamic phone number management
+let phoneFieldCounter = 0;
+function addPhoneField(label = '', number = '') {
+  phoneFieldCounter++;
+  const html = `
+    <div class="flex items-center gap-2 phone-field" data-id="${phoneFieldCounter}">
+      <input 
+        type="text" 
+        placeholder="Label (e.g., Home, Office)" 
+        value="${label}"
+        class="border rounded px-3 py-2 w-1/3 phone-label"
+      >
+      <span class="px-3 py-2 bg-gray-100 border rounded font-mono text-sm phone-display-code">${document.getElementById('patient-country-code').value || '+91'}</span>
+      <input 
+        type="text" 
+        placeholder="Phone number" 
+        value="${number}"
+        class="border rounded px-3 py-2 flex-1 phone-number"
+      >
+      <button 
+        type="button" 
+        onclick="removePhoneField(${phoneFieldCounter})" 
+        class="text-red-600 hover:text-red-800 px-2"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  `;
+  document.getElementById('additional-phones-container').insertAdjacentHTML('beforeend', html);
+}
+
+function removePhoneField(id) {
+  document.querySelector(`.phone-field[data-id="${id}"]`)?.remove();
+}
+
+function updateAllPhoneCodeDisplays() {
+  const code = document.getElementById('patient-country-code').value;
+  document.querySelectorAll('.phone-display-code').forEach(el => {
+    el.textContent = code;
+  });
+}
+
 // Helper function to update country code based on country selection
 function updateCountryCode() {
   const countryMap = {
@@ -253,6 +366,13 @@ function showPatientModal(patient = null) {
   document.getElementById('diseases-container').innerHTML = '';
   diseaseCounter = 0;
   
+  // Clear additional phones
+  document.getElementById('additional-phones-container').innerHTML = '';
+  phoneFieldCounter = 0;
+  
+  // Initialize country dropdown
+  initCountryDropdown();
+  
   if (patient) {
     document.getElementById('patient-id').value = patient.id;
     document.getElementById('patient-name').value = patient.name || '';
@@ -261,10 +381,32 @@ function showPatientModal(patient = null) {
     document.getElementById('patient-weight').value = patient.weight || '';
     document.getElementById('patient-height').value = patient.height || '';
     
-    document.getElementById('patient-country-code').value = patient.country_code || '+91';
+    // Set country
+    const countryName = patient.country || 'India';
+    const countryData = countries.find(c => c.name === countryName) || countries[0];
+    document.getElementById('patient-country-search').value = countryName;
+    document.getElementById('patient-country').value = countryName;
+    document.getElementById('patient-country-code').value = countryData.code;
+    document.getElementById('patient-country-iso3').value = countryData.iso3;
+    document.getElementById('phone-country-code-display').textContent = countryData.code;
+    
+    // Set phone
     document.getElementById('patient-phone').value = patient.phone || '';
-    document.getElementById('patient-phone2').value = patient.phone2 || '';
     document.getElementById('patient-email').value = patient.email || '';
+    
+    // Load additional phones
+    if (patient.additional_phones) {
+      try {
+        const phones = JSON.parse(patient.additional_phones);
+        phones.forEach(p => {
+          if (p.label && p.number) {
+            addPhoneField(p.label, p.number);
+          }
+        });
+      } catch (e) {
+        console.log('No additional phones');
+      }
+    }
     
     document.getElementById('patient-address-hno').value = patient.address_hno || '';
     document.getElementById('patient-address-street').value = patient.address_street || '';
@@ -287,7 +429,10 @@ function showPatientModal(patient = null) {
   } else {
     form.reset();
     document.getElementById('patient-id').value = '';
-    document.getElementById('patient-country-code').value = '+91';
+    
+    // Set default country
+    selectCountry('India', '+91', 'IND');
+  }
   }
   
   modal.classList.remove('hidden');
@@ -302,8 +447,11 @@ async function savePatient() {
     showLoading();
     const id = document.getElementById('patient-id').value;
     
-    // Collect secondary phone (only one now)
-    const secondaryPhone = document.getElementById('patient-phone2')?.value || '';
+    // Collect additional phones with labels
+    const additionalPhones = Array.from(document.querySelectorAll('.phone-field')).map(field => ({
+      label: field.querySelector('.phone-label').value,
+      number: field.querySelector('.phone-number').value
+    })).filter(p => p.label && p.number);
     
     // Collect diseases with all 4 fields
     const diseases = Array.from(document.querySelectorAll('.disease-row')).map(row => ({
@@ -313,13 +461,10 @@ async function savePatient() {
       attacked_by: row.querySelector('.disease-attacked-by').value
     })).filter(d => d.present_health_issue); // Only include rows with health issue filled
     
-    // Extract country name from country code
+    // Get country info
+    const country = document.getElementById('patient-country').value;
     const countryCode = document.getElementById('patient-country-code').value;
-    const countryMap = {
-      '+91': 'India', '+1': 'USA', '+44': 'UK', '+61': 'Australia',
-      '+971': 'UAE', '+65': 'Singapore', '+60': 'Malaysia', '+966': 'Saudi Arabia'
-    };
-    const country = countryMap[countryCode] || 'India';
+    const countryIso3 = document.getElementById('patient-country-iso3').value;
     
     const data = {
       name: document.getElementById('patient-name').value,
@@ -327,6 +472,7 @@ async function savePatient() {
       gender: document.getElementById('patient-gender').value,
       country: country,
       country_code: countryCode,
+      country_iso3: countryIso3,
       phone: document.getElementById('patient-phone').value,
       email: document.getElementById('patient-email').value,
       weight: parseFloat(document.getElementById('patient-weight').value) || null,
@@ -350,8 +496,8 @@ async function savePatient() {
       // Medical history
       medical_history: document.getElementById('patient-medical-history').value,
       
-      // Additional phones as JSON (now just secondary phone)
-      additional_phones: secondaryPhone ? JSON.stringify([secondaryPhone]) : null,
+      // Additional phones as JSON
+      additional_phones: additionalPhones.length > 0 ? JSON.stringify(additionalPhones) : null,
       
       // Diseases as JSON array
       diseases: diseases.length > 0 ? JSON.stringify(diseases) : null

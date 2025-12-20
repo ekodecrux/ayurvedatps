@@ -198,41 +198,44 @@ app.get('/api/patients/:id', async (c) => {
   }
 })
 
-// Create patient with auto-generated COUNTRYNAME0001 patient_id
+// Create patient with auto-generated COUNTRYISO00001 patient_id (sequential across all countries)
 app.post('/api/patients', async (c) => {
   try {
     const body = await c.req.json()
     
-    // Generate patient ID based on country
-    const country = body.country || 'INDIA'
-    const countryUpper = country.toUpperCase()
+    // Generate patient ID: ISO3 code + sequential number (00001, 00002, etc.)
+    const countryIso3 = body.country_iso3 || 'IND'
     
-    const lastPatientWithCountry = await c.env.DB.prepare(
-      'SELECT patient_id FROM patients WHERE patient_id LIKE ? ORDER BY patient_id DESC LIMIT 1'
-    ).bind(`${countryUpper}%`).first()
+    // Get the last patient ID (regardless of country) to continue sequence
+    const lastPatient = await c.env.DB.prepare(
+      'SELECT patient_id FROM patients ORDER BY id DESC LIMIT 1'
+    ).first()
     
     let patientId
-    if (lastPatientWithCountry) {
-      const lastNumber = parseInt((lastPatientWithCountry as any).patient_id.replace(countryUpper, ''))
-      patientId = countryUpper + String(lastNumber + 1).padStart(4, '0')
+    if (lastPatient) {
+      // Extract numeric part from last patient_id (e.g., "IND00005" -> 5)
+      const lastId = (lastPatient as any).patient_id
+      const numericPart = lastId.replace(/^[A-Z]+/, '') // Remove country code prefix
+      const lastNumber = parseInt(numericPart) || 0
+      patientId = countryIso3 + String(lastNumber + 1).padStart(5, '0')
     } else {
-      patientId = countryUpper + '0001'
+      patientId = countryIso3 + '00001'
     }
     
     const result = await c.env.DB.prepare(`
       INSERT INTO patients (
         patient_id, name, age, gender, phone, email, address, medical_history,
-        country, country_code, weight, height,
+        country, country_code, country_iso3, weight, height,
         referred_by_name, referred_by_phone, referred_by_address,
         address_hno, address_street, address_apartment, address_area, 
         address_district, address_state, address_pincode,
         address_latitude, address_longitude,
         photo_url, present_health_issue, present_medicine, mg_value,
         additional_phones
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       patientId, body.name, body.age, body.gender, body.phone, body.email || null, body.address || null, body.medical_history || null,
-      body.country || 'India', body.country_code || '+91', body.weight || null, body.height || null,
+      body.country || 'India', body.country_code || '+91', body.country_iso3 || 'IND', body.weight || null, body.height || null,
       body.referred_by_name || null, body.referred_by_phone || null, body.referred_by_address || null,
       body.address_hno || null, body.address_street || null, body.address_apartment || null, body.address_area || null,
       body.address_district || null, body.address_state || null, body.address_pincode || null,
@@ -256,7 +259,7 @@ app.put('/api/patients/:id', async (c) => {
     await c.env.DB.prepare(`
       UPDATE patients SET 
         name = ?, age = ?, gender = ?, phone = ?, email = ?, address = ?, medical_history = ?,
-        country = ?, country_code = ?, weight = ?, height = ?,
+        country = ?, country_code = ?, country_iso3 = ?, weight = ?, height = ?,
         referred_by_name = ?, referred_by_phone = ?, referred_by_address = ?,
         address_hno = ?, address_street = ?, address_apartment = ?, address_area = ?,
         address_district = ?, address_state = ?, address_pincode = ?,
@@ -267,7 +270,7 @@ app.put('/api/patients/:id', async (c) => {
       WHERE id = ?
     `).bind(
       body.name, body.age, body.gender, body.phone, body.email || null, body.address || null, body.medical_history || null,
-      body.country || null, body.country_code || null, body.weight || null, body.height || null,
+      body.country || null, body.country_code || null, body.country_iso3 || null, body.weight || null, body.height || null,
       body.referred_by_name || null, body.referred_by_phone || null, body.referred_by_address || null,
       body.address_hno || null, body.address_street || null, body.address_apartment || null, body.address_area || null,
       body.address_district || null, body.address_state || null, body.address_pincode || null,
@@ -1921,25 +1924,40 @@ app.get('/', (c) => {
                         <h4 class="font-bold text-lg mb-3 text-ayurveda-700">Contact Information</h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                             <div>
-                                <label class="block text-sm font-medium mb-1">Country Code *</label>
-                                <select id="patient-country-code" class="border rounded px-3 py-2 w-full" required>
-                                    <option value="+91">+91 (India)</option>
-                                    <option value="+1">+1 (USA/Canada)</option>
-                                    <option value="+44">+44 (UK)</option>
-                                    <option value="+61">+61 (Australia)</option>
-                                    <option value="+971">+971 (UAE)</option>
-                                    <option value="+65">+65 (Singapore)</option>
-                                    <option value="+60">+60 (Malaysia)</option>
-                                    <option value="+966">+966 (Saudi Arabia)</option>
-                                </select>
+                                <label class="block text-sm font-medium mb-1">Country *</label>
+                                <div class="relative">
+                                    <input 
+                                        type="text" 
+                                        id="patient-country-search" 
+                                        class="border rounded px-3 py-2 w-full" 
+                                        placeholder="Search country..."
+                                        autocomplete="off"
+                                        onkeyup="filterCountries()"
+                                        onfocus="showCountryDropdown()"
+                                    >
+                                    <input type="hidden" id="patient-country" value="India">
+                                    <input type="hidden" id="patient-country-code" value="+91">
+                                    <input type="hidden" id="patient-country-iso3" value="IND">
+                                    <div id="country-dropdown" class="hidden absolute z-10 bg-white border rounded-md shadow-lg mt-1 w-full max-h-60 overflow-y-auto">
+                                        <!-- Countries populated by JavaScript -->
+                                    </div>
+                                </div>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">Primary Phone Number *</label>
-                                <input type="text" id="patient-phone" class="border rounded px-3 py-2 w-full" placeholder="Enter mobile number" required>
+                                <div class="flex items-center gap-2">
+                                    <span id="phone-country-code-display" class="px-3 py-2 bg-gray-100 border rounded font-mono text-sm">+91</span>
+                                    <input type="text" id="patient-phone" class="border rounded px-3 py-2 w-full flex-1" placeholder="Enter phone number" required>
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Secondary Phone Number</label>
-                                <input type="text" id="patient-phone2" class="border rounded px-3 py-2 w-full" placeholder="Optional secondary number">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium mb-1">Additional Phone Numbers</label>
+                                <div id="additional-phones-container" class="space-y-2">
+                                    <!-- Dynamic phone fields added here -->
+                                </div>
+                                <button type="button" onclick="addPhoneField()" class="mt-2 text-sm text-ayurveda-600 hover:text-ayurveda-700 font-medium">
+                                    <i class="fas fa-plus-circle mr-1"></i> Add Phone Number
+                                </button>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">Email</label>
