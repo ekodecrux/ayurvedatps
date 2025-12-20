@@ -306,6 +306,27 @@ app.get('/api/appointments', async (c) => {
   }
 })
 
+// Get single appointment
+app.get('/api/appointments/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const appointment = await c.env.DB.prepare(`
+      SELECT a.*, p.name as patient_name, p.phone as patient_phone
+      FROM appointments a
+      LEFT JOIN patients p ON a.patient_id = p.id
+      WHERE a.id = ?
+    `).bind(id).first()
+    
+    if (!appointment) {
+      return c.json({ success: false, error: 'Appointment not found' }, 404)
+    }
+    
+    return c.json({ success: true, data: appointment })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
 // Get appointments by patient
 app.get('/api/patients/:id/appointments', async (c) => {
   try {
