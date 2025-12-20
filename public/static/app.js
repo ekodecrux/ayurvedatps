@@ -356,16 +356,6 @@ async function savePatient() {
       // Diseases as JSON array
       diseases: diseases.length > 0 ? JSON.stringify(diseases) : null
     };
-      
-      // Medical information
-      present_health_issue: document.getElementById('patient-present-health-issue').value,
-      present_medicine: document.getElementById('patient-present-medicine').value,
-      mg_value: document.getElementById('patient-mg').value,
-      medical_history: document.getElementById('patient-medical-history').value,
-      
-      // Additional phones as JSON
-      additional_phones: phones.length > 0 ? JSON.stringify(phones) : null
-    };
     
     if (id) {
       await axios.put(`${API_BASE}/patients/${id}`, data);
@@ -522,22 +512,6 @@ function showAppointmentModal(appointment = null) {
     console.error('Error showing appointment modal:', error);
     alert('Error opening appointment modal: ' + error.message);
   }
-}
-  
-  if (appointment) {
-    document.getElementById('appointment-id').value = appointment.id;
-    document.getElementById('appointment-patient').value = appointment.patient_id;
-    document.getElementById('appointment-date').value = appointment.appointment_date ? appointment.appointment_date.substring(0, 16) : '';
-    document.getElementById('appointment-reason').value = appointment.purpose || '';
-    document.getElementById('appointment-status').value = appointment.status || 'scheduled';
-  } else {
-    document.getElementById('appointment-form').reset();
-    document.getElementById('appointment-id').value = '';
-    document.getElementById('appointment-status').value = 'scheduled';
-  }
-  
-  loadPatientsForSelect();
-  modal.classList.remove('hidden');
 }
 
 function closeAppointmentModal() {
