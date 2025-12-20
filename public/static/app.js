@@ -151,26 +151,44 @@ function updateCountryCode() {
   document.getElementById('patient-country-code').value = countryMap[country] || '+91';
 }
 
-// Helper function to add disease field
+// Helper function to add disease row with 4 fields
 let diseaseCounter = 0;
-function addDiseaseField(diseaseName = '', attackedBy = '') {
+function addDiseaseRow(healthIssue = '', medicine = '', mgValue = '', attackedBy = '') {
   diseaseCounter++;
   const html = `
-    <div class="flex gap-2 items-center disease-row" data-id="${diseaseCounter}">
-      <input type="text" placeholder="Disease name" value="${diseaseName}" 
-             class="disease-name border rounded px-3 py-2 flex-1" />
-      <input type="text" placeholder="Attacked by" value="${attackedBy}"
-             class="disease-attacked border rounded px-3 py-2 flex-1" />
-      <button type="button" onclick="removeDiseaseField(${diseaseCounter})" 
-              class="text-red-600 hover:text-red-800 px-2">
-        <i class="fas fa-times"></i>
+    <div class="border rounded-lg p-4 disease-row" data-id="${diseaseCounter}">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
+        <div>
+          <label class="block text-xs font-medium mb-1 text-gray-600">Present Health Issue</label>
+          <input type="text" placeholder="Enter health issue" value="${healthIssue}" 
+                 class="disease-health-issue border rounded px-3 py-2 w-full" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1 text-gray-600">Present Medicine</label>
+          <input type="text" placeholder="Enter medicine" value="${medicine}"
+                 class="disease-medicine border rounded px-3 py-2 w-full" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1 text-gray-600">MG Value</label>
+          <input type="text" placeholder="Enter MG value" value="${mgValue}"
+                 class="disease-mg border rounded px-3 py-2 w-full" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1 text-gray-600">Attacked By</label>
+          <input type="text" placeholder="e.g., Viral, Bacterial" value="${attackedBy}"
+                 class="disease-attacked-by border rounded px-3 py-2 w-full" />
+        </div>
+      </div>
+      <button type="button" onclick="removeDiseaseRow(${diseaseCounter})" 
+              class="text-red-600 hover:text-red-800 text-sm">
+        <i class="fas fa-trash mr-1"></i>Remove Disease
       </button>
     </div>
   `;
-  document.getElementById('diseases-list').insertAdjacentHTML('beforeend', html);
+  document.getElementById('diseases-container').insertAdjacentHTML('beforeend', html);
 }
 
-function removeDiseaseField(id) {
+function removeDiseaseRow(id) {
   document.querySelector(`.disease-row[data-id="${id}"]`)?.remove();
 }
 
@@ -181,24 +199,21 @@ function showPatientModal(patient = null) {
   
   title.textContent = patient ? 'Edit Patient' : 'Add New Patient';
   
-  // Clear diseases list
-  document.getElementById('diseases-list').innerHTML = '';
+  // Clear diseases container
+  document.getElementById('diseases-container').innerHTML = '';
   diseaseCounter = 0;
   
   if (patient) {
     document.getElementById('patient-id').value = patient.id;
     document.getElementById('patient-name').value = patient.name || '';
-    document.getElementById('patient-co').value = patient.co || '';
     document.getElementById('patient-age').value = patient.age || '';
     document.getElementById('patient-gender').value = patient.gender || '';
     document.getElementById('patient-weight').value = patient.weight || '';
     document.getElementById('patient-height').value = patient.height || '';
     
-    document.getElementById('patient-country').value = patient.country || 'India';
     document.getElementById('patient-country-code').value = patient.country_code || '+91';
     document.getElementById('patient-phone').value = patient.phone || '';
     document.getElementById('patient-phone2').value = patient.phone2 || '';
-    document.getElementById('patient-phone3').value = patient.phone3 || '';
     document.getElementById('patient-email').value = patient.email || '';
     
     document.getElementById('patient-address-hno').value = patient.address_hno || '';
@@ -217,11 +232,11 @@ function showPatientModal(patient = null) {
     document.getElementById('patient-present-health-issue').value = patient.present_health_issue || '';
     document.getElementById('patient-present-medicine').value = patient.present_medicine || '';
     document.getElementById('patient-mg').value = patient.mg_value || '';
+    document.getElementById('patient-attacked-by').value = patient.attacked_by || '';
     document.getElementById('patient-medical-history').value = patient.medical_history || '';
   } else {
     form.reset();
     document.getElementById('patient-id').value = '';
-    document.getElementById('patient-country').value = 'India';
     document.getElementById('patient-country-code').value = '+91';
   }
   
@@ -237,24 +252,31 @@ async function savePatient() {
     showLoading();
     const id = document.getElementById('patient-id').value;
     
-    // Collect multiple phones
-    const phones = [
-      document.getElementById('patient-phone2').value,
-      document.getElementById('patient-phone3').value
-    ].filter(p => p);
+    // Collect secondary phone (only one now)
+    const secondaryPhone = document.getElementById('patient-phone2')?.value || '';
     
-    // Collect diseases
+    // Collect diseases with all 4 fields
     const diseases = Array.from(document.querySelectorAll('.disease-row')).map(row => ({
-      disease_name: row.querySelector('.disease-name').value,
-      attacked_by: row.querySelector('.disease-attacked').value
-    })).filter(d => d.disease_name);
+      present_health_issue: row.querySelector('.disease-health-issue').value,
+      present_medicine: row.querySelector('.disease-medicine').value,
+      mg_value: row.querySelector('.disease-mg').value,
+      attacked_by: row.querySelector('.disease-attacked-by').value
+    })).filter(d => d.present_health_issue); // Only include rows with health issue filled
+    
+    // Extract country name from country code
+    const countryCode = document.getElementById('patient-country-code').value;
+    const countryMap = {
+      '+91': 'India', '+1': 'USA', '+44': 'UK', '+61': 'Australia',
+      '+971': 'UAE', '+65': 'Singapore', '+60': 'Malaysia', '+966': 'Saudi Arabia'
+    };
+    const country = countryMap[countryCode] || 'India';
     
     const data = {
       name: document.getElementById('patient-name').value,
       age: parseInt(document.getElementById('patient-age').value) || null,
       gender: document.getElementById('patient-gender').value,
-      country: document.getElementById('patient-country').value,
-      country_code: document.getElementById('patient-country-code').value,
+      country: country,
+      country_code: countryCode,
       phone: document.getElementById('patient-phone').value,
       email: document.getElementById('patient-email').value,
       weight: parseFloat(document.getElementById('patient-weight').value) || null,
@@ -274,6 +296,16 @@ async function savePatient() {
       referred_by_name: document.getElementById('patient-referred-by').value,
       referred_by_phone: document.getElementById('patient-referred-by-phone').value,
       referred_by_address: document.getElementById('patient-referred-by-address').value,
+      
+      // Medical history
+      medical_history: document.getElementById('patient-medical-history').value,
+      
+      // Additional phones as JSON (now just secondary phone)
+      additional_phones: secondaryPhone ? JSON.stringify([secondaryPhone]) : null,
+      
+      // Diseases as JSON array
+      diseases: diseases.length > 0 ? JSON.stringify(diseases) : null
+    };
       
       // Medical information
       present_health_issue: document.getElementById('patient-present-health-issue').value,
@@ -356,16 +388,16 @@ async function viewPatient(id) {
   editPatient(id);
 }
 
-async function exportPatients() {
+async function exportPatients(format = 'csv') {
   try {
     const country = document.getElementById('patient-filter-country')?.value || '';
-    let url = `${API_BASE}/patients/export?format=csv`;
+    let url = `${API_BASE}/patients/export?format=${format}`;
     if (country) url += `&country=${country}`;
     
     window.open(url, '_blank');
   } catch (error) {
     console.error('Export error:', error);
-    alert('Error exporting patients');
+    alert(`Error exporting patients to ${format.toUpperCase()}`);
   }
 }
 
@@ -578,12 +610,78 @@ async function loadPatientsForHerbsRoutes() {
     const patients = res.data.data || [];
     const select = document.getElementById('prescription-patient');
     
+    // Store patients data globally for quick access
+    window.patientsData = patients;
+    
     select.innerHTML = '<option value="">Select Patient</option>' + 
       patients.map(p => `<option value="${p.id}">${p.name} (${p.patient_id || p.phone})</option>`).join('');
   } catch (error) {
     console.error('Load patients error:', error);
   }
 }
+
+// Display patient information when selected
+async function displayPatientInfo() {
+  const patientId = document.getElementById('prescription-patient').value;
+  const display = document.getElementById('patient-info-display');
+  
+  if (!patientId) {
+    display.classList.add('hidden');
+    return;
+  }
+  
+  try {
+    // Fetch full patient data
+    const res = await axios.get(`${API_BASE}/patients/${patientId}`);
+    const patient = res.data.data;
+    
+    // Display patient information
+    document.getElementById('display-patient-id').textContent = patient.patient_id || 'N/A';
+    document.getElementById('display-patient-age-gender').textContent = `${patient.age || 'N/A'} / ${patient.gender || 'N/A'}`;
+    document.getElementById('display-patient-country').textContent = patient.country || 'N/A';
+    document.getElementById('display-patient-phone').textContent = `${patient.country_code || ''} ${patient.phone || 'N/A'}`;
+    document.getElementById('display-patient-email').textContent = patient.email || 'N/A';
+    document.getElementById('display-patient-weight-height').textContent = `${patient.weight || 'N/A'} kg / ${patient.height || 'N/A'} cm`;
+    
+    // Build full address
+    const addressParts = [];
+    if (patient.address_hno) addressParts.push(patient.address_hno);
+    if (patient.address_street) addressParts.push(patient.address_street);
+    if (patient.address_apartment) addressParts.push(patient.address_apartment);
+    if (patient.address_area) addressParts.push(patient.address_area);
+    if (patient.address_district) addressParts.push(patient.address_district);
+    if (patient.address_state) addressParts.push(patient.address_state);
+    if (patient.address_pincode) addressParts.push(patient.address_pincode);
+    document.getElementById('display-patient-address').textContent = addressParts.join(', ') || 'N/A';
+    
+    document.getElementById('display-patient-health-issue').textContent = patient.present_health_issue || 'N/A';
+    document.getElementById('display-patient-medical-history').textContent = patient.medical_history || 'N/A';
+    
+    display.classList.remove('hidden');
+  } catch (error) {
+    console.error('Error loading patient details:', error);
+    alert('Error loading patient details');
+  }
+}
+
+// Calculate follow-up date based on given date + treatment months
+function calculateFollowUpDate() {
+  const givenDate = document.getElementById('prescription-date').value;
+  const months = parseInt(document.getElementById('prescription-months').value) || 0;
+  
+  if (!givenDate) {
+    document.getElementById('prescription-followup').value = '';
+    return;
+  }
+  
+  const followUpDate = new Date(givenDate);
+  followUpDate.setMonth(followUpDate.getMonth() + months);
+  
+  // Format as YYYY-MM-DD for date input
+  const formattedDate = followUpDate.toISOString().split('T')[0];
+  document.getElementById('prescription-followup').value = formattedDate;
+}
+
 
 let medicineCounter = 0;
 
@@ -661,10 +759,12 @@ async function saveHerbsRoutes() {
     
     const givenDate = document.getElementById('prescription-date').value;
     const months = parseInt(document.getElementById('prescription-months').value) || 0;
+    const patientId = parseInt(document.getElementById('prescription-patient').value);
     
     // Auto-calculate follow-up date
     const nextFollowupDate = new Date(givenDate);
     nextFollowupDate.setMonth(nextFollowupDate.getMonth() + months);
+    const followUpDateStr = nextFollowupDate.toISOString().split('T')[0];
     
     // Collect medicines with dosage schedule
     const medicines = [];
@@ -701,10 +801,10 @@ async function saveHerbsRoutes() {
     const advancePaid = parseFloat(document.getElementById('prescription-advance').value) || 0;
     
     const data = {
-      patient_id: parseInt(document.getElementById('prescription-patient').value),
+      patient_id: patientId,
       given_date: givenDate,
       treatment_months: months,
-      follow_up_date: nextFollowupDate.toISOString().split('T')[0],
+      follow_up_date: followUpDateStr,
       diagnosis: document.getElementById('prescription-problem').value || 'Not specified',
       notes: '',
       course: parseInt(document.getElementById('prescription-course').value) || null,
@@ -715,11 +815,29 @@ async function saveHerbsRoutes() {
       medicines: medicines
     };
     
+    // Save the Herbs & Routes record
     const result = await axios.post(`${API_BASE}/prescriptions`, data);
-    alert(`Herbs & Routes record created successfully! Follow-up date: ${formatDate(data.follow_up_date)}`);
+    
+    // Auto-create reminder for follow-up date
+    try {
+      const reminderData = {
+        patient_id: patientId,
+        reminder_date: followUpDateStr,
+        reminder_type: 'Follow-up',
+        notes: `Follow-up for Herbs & Routes treatment (${months} month${months > 1 ? 's' : ''} course)`
+      };
+      await axios.post(`${API_BASE}/reminders`, reminderData);
+      console.log('Reminder created automatically for follow-up date');
+    } catch (reminderError) {
+      console.error('Error creating reminder:', reminderError);
+      // Don't fail the whole operation if reminder creation fails
+    }
+    
+    alert(`Herbs & Routes record created successfully!\nFollow-up date: ${formatDate(followUpDateStr)}\nReminder has been set automatically.`);
     
     closeHerbsRoutesModal();
     loadHerbsRoutes();
+    loadReminders(); // Refresh reminders to show the new one
   } catch (error) {
     console.error('Save herbs & routes error:', error);
     alert('Error saving herbs & routes record: ' + (error.response?.data?.error || error.message));

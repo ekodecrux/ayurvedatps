@@ -207,58 +207,201 @@ app.delete('/api/patient-diseases/:id', async (c) => {
 })
 
 // Export patients to CSV
-app.get('/api/patients/export/csv', async (c) => {
+// Export patients in CSV, Excel, or PDF format
+app.get('/api/patients/export', async (c) => {
   try {
-    const { results } = await c.env.DB.prepare('SELECT * FROM patients ORDER BY created_at DESC').all()
+    const format = c.req.query('format') || 'csv'
+    const country = c.req.query('country') || ''
+    
+    let query = 'SELECT * FROM patients WHERE 1=1'
+    const params: any[] = []
+    
+    if (country) {
+      query += ' AND country = ?'
+      params.push(country)
+    }
+    
+    query += ' ORDER BY created_at DESC'
+    
+    const { results } = await c.env.DB.prepare(query).bind(...params).all()
     
     if (results.length === 0) {
       return c.text('No patients to export', 404)
     }
     
-    // CSV headers
-    const headers = [
-      'Patient ID', 'Name', 'Age', 'Gender', 'Country', 'Phone', 'Country Code',
-      'Email', 'Weight', 'Height', 'Address H.No', 'Street', 'Apartment', 'Area',
-      'District', 'State', 'Pin Code', 'Present Health Issue', 'Present Medicine',
-      'MG Value', 'Referred By Name', 'Referred By Phone', 'Medical History', 'Created At'
-    ].join(',')
+    const date = new Date().toISOString().split('T')[0]
     
-    // CSV rows
-    const rows = results.map((patient: any) => {
-      return [
-        patient.patient_id || '',
-        `"${(patient.name || '').replace(/"/g, '""')}"`,
-        patient.age || '',
-        patient.gender || '',
-        patient.country || '',
-        patient.phone || '',
-        patient.country_code || '',
-        patient.email || '',
-        patient.weight || '',
-        patient.height || '',
-        patient.address_hno || '',
-        `"${(patient.address_street || '').replace(/"/g, '""')}"`,
-        `"${(patient.address_apartment || '').replace(/"/g, '""')}"`,
-        `"${(patient.address_area || '').replace(/"/g, '""')}"`,
-        patient.address_district || '',
-        patient.address_state || '',
-        patient.address_pincode || '',
-        `"${(patient.present_health_issue || '').replace(/"/g, '""')}"`,
-        `"${(patient.present_medicine || '').replace(/"/g, '""')}"`,
-        patient.mg_value || '',
-        patient.referred_by_name || '',
-        patient.referred_by_phone || '',
-        `"${(patient.medical_history || '').replace(/"/g, '""')}"`,
-        patient.created_at || ''
+    if (format === 'csv') {
+      // CSV Export
+      const headers = [
+        'Patient ID', 'Name', 'Age', 'Gender', 'Country', 'Phone', 'Country Code',
+        'Email', 'Weight', 'Height', 'Address H.No', 'Street', 'Apartment', 'Area',
+        'District', 'State', 'Pin Code', 'Present Health Issue', 'Present Medicine',
+        'MG Value', 'Attacked By', 'Referred By Name', 'Referred By Phone', 'Medical History', 'Created At'
       ].join(',')
-    }).join('\n')
-    
-    const csv = `${headers}\n${rows}`
-    
-    return c.text(csv, 200, {
-      'Content-Type': 'text/csv',
-      'Content-Disposition': `attachment; filename="patients_export_${new Date().toISOString().split('T')[0]}.csv"`
-    })
+      
+      const rows = results.map((patient: any) => {
+        return [
+          patient.patient_id || '',
+          `"${(patient.name || '').replace(/"/g, '""')}"`,
+          patient.age || '',
+          patient.gender || '',
+          patient.country || '',
+          patient.phone || '',
+          patient.country_code || '',
+          patient.email || '',
+          patient.weight || '',
+          patient.height || '',
+          patient.address_hno || '',
+          `"${(patient.address_street || '').replace(/"/g, '""')}"`,
+          `"${(patient.address_apartment || '').replace(/"/g, '""')}"`,
+          `"${(patient.address_area || '').replace(/"/g, '""')}"`,
+          patient.address_district || '',
+          patient.address_state || '',
+          patient.address_pincode || '',
+          `"${(patient.present_health_issue || '').replace(/"/g, '""')}"`,
+          `"${(patient.present_medicine || '').replace(/"/g, '""')}"`,
+          patient.mg_value || '',
+          patient.attacked_by || '',
+          patient.referred_by_name || '',
+          patient.referred_by_phone || '',
+          `"${(patient.medical_history || '').replace(/"/g, '""')}"`,
+          patient.created_at || ''
+        ].join(',')
+      }).join('\n')
+      
+      const csv = `${headers}\n${rows}`
+      
+      return c.text(csv, 200, {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': `attachment; filename="patients_export_${date}.csv"`
+      })
+    } else if (format === 'excel') {
+      // Excel Export (using HTML table with Excel mime type)
+      const headers = ['Patient ID', 'Name', 'Age', 'Gender', 'Country', 'Phone', 'Country Code',
+        'Email', 'Weight', 'Height', 'Address H.No', 'Street', 'Apartment', 'Area',
+        'District', 'State', 'Pin Code', 'Present Health Issue', 'Present Medicine',
+        'MG Value', 'Attacked By', 'Referred By Name', 'Referred By Phone', 'Medical History', 'Created At']
+      
+      const rows = results.map((patient: any) => {
+        return `<tr>
+          <td>${patient.patient_id || ''}</td>
+          <td>${patient.name || ''}</td>
+          <td>${patient.age || ''}</td>
+          <td>${patient.gender || ''}</td>
+          <td>${patient.country || ''}</td>
+          <td>${patient.phone || ''}</td>
+          <td>${patient.country_code || ''}</td>
+          <td>${patient.email || ''}</td>
+          <td>${patient.weight || ''}</td>
+          <td>${patient.height || ''}</td>
+          <td>${patient.address_hno || ''}</td>
+          <td>${patient.address_street || ''}</td>
+          <td>${patient.address_apartment || ''}</td>
+          <td>${patient.address_area || ''}</td>
+          <td>${patient.address_district || ''}</td>
+          <td>${patient.address_state || ''}</td>
+          <td>${patient.address_pincode || ''}</td>
+          <td>${patient.present_health_issue || ''}</td>
+          <td>${patient.present_medicine || ''}</td>
+          <td>${patient.mg_value || ''}</td>
+          <td>${patient.attacked_by || ''}</td>
+          <td>${patient.referred_by_name || ''}</td>
+          <td>${patient.referred_by_phone || ''}</td>
+          <td>${patient.medical_history || ''}</td>
+          <td>${patient.created_at || ''}</td>
+        </tr>`
+      }).join('\n')
+      
+      const excel = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
+          <head>
+            <meta charset="UTF-8">
+            <style>table { border-collapse: collapse; } td, th { border: 1px solid #ddd; padding: 8px; }</style>
+          </head>
+          <body>
+            <table>
+              <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </body>
+        </html>
+      `
+      
+      return c.html(excel, 200, {
+        'Content-Type': 'application/vnd.ms-excel',
+        'Content-Disposition': `attachment; filename="patients_export_${date}.xls"`
+      })
+    } else if (format === 'pdf') {
+      // PDF Export (using HTML that can be printed to PDF)
+      const rows = results.map((patient: any) => {
+        return `<tr>
+          <td>${patient.patient_id || ''}</td>
+          <td>${patient.name || ''}</td>
+          <td>${patient.age || ''}</td>
+          <td>${patient.gender || ''}</td>
+          <td>${patient.country || ''}</td>
+          <td>${patient.phone || ''}</td>
+          <td>${patient.email || ''}</td>
+          <td>${patient.present_health_issue || ''}</td>
+        </tr>`
+      }).join('\n')
+      
+      const pdf = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>Patients Export - ${date}</title>
+            <style>
+              @media print {
+                body { margin: 0; padding: 20px; }
+                .no-print { display: none; }
+              }
+              body { font-family: Arial, sans-serif; }
+              h1 { text-align: center; color: #333; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th { background: #4CAF50; color: white; padding: 10px; text-align: left; font-weight: bold; }
+              td { border: 1px solid #ddd; padding: 8px; }
+              tr:nth-child(even) { background-color: #f9f9f9; }
+              .print-btn { margin: 20px auto; display: block; padding: 10px 30px; background: #4CAF50; color: white; border: none; cursor: pointer; font-size: 16px; }
+            </style>
+            <script>
+              window.onload = function() {
+                const printBtn = document.getElementById('printBtn');
+                if (printBtn) {
+                  printBtn.addEventListener('click', function() { window.print(); });
+                }
+              }
+            </script>
+          </head>
+          <body>
+            <h1>TPS DHANVANTRI AYURVEDA - Patients List</h1>
+            <p style="text-align: center;">Export Date: ${date} | Total Patients: ${results.length}</p>
+            <button id="printBtn" class="print-btn no-print">Print / Save as PDF</button>
+            <table>
+              <thead>
+                <tr>
+                  <th>Patient ID</th>
+                  <th>Name</th>
+                  <th>Age</th>
+                  <th>Gender</th>
+                  <th>Country</th>
+                  <th>Phone</th>
+                  <th>Email</th>
+                  <th>Health Issue</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </body>
+        </html>
+      `
+      
+      return c.html(pdf, 200)
+    } else {
+      return c.json({ success: false, error: 'Invalid format. Use csv, excel, or pdf' }, 400)
+    }
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
   }
@@ -1147,8 +1290,14 @@ app.get('/', (c) => {
                             <option value="USA">USA</option>
                             <option value="UK">UK</option>
                         </select>
-                        <button onclick="exportPatients()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-                            <i class="fas fa-download mr-2"></i>Export CSV
+                        <button onclick="exportPatients('csv')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-file-csv mr-2"></i>CSV
+                        </button>
+                        <button onclick="exportPatients('excel')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-file-excel mr-2"></i>Excel
+                        </button>
+                        <button onclick="exportPatients('pdf')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-file-pdf mr-2"></i>PDF
                         </button>
                     </div>
                     
@@ -1417,10 +1566,6 @@ app.get('/', (c) => {
                                 <input type="text" id="patient-name" class="border rounded px-3 py-2 w-full" required>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1">C/o (Care of)</label>
-                                <input type="text" id="patient-co" class="border rounded px-3 py-2 w-full">
-                            </div>
-                            <div>
                                 <label class="block text-sm font-medium mb-1">Age</label>
                                 <input type="number" id="patient-age" class="border rounded px-3 py-2 w-full">
                             </div>
@@ -1446,34 +1591,25 @@ app.get('/', (c) => {
                         <h4 class="font-bold text-lg mb-3 text-ayurveda-700">Contact Information</h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                             <div>
-                                <label class="block text-sm font-medium mb-1">Country *</label>
-                                <select id="patient-country" class="border rounded px-3 py-2 w-full" onchange="updateCountryCode()" required>
-                                    <option value="India">India</option>
-                                    <option value="USA">USA</option>
-                                    <option value="UK">UK</option>
-                                    <option value="Australia">Australia</option>
-                                    <option value="Canada">Canada</option>
-                                    <option value="UAE">UAE</option>
-                                    <option value="Singapore">Singapore</option>
-                                    <option value="Malaysia">Malaysia</option>
-                                    <option value="Saudi Arabia">Saudi Arabia</option>
+                                <label class="block text-sm font-medium mb-1">Country Code *</label>
+                                <select id="patient-country-code" class="border rounded px-3 py-2 w-full" required>
+                                    <option value="+91">+91 (India)</option>
+                                    <option value="+1">+1 (USA/Canada)</option>
+                                    <option value="+44">+44 (UK)</option>
+                                    <option value="+61">+61 (Australia)</option>
+                                    <option value="+971">+971 (UAE)</option>
+                                    <option value="+65">+65 (Singapore)</option>
+                                    <option value="+60">+60 (Malaysia)</option>
+                                    <option value="+966">+966 (Saudi Arabia)</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1">Country Code</label>
-                                <input type="text" id="patient-country-code" class="border rounded px-3 py-2 w-full" value="+91" readonly>
+                                <label class="block text-sm font-medium mb-1">Primary Phone Number *</label>
+                                <input type="text" id="patient-phone" class="border rounded px-3 py-2 w-full" placeholder="Enter mobile number" required>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1">Phone 1 *</label>
-                                <input type="text" id="patient-phone" class="border rounded px-3 py-2 w-full" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Phone 2</label>
-                                <input type="text" id="patient-phone2" class="border rounded px-3 py-2 w-full">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Phone 3</label>
-                                <input type="text" id="patient-phone3" class="border rounded px-3 py-2 w-full">
+                                <label class="block text-sm font-medium mb-1">Secondary Phone Number</label>
+                                <input type="text" id="patient-phone2" class="border rounded px-3 py-2 w-full" placeholder="Optional secondary number">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">Email</label>
@@ -1534,32 +1670,21 @@ app.get('/', (c) => {
                         </div>
                         
                         <h4 class="font-bold text-lg mb-3 text-ayurveda-700">Medical Information</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Present Health Issue</label>
-                                <input type="text" id="patient-present-health-issue" class="border rounded px-3 py-2 w-full">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-2">
+                                Diseases <span class="text-xs text-gray-500">(Click "Add Disease" to add multiple diseases)</span>
+                            </label>
+                            <div id="diseases-container" class="space-y-3 mb-3">
+                                <!-- Disease rows will be added here dynamically -->
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Present Medicine</label>
-                                <input type="text" id="patient-present-medicine" class="border rounded px-3 py-2 w-full">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">MG Value</label>
-                                <input type="text" id="patient-mg" class="border rounded px-3 py-2 w-full">
-                            </div>
+                            <button type="button" onclick="addDiseaseRow()" class="text-ayurveda-600 hover:text-ayurveda-700 text-sm font-medium">
+                                <i class="fas fa-plus mr-1"></i>Add Disease
+                            </button>
                         </div>
                         
                         <div class="mb-6">
                             <label class="block text-sm font-medium mb-1">Medical History</label>
                             <textarea id="patient-medical-history" class="border rounded px-3 py-2 w-full" rows="3" placeholder="Previous medical conditions, allergies, surgeries, etc."></textarea>
-                        </div>
-                        
-                        <div class="mb-6">
-                            <label class="block text-sm font-medium mb-2">Multiple Diseases <span class="text-xs text-gray-500">(Add multiple if needed)</span></label>
-                            <div id="diseases-list" class="space-y-2 mb-2"></div>
-                            <button type="button" onclick="addDiseaseField()" class="text-ayurveda-600 hover:text-ayurveda-700 text-sm">
-                                <i class="fas fa-plus mr-1"></i>Add Disease
-                            </button>
                         </div>
                         
                         <div class="mt-6 flex justify-end space-x-3">
@@ -1632,20 +1757,64 @@ app.get('/', (c) => {
                     <form id="prescription-form" onsubmit="event.preventDefault(); saveHerbsRoutes();">
                         <input type="hidden" id="prescription-id">
                         
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-medium mb-1">Patient *</label>
-                                <select id="prescription-patient" class="border rounded px-3 py-2 w-full" required>
-                                    <option value="">Select Patient</option>
-                                </select>
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium mb-1">Patient *</label>
+                            <select id="prescription-patient" class="border rounded px-3 py-2 w-full" required onchange="displayPatientInfo()">
+                                <option value="">Select Patient</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Patient Information Display -->
+                        <div id="patient-info-display" class="hidden mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h4 class="font-bold text-lg mb-3 text-blue-800"><i class="fas fa-user-circle mr-2"></i>Patient Information</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                <div>
+                                    <span class="font-semibold">Patient ID:</span>
+                                    <span id="display-patient-id" class="ml-2"></span>
+                                </div>
+                                <div>
+                                    <span class="font-semibold">Age/Gender:</span>
+                                    <span id="display-patient-age-gender" class="ml-2"></span>
+                                </div>
+                                <div>
+                                    <span class="font-semibold">Country:</span>
+                                    <span id="display-patient-country" class="ml-2"></span>
+                                </div>
+                                <div>
+                                    <span class="font-semibold">Phone:</span>
+                                    <span id="display-patient-phone" class="ml-2"></span>
+                                </div>
+                                <div>
+                                    <span class="font-semibold">Email:</span>
+                                    <span id="display-patient-email" class="ml-2"></span>
+                                </div>
+                                <div>
+                                    <span class="font-semibold">Weight/Height:</span>
+                                    <span id="display-patient-weight-height" class="ml-2"></span>
+                                </div>
+                                <div class="md:col-span-3">
+                                    <span class="font-semibold">Address:</span>
+                                    <span id="display-patient-address" class="ml-2"></span>
+                                </div>
+                                <div class="md:col-span-3">
+                                    <span class="font-semibold">Present Health Issue:</span>
+                                    <span id="display-patient-health-issue" class="ml-2 text-red-600"></span>
+                                </div>
+                                <div class="md:col-span-3">
+                                    <span class="font-semibold">Medical History:</span>
+                                    <span id="display-patient-medical-history" class="ml-2"></span>
+                                </div>
                             </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                             <div>
                                 <label class="block text-sm font-medium mb-1">Given Date *</label>
-                                <input type="date" id="prescription-date" class="border rounded px-3 py-2 w-full" required>
+                                <input type="date" id="prescription-date" class="border rounded px-3 py-2 w-full" required onchange="calculateFollowUpDate()">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">Treatment Months *</label>
-                                <select id="prescription-months" class="border rounded px-3 py-2 w-full" required>
+                                <select id="prescription-months" class="border rounded px-3 py-2 w-full" required onchange="calculateFollowUpDate()">
                                     <option value="1">1 Month</option>
                                     <option value="2">2 Months</option>
                                     <option value="3">3 Months</option>
@@ -1654,8 +1823,8 @@ app.get('/', (c) => {
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1">Problem/Diagnosis</label>
-                                <input type="text" id="prescription-problem" class="border rounded px-3 py-2 w-full">
+                                <label class="block text-sm font-medium mb-1">Follow-up Date</label>
+                                <input type="date" id="prescription-followup" class="border rounded px-3 py-2 w-full bg-gray-100" readonly>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">Course (1-16)</label>
@@ -1678,6 +1847,11 @@ app.get('/', (c) => {
                                     <option value="16">16</option>
                                 </select>
                             </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium mb-1">Problem/Diagnosis</label>
+                            <textarea id="prescription-problem" class="border rounded px-3 py-2 w-full" rows="2" placeholder="Enter diagnosis or problem details"></textarea>
                         </div>
                         
                         <div class="mb-6">
