@@ -906,13 +906,421 @@ app.get('/', (c) => {
                 </div>
             </div>
 
-            <!-- Other sections will be loaded dynamically -->
-            <div id="patients-section" class="section hidden"></div>
-            <div id="appointments-section" class="section hidden"></div>
-            <div id="prescriptions-section" class="section hidden"></div>
+            <!-- PATIENTS SECTION -->
+            <div id="patients-section" class="section hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Patients</h2>
+                    <button onclick="showPatientModal()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-plus mr-2"></i>Add Patient
+                    </button>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <input type="text" id="patient-search" placeholder="Search by name, phone, ID..." class="border rounded px-3 py-2" onkeyup="loadPatients()">
+                        <select id="patient-filter-country" class="border rounded px-3 py-2" onchange="loadPatients()">
+                            <option value="">All Countries</option>
+                            <option value="India">India</option>
+                            <option value="USA">USA</option>
+                            <option value="UK">UK</option>
+                        </select>
+                        <button onclick="exportPatients()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-download mr-2"></i>Export CSV
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-6 py-3 text-left">Patient ID</th>
+                                    <th class="px-6 py-3 text-left">Name</th>
+                                    <th class="px-6 py-3 text-left">Age/Gender</th>
+                                    <th class="px-6 py-3 text-left">Phone</th>
+                                    <th class="px-6 py-3 text-left">Country</th>
+                                    <th class="px-6 py-3 text-left">Added</th>
+                                    <th class="px-6 py-3 text-left">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="patients-table-body">
+                                <tr><td colspan="7" class="text-center py-4">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
 
-            <div id="reminders-section" class="section hidden"></div>
-            <div id="settings-section" class="section hidden"></div>
+            <!-- APPOINTMENTS SECTION -->
+            <div id="appointments-section" class="section hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Appointments</h2>
+                    <button onclick="showAppointmentModal()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-plus mr-2"></i>Add Appointment
+                    </button>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <input type="text" id="appointment-search" placeholder="Search by patient name or phone..." class="border rounded px-3 py-2" onkeyup="loadAppointments()">
+                        <select id="appointment-filter-status" class="border rounded px-3 py-2" onchange="loadAppointments()">
+                            <option value="">All Status</option>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-6 py-3 text-left">Date & Time</th>
+                                    <th class="px-6 py-3 text-left">Patient</th>
+                                    <th class="px-6 py-3 text-left">Phone</th>
+                                    <th class="px-6 py-3 text-left">Reason</th>
+                                    <th class="px-6 py-3 text-left">Status</th>
+                                    <th class="px-6 py-3 text-left">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="appointments-table-body">
+                                <tr><td colspan="6" class="text-center py-4">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HERBS & ROUTES (PRESCRIPTIONS) SECTION -->
+            <div id="prescriptions-section" class="section hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-leaf mr-2 text-ayurveda-600"></i>Herbs & Routes</h2>
+                    <button onclick="showHerbsRoutesModal()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-plus mr-2"></i>New Record
+                    </button>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="mb-4">
+                        <input type="text" id="prescription-search" placeholder="Search by patient name or problem..." class="border rounded px-3 py-2 w-full" onkeyup="loadHerbsRoutes()">
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-6 py-3 text-left">Given Date</th>
+                                    <th class="px-6 py-3 text-left">Patient</th>
+                                    <th class="px-6 py-3 text-left">Problem</th>
+                                    <th class="px-6 py-3 text-left">Course</th>
+                                    <th class="px-6 py-3 text-left">Amount</th>
+                                    <th class="px-6 py-3 text-left">Duration</th>
+                                    <th class="px-6 py-3 text-left">Next Follow-up</th>
+                                    <th class="px-6 py-3 text-left">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="prescriptions-table-body">
+                                <tr><td colspan="8" class="text-center py-4">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REMINDERS SECTION -->
+            <div id="reminders-section" class="section hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Reminders</h2>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <input type="text" id="reminder-search" placeholder="Search by patient name..." class="border rounded px-3 py-2" onkeyup="loadReminders()">
+                        <select id="reminder-filter-status" class="border rounded px-3 py-2" onchange="loadReminders()">
+                            <option value="">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="sent">Sent</option>
+                        </select>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-6 py-3 text-left">Date</th>
+                                    <th class="px-6 py-3 text-left">Patient</th>
+                                    <th class="px-6 py-3 text-left">Phone</th>
+                                    <th class="px-6 py-3 text-left">Type</th>
+                                    <th class="px-6 py-3 text-left">Message</th>
+                                    <th class="px-6 py-3 text-left">Status</th>
+                                    <th class="px-6 py-3 text-left">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reminders-table-body">
+                                <tr><td colspan="7" class="text-center py-4">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SETTINGS SECTION -->
+            <div id="settings-section" class="section hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Settings</h2>
+                
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-xl font-bold mb-4">Clinic Information</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Clinic Name</label>
+                            <input type="text" id="setting-clinic_name" class="border rounded px-3 py-2 w-full" value="TPS DHANVANTRI AYURVEDA">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Phone</label>
+                            <input type="text" id="setting-clinic_phone" class="border rounded px-3 py-2 w-full">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Email</label>
+                            <input type="text" id="setting-clinic_email" class="border rounded px-3 py-2 w-full">
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="setting-whatsapp_enabled" class="mr-2">
+                            <label for="setting-whatsapp_enabled">Enable WhatsApp Notifications</label>
+                        </div>
+                        <button onclick="saveSettings()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-6 py-2 rounded-lg">
+                            Save Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PATIENT MODAL -->
+            <div id="patient-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 id="patient-modal-title" class="text-2xl font-bold">Add Patient</h3>
+                        <button onclick="closePatientModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="patient-form" onsubmit="event.preventDefault(); savePatient();">
+                        <input type="hidden" id="patient-id">
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Name *</label>
+                                <input type="text" id="patient-name" class="border rounded px-3 py-2 w-full" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Age</label>
+                                <input type="number" id="patient-age" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Gender</label>
+                                <select id="patient-gender" class="border rounded px-3 py-2 w-full">
+                                    <option value="">Select</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Country</label>
+                                <select id="patient-country" class="border rounded px-3 py-2 w-full">
+                                    <option value="India">India</option>
+                                    <option value="USA">USA</option>
+                                    <option value="UK">UK</option>
+                                    <option value="Australia">Australia</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Country Code</label>
+                                <input type="text" id="patient-country-code" class="border rounded px-3 py-2 w-full" value="+91">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Phone *</label>
+                                <input type="text" id="patient-phone" class="border rounded px-3 py-2 w-full" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Email</label>
+                                <input type="email" id="patient-email" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Weight (kg)</label>
+                                <input type="number" step="0.1" id="patient-weight" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Height (cm)</label>
+                                <input type="number" step="0.1" id="patient-height" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Referred By</label>
+                                <input type="text" id="patient-referred-by" class="border rounded px-3 py-2 w-full">
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium mb-1">Address</label>
+                            <textarea id="patient-address" class="border rounded px-3 py-2 w-full" rows="2"></textarea>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium mb-1">Medical History</label>
+                            <textarea id="patient-medical-history" class="border rounded px-3 py-2 w-full" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="mt-6 flex justify-end space-x-3">
+                            <button type="button" onclick="closePatientModal()" class="px-6 py-2 border rounded-lg hover:bg-gray-100">Cancel</button>
+                            <button type="submit" class="px-6 py-2 bg-ayurveda-600 hover:bg-ayurveda-700 text-white rounded-lg">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- APPOINTMENT MODAL -->
+            <div id="appointment-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg p-8 max-w-2xl w-full">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 id="appointment-modal-title" class="text-2xl font-bold">Add Appointment</h3>
+                        <button onclick="closeAppointmentModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="appointment-form" onsubmit="event.preventDefault(); saveAppointment();">
+                        <input type="hidden" id="appointment-id">
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Patient *</label>
+                                <select id="appointment-patient" class="border rounded px-3 py-2 w-full" required>
+                                    <option value="">Select Patient</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Date & Time *</label>
+                                <input type="datetime-local" id="appointment-date" class="border rounded px-3 py-2 w-full" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Reason</label>
+                                <textarea id="appointment-reason" class="border rounded px-3 py-2 w-full" rows="3"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Status</label>
+                                <select id="appointment-status" class="border rounded px-3 py-2 w-full">
+                                    <option value="scheduled">Scheduled</option>
+                                    <option value="confirmed">Confirmed</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 flex justify-end space-x-3">
+                            <button type="button" onclick="closeAppointmentModal()" class="px-6 py-2 border rounded-lg hover:bg-gray-100">Cancel</button>
+                            <button type="submit" class="px-6 py-2 bg-ayurveda-600 hover:bg-ayurveda-700 text-white rounded-lg">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- HERBS & ROUTES MODAL -->
+            <div id="prescription-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg p-8 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 id="prescription-modal-title" class="text-2xl font-bold"><i class="fas fa-leaf mr-2 text-ayurveda-600"></i>New Herbs & Routes Record</h3>
+                        <button onclick="closeHerbsRoutesModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="prescription-form" onsubmit="event.preventDefault(); saveHerbsRoutes();">
+                        <input type="hidden" id="prescription-id">
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium mb-1">Patient *</label>
+                                <select id="prescription-patient" class="border rounded px-3 py-2 w-full" required>
+                                    <option value="">Select Patient</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Given Date *</label>
+                                <input type="date" id="prescription-date" class="border rounded px-3 py-2 w-full" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Treatment Months *</label>
+                                <select id="prescription-months" class="border rounded px-3 py-2 w-full" required>
+                                    <option value="1">1 Month</option>
+                                    <option value="2">2 Months</option>
+                                    <option value="3">3 Months</option>
+                                    <option value="6">6 Months</option>
+                                    <option value="12">12 Months</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Problem/Diagnosis</label>
+                                <input type="text" id="prescription-problem" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Course (1-16)</label>
+                                <select id="prescription-course" class="border rounded px-3 py-2 w-full">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="7">7</option>
+                                    <option value="8">8</option>
+                                    <option value="9">9</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                    <option value="13">13</option>
+                                    <option value="14">14</option>
+                                    <option value="15">15</option>
+                                    <option value="16">16</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-bold text-lg">Medicines</h4>
+                                <button type="button" onclick="addMedicineRow()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+                                    <i class="fas fa-plus mr-2"></i>Add Medicine
+                                </button>
+                            </div>
+                            <div id="medicines-list"></div>
+                        </div>
+                        
+                        <div class="border-t pt-6 mb-6">
+                            <h4 class="font-bold text-lg mb-4">Payment Details</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Total Amount</label>
+                                    <input type="number" step="0.01" id="prescription-amount" class="border rounded px-3 py-2 w-full">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Advance Paid</label>
+                                    <input type="number" step="0.01" id="prescription-advance" class="border rounded px-3 py-2 w-full">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Payment Notes</label>
+                                    <input type="text" id="prescription-payment-notes" class="border rounded px-3 py-2 w-full">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3">
+                            <button type="button" onclick="closeHerbsRoutesModal()" class="px-6 py-2 border rounded-lg hover:bg-gray-100">Cancel</button>
+                            <button type="submit" class="px-6 py-2 bg-ayurveda-600 hover:bg-ayurveda-700 text-white rounded-lg">Save Record</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
 
         <!-- Loading Overlay -->
