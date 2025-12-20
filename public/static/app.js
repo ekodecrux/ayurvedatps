@@ -140,6 +140,40 @@ function renderPatients() {
   document.getElementById('patients-table-body').innerHTML = html;
 }
 
+// Helper function to update country code based on country selection
+function updateCountryCode() {
+  const countryMap = {
+    'India': '+91', 'USA': '+1', 'UK': '+44', 'Australia': '+61',
+    'Canada': '+1', 'UAE': '+971', 'Singapore': '+65', 
+    'Malaysia': '+60', 'Saudi Arabia': '+966'
+  };
+  const country = document.getElementById('patient-country').value;
+  document.getElementById('patient-country-code').value = countryMap[country] || '+91';
+}
+
+// Helper function to add disease field
+let diseaseCounter = 0;
+function addDiseaseField(diseaseName = '', attackedBy = '') {
+  diseaseCounter++;
+  const html = `
+    <div class="flex gap-2 items-center disease-row" data-id="${diseaseCounter}">
+      <input type="text" placeholder="Disease name" value="${diseaseName}" 
+             class="disease-name border rounded px-3 py-2 flex-1" />
+      <input type="text" placeholder="Attacked by" value="${attackedBy}"
+             class="disease-attacked border rounded px-3 py-2 flex-1" />
+      <button type="button" onclick="removeDiseaseField(${diseaseCounter})" 
+              class="text-red-600 hover:text-red-800 px-2">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  `;
+  document.getElementById('diseases-list').insertAdjacentHTML('beforeend', html);
+}
+
+function removeDiseaseField(id) {
+  document.querySelector(`.disease-row[data-id="${id}"]`)?.remove();
+}
+
 function showPatientModal(patient = null) {
   const modal = document.getElementById('patient-modal');
   const title = document.getElementById('patient-modal-title');
@@ -147,20 +181,43 @@ function showPatientModal(patient = null) {
   
   title.textContent = patient ? 'Edit Patient' : 'Add New Patient';
   
+  // Clear diseases list
+  document.getElementById('diseases-list').innerHTML = '';
+  diseaseCounter = 0;
+  
   if (patient) {
     document.getElementById('patient-id').value = patient.id;
     document.getElementById('patient-name').value = patient.name || '';
+    document.getElementById('patient-co').value = patient.co || '';
     document.getElementById('patient-age').value = patient.age || '';
     document.getElementById('patient-gender').value = patient.gender || '';
+    document.getElementById('patient-weight').value = patient.weight || '';
+    document.getElementById('patient-height').value = patient.height || '';
+    
     document.getElementById('patient-country').value = patient.country || 'India';
     document.getElementById('patient-country-code').value = patient.country_code || '+91';
     document.getElementById('patient-phone').value = patient.phone || '';
+    document.getElementById('patient-phone2').value = patient.phone2 || '';
+    document.getElementById('patient-phone3').value = patient.phone3 || '';
     document.getElementById('patient-email').value = patient.email || '';
-    document.getElementById('patient-weight').value = patient.weight || '';
-    document.getElementById('patient-height').value = patient.height || '';
+    
+    document.getElementById('patient-address-hno').value = patient.address_hno || '';
+    document.getElementById('patient-address-street').value = patient.address_street || '';
+    document.getElementById('patient-address-apartment').value = patient.address_apartment || '';
+    document.getElementById('patient-address-area').value = patient.address_area || '';
+    document.getElementById('patient-address-district').value = patient.address_district || '';
+    document.getElementById('patient-address-state').value = patient.address_state || '';
+    document.getElementById('patient-address-pincode').value = patient.address_pincode || '';
     document.getElementById('patient-address').value = patient.address || '';
-    document.getElementById('patient-medical-history').value = patient.medical_history || '';
+    
     document.getElementById('patient-referred-by').value = patient.referred_by_name || '';
+    document.getElementById('patient-referred-by-phone').value = patient.referred_by_phone || '';
+    document.getElementById('patient-referred-by-address').value = patient.referred_by_address || '';
+    
+    document.getElementById('patient-present-health-issue').value = patient.present_health_issue || '';
+    document.getElementById('patient-present-medicine').value = patient.present_medicine || '';
+    document.getElementById('patient-mg').value = patient.mg_value || '';
+    document.getElementById('patient-medical-history').value = patient.medical_history || '';
   } else {
     form.reset();
     document.getElementById('patient-id').value = '';
@@ -180,6 +237,18 @@ async function savePatient() {
     showLoading();
     const id = document.getElementById('patient-id').value;
     
+    // Collect multiple phones
+    const phones = [
+      document.getElementById('patient-phone2').value,
+      document.getElementById('patient-phone3').value
+    ].filter(p => p);
+    
+    // Collect diseases
+    const diseases = Array.from(document.querySelectorAll('.disease-row')).map(row => ({
+      disease_name: row.querySelector('.disease-name').value,
+      attacked_by: row.querySelector('.disease-attacked').value
+    })).filter(d => d.disease_name);
+    
     const data = {
       name: document.getElementById('patient-name').value,
       age: parseInt(document.getElementById('patient-age').value) || null,
@@ -190,24 +259,65 @@ async function savePatient() {
       email: document.getElementById('patient-email').value,
       weight: parseFloat(document.getElementById('patient-weight').value) || null,
       height: parseFloat(document.getElementById('patient-height').value) || null,
+      
+      // Detailed address fields
+      address_hno: document.getElementById('patient-address-hno').value,
+      address_street: document.getElementById('patient-address-street').value,
+      address_apartment: document.getElementById('patient-address-apartment').value,
+      address_area: document.getElementById('patient-address-area').value,
+      address_district: document.getElementById('patient-address-district').value,
+      address_state: document.getElementById('patient-address-state').value,
+      address_pincode: document.getElementById('patient-address-pincode').value,
       address: document.getElementById('patient-address').value,
+      
+      // Referred by
+      referred_by_name: document.getElementById('patient-referred-by').value,
+      referred_by_phone: document.getElementById('patient-referred-by-phone').value,
+      referred_by_address: document.getElementById('patient-referred-by-address').value,
+      
+      // Medical information
+      present_health_issue: document.getElementById('patient-present-health-issue').value,
+      present_medicine: document.getElementById('patient-present-medicine').value,
+      mg_value: document.getElementById('patient-mg').value,
       medical_history: document.getElementById('patient-medical-history').value,
-      referred_by_name: document.getElementById('patient-referred-by').value
+      
+      // Additional phones as JSON
+      additional_phones: phones.length > 0 ? JSON.stringify(phones) : null
     };
     
     if (id) {
       await axios.put(`${API_BASE}/patients/${id}`, data);
-      alert('Patient updated successfully');
+      
+      // Update diseases if editing
+      if (diseases.length > 0) {
+        // Delete existing diseases and add new ones
+        await axios.delete(`${API_BASE}/patients/${id}/diseases/all`).catch(() => {});
+        for (const disease of diseases) {
+          await axios.post(`${API_BASE}/patients/${id}/diseases`, disease);
+        }
+      }
+      
+      alert('Patient updated successfully! Patient ID: ' + (await axios.get(`${API_BASE}/patients/${id}`)).data.data.patient_id);
     } else {
-      await axios.post(`${API_BASE}/patients`, data);
-      alert('Patient added successfully');
+      const result = await axios.post(`${API_BASE}/patients`, data);
+      const patientId = result.data.data.patient_id;
+      
+      // Add diseases for new patient
+      if (diseases.length > 0) {
+        const newId = result.data.data.id;
+        for (const disease of diseases) {
+          await axios.post(`${API_BASE}/patients/${newId}/diseases`, disease);
+        }
+      }
+      
+      alert(`Patient added successfully! Patient ID: ${patientId}`);
     }
     
     closePatientModal();
     loadPatients();
   } catch (error) {
     console.error('Save patient error:', error);
-    alert('Error saving patient');
+    alert('Error saving patient: ' + (error.response?.data?.error || error.message));
   } finally {
     hideLoading();
   }

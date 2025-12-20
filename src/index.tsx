@@ -1107,10 +1107,15 @@ app.get('/', (c) => {
                     <form id="patient-form" onsubmit="event.preventDefault(); savePatient();">
                         <input type="hidden" id="patient-id">
                         
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <h4 class="font-bold text-lg mb-3 text-ayurveda-700">Basic Information</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                             <div>
                                 <label class="block text-sm font-medium mb-1">Name *</label>
                                 <input type="text" id="patient-name" class="border rounded px-3 py-2 w-full" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">C/o (Care of)</label>
+                                <input type="text" id="patient-co" class="border rounded px-3 py-2 w-full">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">Age</label>
@@ -1126,27 +1131,6 @@ app.get('/', (c) => {
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1">Country</label>
-                                <select id="patient-country" class="border rounded px-3 py-2 w-full">
-                                    <option value="India">India</option>
-                                    <option value="USA">USA</option>
-                                    <option value="UK">UK</option>
-                                    <option value="Australia">Australia</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Country Code</label>
-                                <input type="text" id="patient-country-code" class="border rounded px-3 py-2 w-full" value="+91">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Phone *</label>
-                                <input type="text" id="patient-phone" class="border rounded px-3 py-2 w-full" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Email</label>
-                                <input type="email" id="patient-email" class="border rounded px-3 py-2 w-full">
-                            </div>
-                            <div>
                                 <label class="block text-sm font-medium mb-1">Weight (kg)</label>
                                 <input type="number" step="0.1" id="patient-weight" class="border rounded px-3 py-2 w-full">
                             </div>
@@ -1154,25 +1138,132 @@ app.get('/', (c) => {
                                 <label class="block text-sm font-medium mb-1">Height (cm)</label>
                                 <input type="number" step="0.1" id="patient-height" class="border rounded px-3 py-2 w-full">
                             </div>
+                        </div>
+                        
+                        <h4 class="font-bold text-lg mb-3 text-ayurveda-700">Contact Information</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                             <div>
-                                <label class="block text-sm font-medium mb-1">Referred By</label>
-                                <input type="text" id="patient-referred-by" class="border rounded px-3 py-2 w-full">
+                                <label class="block text-sm font-medium mb-1">Country *</label>
+                                <select id="patient-country" class="border rounded px-3 py-2 w-full" onchange="updateCountryCode()" required>
+                                    <option value="India">India</option>
+                                    <option value="USA">USA</option>
+                                    <option value="UK">UK</option>
+                                    <option value="Australia">Australia</option>
+                                    <option value="Canada">Canada</option>
+                                    <option value="UAE">UAE</option>
+                                    <option value="Singapore">Singapore</option>
+                                    <option value="Malaysia">Malaysia</option>
+                                    <option value="Saudi Arabia">Saudi Arabia</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Country Code</label>
+                                <input type="text" id="patient-country-code" class="border rounded px-3 py-2 w-full" value="+91" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Phone 1 *</label>
+                                <input type="text" id="patient-phone" class="border rounded px-3 py-2 w-full" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Phone 2</label>
+                                <input type="text" id="patient-phone2" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Phone 3</label>
+                                <input type="text" id="patient-phone3" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Email</label>
+                                <input type="email" id="patient-email" class="border rounded px-3 py-2 w-full">
                             </div>
                         </div>
                         
-                        <div class="mt-4">
-                            <label class="block text-sm font-medium mb-1">Address</label>
-                            <textarea id="patient-address" class="border rounded px-3 py-2 w-full" rows="2"></textarea>
+                        <h4 class="font-bold text-lg mb-3 text-ayurveda-700">Detailed Address</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">H.No / Door No</label>
+                                <input type="text" id="patient-address-hno" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Street</label>
+                                <input type="text" id="patient-address-street" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Apartment/Building</label>
+                                <input type="text" id="patient-address-apartment" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Area/Locality</label>
+                                <input type="text" id="patient-address-area" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">District</label>
+                                <input type="text" id="patient-address-district" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">State/Province</label>
+                                <input type="text" id="patient-address-state" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Pin Code / Zip</label>
+                                <input type="text" id="patient-address-pincode" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium mb-1">Complete Address</label>
+                                <textarea id="patient-address" class="border rounded px-3 py-2 w-full" rows="2" placeholder="Full address for reference"></textarea>
+                            </div>
                         </div>
                         
-                        <div class="mt-4">
+                        <h4 class="font-bold text-lg mb-3 text-ayurveda-700">Referred By</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Name</label>
+                                <input type="text" id="patient-referred-by" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Phone</label>
+                                <input type="text" id="patient-referred-by-phone" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Address</label>
+                                <input type="text" id="patient-referred-by-address" class="border rounded px-3 py-2 w-full">
+                            </div>
+                        </div>
+                        
+                        <h4 class="font-bold text-lg mb-3 text-ayurveda-700">Medical Information</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Present Health Issue</label>
+                                <input type="text" id="patient-present-health-issue" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Present Medicine</label>
+                                <input type="text" id="patient-present-medicine" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">MG Value</label>
+                                <input type="text" id="patient-mg" class="border rounded px-3 py-2 w-full">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
                             <label class="block text-sm font-medium mb-1">Medical History</label>
-                            <textarea id="patient-medical-history" class="border rounded px-3 py-2 w-full" rows="3"></textarea>
+                            <textarea id="patient-medical-history" class="border rounded px-3 py-2 w-full" rows="3" placeholder="Previous medical conditions, allergies, surgeries, etc."></textarea>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium mb-2">Multiple Diseases <span class="text-xs text-gray-500">(Add multiple if needed)</span></label>
+                            <div id="diseases-list" class="space-y-2 mb-2"></div>
+                            <button type="button" onclick="addDiseaseField()" class="text-ayurveda-600 hover:text-ayurveda-700 text-sm">
+                                <i class="fas fa-plus mr-1"></i>Add Disease
+                            </button>
                         </div>
                         
                         <div class="mt-6 flex justify-end space-x-3">
                             <button type="button" onclick="closePatientModal()" class="px-6 py-2 border rounded-lg hover:bg-gray-100">Cancel</button>
-                            <button type="submit" class="px-6 py-2 bg-ayurveda-600 hover:bg-ayurveda-700 text-white rounded-lg">Save</button>
+                            <button type="submit" class="px-6 py-2 bg-ayurveda-600 hover:bg-ayurveda-700 text-white rounded-lg">
+                                <i class="fas fa-save mr-2"></i>Save Patient
+                            </button>
                         </div>
                     </form>
                 </div>
