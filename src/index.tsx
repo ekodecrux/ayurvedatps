@@ -145,6 +145,18 @@ app.get('/api/auth/me', async (c) => {
 
 // ==================== PATIENTS API ====================
 
+// Get list of countries that have patients
+app.get('/api/patients/countries', async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare(
+      'SELECT DISTINCT country FROM patients WHERE country IS NOT NULL AND country != "" ORDER BY country ASC'
+    ).all()
+    return c.json({ success: true, data: results.map((r: any) => r.country) })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
 // Get all patients with search and filter
 app.get('/api/patients', async (c) => {
   try {
@@ -1664,9 +1676,7 @@ app.get('/', (c) => {
                         <input type="text" id="patient-search" placeholder="Search by name, phone, ID..." class="border rounded px-3 py-2" onkeyup="loadPatients()">
                         <select id="patient-filter-country" class="border rounded px-3 py-2" onchange="loadPatients()">
                             <option value="">All Countries</option>
-                            <option value="India">India</option>
-                            <option value="USA">USA</option>
-                            <option value="UK">UK</option>
+                            <!-- Options loaded dynamically from /api/patients/countries -->
                         </select>
                         <button onclick="exportPatients('csv')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
                             <i class="fas fa-file-csv mr-2"></i>CSV

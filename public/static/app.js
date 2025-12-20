@@ -283,7 +283,10 @@ function showSection(sectionName) {
   
   switch(sectionName) {
     case 'dashboard': loadDashboard(); break;
-    case 'patients': loadPatients(); break;
+    case 'patients': 
+      loadPatientCountries(); // Load country filter first
+      loadPatients(); 
+      break;
     case 'appointments': loadAppointments(); break;
     case 'prescriptions': loadHerbsRoutes(); break;
     case 'reminders': loadReminders(); break;
@@ -354,6 +357,21 @@ function renderDashboardReminders(reminders) {
 }
 
 // ==================== PATIENTS ====================
+async function loadPatientCountries() {
+  try {
+    const res = await axios.get(`${API_BASE}/patients/countries`);
+    const countries = res.data.data || [];
+    
+    const dropdown = document.getElementById('patient-filter-country');
+    if (dropdown) {
+      dropdown.innerHTML = '<option value="">All Countries</option>' + 
+        countries.map(country => `<option value="${country}">${country}</option>`).join('');
+    }
+  } catch (error) {
+    console.error('Load patient countries error:', error);
+  }
+}
+
 async function loadPatients() {
   try {
     showLoading();
