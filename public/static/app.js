@@ -493,10 +493,36 @@ function renderAppointments() {
 }
 
 function showAppointmentModal(appointment = null) {
-  const modal = document.getElementById('appointment-modal');
-  const title = document.getElementById('appointment-modal-title');
-  
-  title.textContent = appointment ? 'Edit Appointment' : 'Add New Appointment';
+  try {
+    const modal = document.getElementById('appointment-modal');
+    const title = document.getElementById('appointment-modal-title');
+    
+    if (!modal || !title) {
+      console.error('Appointment modal elements not found');
+      return;
+    }
+    
+    title.textContent = appointment ? 'Edit Appointment' : 'Add New Appointment';
+    
+    if (appointment) {
+      document.getElementById('appointment-id').value = appointment.id;
+      document.getElementById('appointment-patient').value = appointment.patient_id;
+      document.getElementById('appointment-date').value = appointment.appointment_date ? appointment.appointment_date.substring(0, 16) : '';
+      document.getElementById('appointment-reason').value = appointment.purpose || '';
+      document.getElementById('appointment-status').value = appointment.status || 'scheduled';
+    } else {
+      document.getElementById('appointment-form').reset();
+      document.getElementById('appointment-id').value = '';
+      document.getElementById('appointment-status').value = 'scheduled';
+    }
+    
+    loadPatientsForSelect();
+    modal.classList.remove('hidden');
+  } catch (error) {
+    console.error('Error showing appointment modal:', error);
+    alert('Error opening appointment modal: ' + error.message);
+  }
+}
   
   if (appointment) {
     document.getElementById('appointment-id').value = appointment.id;
@@ -582,11 +608,15 @@ async function editAppointment(id) {
   try {
     showLoading();
     const res = await axios.get(`${API_BASE}/appointments/${id}`);
+    
+    // Ensure loading is hidden before showing modal
+    hideLoading();
+    
+    // Show modal
     showAppointmentModal(res.data.data);
   } catch (error) {
     console.error('Load appointment error:', error);
     alert('Error loading appointment details');
-  } finally {
     hideLoading();
   }
 }
