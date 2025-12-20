@@ -502,7 +502,7 @@ function showAppointmentModal(appointment = null) {
     document.getElementById('appointment-id').value = appointment.id;
     document.getElementById('appointment-patient').value = appointment.patient_id;
     document.getElementById('appointment-date').value = appointment.appointment_date ? appointment.appointment_date.substring(0, 16) : '';
-    document.getElementById('appointment-reason').value = appointment.reason || '';
+    document.getElementById('appointment-reason').value = appointment.purpose || '';
     document.getElementById('appointment-status').value = appointment.status || 'scheduled';
   } else {
     document.getElementById('appointment-form').reset();
@@ -539,7 +539,8 @@ async function saveAppointment() {
     const data = {
       patient_id: parseInt(document.getElementById('appointment-patient').value),
       appointment_date: document.getElementById('appointment-date').value,
-      reason: document.getElementById('appointment-reason').value,
+      purpose: document.getElementById('appointment-reason').value,
+      notes: document.getElementById('appointment-reason').value,
       status: document.getElementById('appointment-status').value
     };
     
