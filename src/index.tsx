@@ -231,8 +231,8 @@ app.post('/api/patients', async (c) => {
         address_district, address_state, address_pincode,
         address_latitude, address_longitude,
         photo_url, present_health_issue, present_medicine, mg_value,
-        additional_phones
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        additional_phones, diseases
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       patientId,
       body.name || null,
@@ -263,7 +263,8 @@ app.post('/api/patients', async (c) => {
       body.present_health_issue || null,
       body.present_medicine || null,
       body.mg_value || null,
-      body.additional_phones || null
+      body.additional_phones || null,
+      body.diseases || null
     ).run()
     
     return c.json({ success: true, data: { id: result.meta.last_row_id, patient_id: patientId } }, 201)
@@ -287,7 +288,7 @@ app.put('/api/patients/:id', async (c) => {
         address_district = ?, address_state = ?, address_pincode = ?,
         address_latitude = ?, address_longitude = ?,
         photo_url = ?, present_health_issue = ?, present_medicine = ?, mg_value = ?,
-        additional_phones = ?,
+        additional_phones = ?, diseases = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(
@@ -320,6 +321,7 @@ app.put('/api/patients/:id', async (c) => {
       body.present_medicine || null,
       body.mg_value || null,
       body.additional_phones || null,
+      body.diseases || null,
       id
     ).run()
     
@@ -957,11 +959,11 @@ app.post('/api/send-whatsapp', async (c) => {
     
     // Get WhatsApp settings
     const phoneIdSetting = await c.env.DB.prepare(
-      "SELECT setting_value FROM settings WHERE setting_key = 'whatsapp_phone_id'"
+      "SELECT value FROM settings WHERE key = 'whatsapp_phone_id'"
     ).first()
     
     const tokenSetting = await c.env.DB.prepare(
-      "SELECT setting_value FROM settings WHERE setting_key = 'whatsapp_token'"
+      "SELECT value FROM settings WHERE key = 'whatsapp_token'"
     ).first()
     
     if (!phoneIdSetting || !tokenSetting) {
@@ -971,8 +973,8 @@ app.post('/api/send-whatsapp', async (c) => {
       }, 400)
     }
     
-    const phoneNumberId = (phoneIdSetting as any).setting_value
-    const accessToken = (tokenSetting as any).setting_value
+    const phoneNumberId = (phoneIdSetting as any).value
+    const accessToken = (tokenSetting as any).value
     
     // Send via WhatsApp Business API
     const whatsappResponse = await fetch(
@@ -1027,19 +1029,19 @@ app.post('/api/send-sms', async (c) => {
     
     // Get SMS settings
     const providerSetting = await c.env.DB.prepare(
-      "SELECT setting_value FROM settings WHERE setting_key = 'sms_provider'"
+      "SELECT value FROM settings WHERE key = 'sms_provider'"
     ).first()
     
     const apiKeySetting = await c.env.DB.prepare(
-      "SELECT setting_value FROM settings WHERE setting_key = 'sms_api_key'"
+      "SELECT value FROM settings WHERE key = 'sms_api_key'"
     ).first()
     
     const authTokenSetting = await c.env.DB.prepare(
-      "SELECT setting_value FROM settings WHERE setting_key = 'sms_auth_token'"
+      "SELECT value FROM settings WHERE key = 'sms_auth_token'"
     ).first()
     
     const senderIdSetting = await c.env.DB.prepare(
-      "SELECT setting_value FROM settings WHERE setting_key = 'sms_sender_id'"
+      "SELECT value FROM settings WHERE key = 'sms_sender_id'"
     ).first()
     
     if (!providerSetting || !apiKeySetting) {

@@ -698,29 +698,10 @@ async function savePatient() {
     
     if (id) {
       await axios.put(`${API_BASE}/patients/${id}`, data);
-      
-      // Update diseases if editing
-      if (diseases.length > 0) {
-        // Delete existing diseases and add new ones
-        await axios.delete(`${API_BASE}/patients/${id}/diseases/all`).catch(() => {});
-        for (const disease of diseases) {
-          await axios.post(`${API_BASE}/patients/${id}/diseases`, disease);
-        }
-      }
-      
       alert('✅ Patient updated successfully!\n\nPatient ID: ' + (await axios.get(`${API_BASE}/patients/${id}`)).data.data.patient_id);
     } else {
       const result = await axios.post(`${API_BASE}/patients`, data);
       const patientId = result.data.data.patient_id;
-      
-      // Add diseases for new patient
-      if (diseases.length > 0) {
-        const newId = result.data.data.id;
-        for (const disease of diseases) {
-          await axios.post(`${API_BASE}/patients/${newId}/diseases`, disease);
-        }
-      }
-      
       alert(`✅ Patient added successfully!\n\nPatient ID: ${patientId}\nName: ${name}\nPhone: ${countryCode} ${phone}`);
     }
     
