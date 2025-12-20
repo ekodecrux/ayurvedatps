@@ -514,12 +514,12 @@ async function loadHerbsRoutes() {
     showLoading();
     const search = document.getElementById('prescription-search')?.value || '';
     
-    const res = await axios.get(`${API_BASE}/herbs-routes?search=${search}`);
+    const res = await axios.get(`${API_BASE}/prescriptions?search=${search}`);
     currentHerbsRoutes = res.data.data || [];
     renderHerbsRoutes();
   } catch (error) {
     console.error('Load herbs & routes error:', error);
-    alert('Error loading herbs & routes');
+    alert('Error loading herbs & routes: ' + (error.response?.data?.error || error.message));
   } finally {
     hideLoading();
   }
@@ -528,13 +528,13 @@ async function loadHerbsRoutes() {
 function renderHerbsRoutes() {
   const html = currentHerbsRoutes.map(hr => `
     <tr class="hover:bg-gray-50">
-      <td class="px-6 py-4 border-b">${formatDate(hr.given_date)}</td>
+      <td class="px-6 py-4 border-b">${formatDate(hr.given_date || hr.created_at)}</td>
       <td class="px-6 py-4 border-b font-medium">${hr.patient_name}</td>
-      <td class="px-6 py-4 border-b">${hr.problem || 'N/A'}</td>
+      <td class="px-6 py-4 border-b">${hr.diagnosis || 'N/A'}</td>
       <td class="px-6 py-4 border-b">${hr.course || 'N/A'}</td>
-      <td class="px-6 py-4 border-b">₹${hr.total_amount || 0}</td>
-      <td class="px-6 py-4 border-b">${hr.months || 0} months</td>
-      <td class="px-6 py-4 border-b">${formatDate(hr.next_followup_date)}</td>
+      <td class="px-6 py-4 border-b">₹${hr.payment_amount || 0}</td>
+      <td class="px-6 py-4 border-b">${hr.treatment_months || 0} months</td>
+      <td class="px-6 py-4 border-b">${formatDate(hr.follow_up_date || hr.next_followup_date)}</td>
       <td class="px-6 py-4 border-b">
         <button onclick="viewHerbsRoutes(${hr.id})" class="text-blue-600 hover:text-blue-800 mr-2"><i class="fas fa-eye"></i></button>
         <button onclick="printHerbsRoutes(${hr.id})" class="text-purple-600 hover:text-purple-800 mr-2"><i class="fas fa-print"></i></button>
@@ -746,7 +746,7 @@ async function deleteHerbsRoutes(id) {
   
   try {
     showLoading();
-    await axios.delete(`${API_BASE}/herbs-routes/${id}`);
+    await axios.delete(`${API_BASE}/prescriptions/${id}`);
     alert('Record deleted successfully');
     loadHerbsRoutes();
   } catch (error) {
@@ -807,24 +807,88 @@ async function loadReminders() {
 function renderReminders() {
   const html = currentReminders.map(rem => `
     <tr class="hover:bg-gray-50">
-      <td class="px-6 py-4 border-b">${formatDate(rem.reminder_date)}</td>
+      <td class="px-6 py-4 border-b">${formatDate(rem.scheduled_date || rem.reminder_date)}</td>
       <td class="px-6 py-4 border-b font-medium">${rem.patient_name}</td>
       <td class="px-6 py-4 border-b">${rem.patient_phone}</td>
-      <td class="px-6 py-4 border-b">${rem.reminder_type}</td>
+      <td class="px-6 py-4 border-b">${rem.type || rem.reminder_type}</td>
       <td class="px-6 py-4 border-b">${rem.message || 'N/A'}</td>
       <td class="px-6 py-4 border-b">
-        <span class="px-3 py-1 rounded-full text-sm ${rem.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${rem.status}</span>
+        <span class="px-3 py-1 rounded-full text-sm ${rem.status === 'Sent' || rem.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${rem.status}</span>
       </td>
       <td class="px-6 py-4 border-b">
-        <button onclick="markReminderSent(${rem.id})" class="text-green-600 hover:text-green-800 mr-2" ${rem.status === 'sent' ? 'disabled' : ''}>
+        ${rem.status === 'Sent' || rem.status === 'sent' ? '' : `
+          <button onclick="sendReminderWhatsApp(${rem.id}, '${rem.patient_phone}', '${escape(rem.patient_name)}', '${escape(rem.message)}')" 
+                  class="text-green-600 hover:text-green-800 mr-2" title="Send WhatsApp">
+            <i class="fab fa-whatsapp"></i>
+          </button>
+          <button onclick="sendReminderSMS(${rem.id}, '${rem.patient_phone}', '${escape(rem.patient_name)}', '${escape(rem.message)}')" 
+                  class="text-blue-600 hover:text-blue-800 mr-2" title="Send SMS">
+            <i class="fas fa-sms"></i>
+          </button>
+        `}
+        <button onclick="markReminderSent(${rem.id})" class="text-gray-600 hover:text-gray-800 mr-2" ${rem.status === 'Sent' || rem.status === 'sent' ? 'disabled' : ''} title="Mark as sent">
           <i class="fas fa-check"></i>
         </button>
-        <button onclick="deleteReminder(${rem.id})" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+        <button onclick="deleteReminder(${rem.id})" class="text-red-600 hover:text-red-800" title="Delete">
+          <i class="fas fa-trash"></i>
+        </button>
       </td>
     </tr>
   `).join('') || '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No reminders found</td></tr>';
   
   document.getElementById('reminders-table-body').innerHTML = html;
+}
+
+// Send reminder via WhatsApp
+async function sendReminderWhatsApp(id, phone, patientName, message) {
+  if (!confirm(`Send WhatsApp reminder to ${unescape(patientName)} (${phone})?`)) return;
+  
+  try {
+    showLoading();
+    
+    // Format WhatsApp message
+    const whatsappMessage = unescape(message) || `Dear ${unescape(patientName)}, this is a reminder from TPS DHANVANTRI AYURVEDA for your upcoming consultation.`;
+    
+    // Open WhatsApp (this will work on mobile and desktop with WhatsApp installed)
+    const whatsappURL = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(whatsappMessage)}`;
+    window.open(whatsappURL, '_blank');
+    
+    // Mark as sent after opening WhatsApp
+    await axios.put(`${API_BASE}/reminders/${id}`, { status: 'Sent' });
+    alert('WhatsApp opened! Please send the message. Reminder marked as sent.');
+    loadReminders();
+  } catch (error) {
+    console.error('WhatsApp send error:', error);
+    alert('Error: ' + (error.response?.data?.error || error.message));
+  } finally {
+    hideLoading();
+  }
+}
+
+// Send reminder via SMS
+async function sendReminderSMS(id, phone, patientName, message) {
+  if (!confirm(`Send SMS reminder to ${unescape(patientName)} (${phone})?`)) return;
+  
+  try {
+    showLoading();
+    
+    // Format SMS message
+    const smsMessage = unescape(message) || `Dear ${unescape(patientName)}, this is a reminder from TPS DHANVANTRI AYURVEDA for your upcoming consultation.`;
+    
+    // Open SMS (this will work on mobile)
+    const smsURL = `sms:${phone}?body=${encodeURIComponent(smsMessage)}`;
+    window.open(smsURL, '_blank');
+    
+    // Mark as sent after opening SMS
+    await axios.put(`${API_BASE}/reminders/${id}`, { status: 'Sent' });
+    alert('SMS app opened! Please send the message. Reminder marked as sent.');
+    loadReminders();
+  } catch (error) {
+    console.error('SMS send error:', error);
+    alert('Error: ' + (error.response?.data?.error || error.message));
+  } finally {
+    hideLoading();
+  }
 }
 
 async function markReminderSent(id) {
