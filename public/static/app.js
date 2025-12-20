@@ -602,10 +602,40 @@ function showPatientModal(patient = null) {
     document.getElementById('patient-referred-by-phone').value = patient.referred_by_phone || '';
     document.getElementById('patient-referred-by-address').value = patient.referred_by_address || '';
     
-    document.getElementById('patient-present-health-issue').value = patient.present_health_issue || '';
-    document.getElementById('patient-present-medicine').value = patient.present_medicine || '';
-    document.getElementById('patient-mg').value = patient.mg_value || '';
-    document.getElementById('patient-attacked-by').value = patient.attacked_by || '';
+    // Load diseases from JSON array
+    if (patient.diseases) {
+      try {
+        const diseases = JSON.parse(patient.diseases);
+        diseases.forEach(d => {
+          addDiseaseRow(
+            d.present_health_issue || '',
+            d.present_medicine || '',
+            d.mg_value || '',
+            d.attacked_by || ''
+          );
+        });
+      } catch (e) {
+        console.log('No diseases to load or invalid JSON');
+        // Fallback to old single disease fields if JSON parsing fails
+        if (patient.present_health_issue) {
+          addDiseaseRow(
+            patient.present_health_issue || '',
+            patient.present_medicine || '',
+            patient.mg_value || '',
+            patient.attacked_by || ''
+          );
+        }
+      }
+    } else if (patient.present_health_issue) {
+      // Fallback to old single disease fields
+      addDiseaseRow(
+        patient.present_health_issue || '',
+        patient.present_medicine || '',
+        patient.mg_value || '',
+        patient.attacked_by || ''
+      );
+    }
+    
     document.getElementById('patient-medical-history').value = patient.medical_history || '';
   } else {
     form.reset();
