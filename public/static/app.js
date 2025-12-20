@@ -760,7 +760,7 @@ async function deleteHerbsRoutes(id) {
 async function viewHerbsRoutes(id) {
   try {
     showLoading();
-    const res = await axios.get(`${API_BASE}/herbs-routes/${id}`);
+    const res = await axios.get(`${API_BASE}/prescriptions/${id}`);
     const hr = res.data.data;
     
     // Display in a modal or new section
@@ -776,7 +776,7 @@ async function viewHerbsRoutes(id) {
 async function printHerbsRoutes(id) {
   try {
     // Open print view in new window
-    window.open(`/api/herbs-routes/${id}/print`, '_blank');
+    window.open(`/api/prescriptions/${id}/print`, '_blank');
   } catch (error) {
     console.error('Print error:', error);
     alert('Error printing record');
