@@ -483,7 +483,7 @@ app.post('/api/prescriptions', async (c) => {
     // Insert herbs_routes record
     const result = await c.env.DB.prepare(`
       INSERT INTO herbs_routes (
-        patient_id, given_date, treatment_months, follow_up_date,
+        patient_id, given_date, treatment_months, next_followup_date,
         diagnosis, notes, payment_amount, advance_payment, 
         due_balance, payment_notes, course
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -491,7 +491,7 @@ app.post('/api/prescriptions', async (c) => {
       body.patient_id,
       body.given_date,
       body.treatment_months,
-      body.follow_up_date,
+      body.follow_up_date || null,
       body.diagnosis || null,
       body.notes || null,
       body.payment_amount || 0,
@@ -539,7 +539,7 @@ app.post('/api/prescriptions', async (c) => {
       `).bind(
         body.patient_id,
         'Follow-up',
-        body.follow_up_date,
+        body.follow_up_date || null,
         'Follow-up Consultation',
         'Time for your follow-up consultation',
         'Pending'
@@ -561,7 +561,7 @@ app.put('/api/prescriptions/:id', async (c) => {
     // Update herbs_routes record
     await c.env.DB.prepare(`
       UPDATE herbs_routes SET 
-        patient_id = ?, given_date = ?, treatment_months = ?, follow_up_date = ?,
+        patient_id = ?, given_date = ?, treatment_months = ?, next_followup_date = ?,
         diagnosis = ?, notes = ?, payment_amount = ?, advance_payment = ?, 
         due_balance = ?, payment_notes = ?, course = ?,
         updated_at = CURRENT_TIMESTAMP
@@ -570,7 +570,7 @@ app.put('/api/prescriptions/:id', async (c) => {
       body.patient_id,
       body.given_date,
       body.treatment_months,
-      body.follow_up_date,
+      body.follow_up_date || null,
       body.diagnosis || null,
       body.notes || null,
       body.payment_amount || 0,
