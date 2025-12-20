@@ -627,6 +627,24 @@ async function savePatient() {
     showLoading();
     const id = document.getElementById('patient-id').value;
     
+    // Validate mandatory fields
+    const name = document.getElementById('patient-name').value.trim();
+    const country = document.getElementById('patient-country').value;
+    const countryCode = document.getElementById('patient-country-code').value;
+    const countryIso3 = document.getElementById('patient-country-iso3').value;
+    const phone = document.getElementById('patient-phone').value.trim();
+    
+    const missingFields = [];
+    if (!name) missingFields.push('Name');
+    if (!country) missingFields.push('Country');
+    if (!phone) missingFields.push('Primary Phone Number');
+    
+    if (missingFields.length > 0) {
+      hideLoading();
+      alert('❌ Missing Required Fields:\n\n' + missingFields.map(f => '• ' + f).join('\n') + '\n\nPlease fill in all required fields marked with *');
+      return;
+    }
+    
     // Collect additional phones with labels
     const additionalPhones = Array.from(document.querySelectorAll('.phone-field')).map(field => ({
       label: field.querySelector('.phone-label').value,
@@ -641,40 +659,35 @@ async function savePatient() {
       attacked_by: row.querySelector('.disease-attacked-by').value
     })).filter(d => d.present_health_issue); // Only include rows with health issue filled
     
-    // Get country info
-    const country = document.getElementById('patient-country').value;
-    const countryCode = document.getElementById('patient-country-code').value;
-    const countryIso3 = document.getElementById('patient-country-iso3').value;
-    
     const data = {
-      name: document.getElementById('patient-name').value,
+      name: name,
       age: parseInt(document.getElementById('patient-age').value) || null,
-      gender: document.getElementById('patient-gender').value,
+      gender: document.getElementById('patient-gender').value || null,
       country: country,
       country_code: countryCode,
       country_iso3: countryIso3,
-      phone: document.getElementById('patient-phone').value,
-      email: document.getElementById('patient-email').value,
+      phone: phone,
+      email: document.getElementById('patient-email').value || null,
       weight: parseFloat(document.getElementById('patient-weight').value) || null,
       height: parseFloat(document.getElementById('patient-height').value) || null,
       
       // Detailed address fields
-      address_hno: document.getElementById('patient-address-hno').value,
-      address_street: document.getElementById('patient-address-street').value,
-      address_apartment: document.getElementById('patient-address-apartment').value,
-      address_area: document.getElementById('patient-address-area').value,
-      address_district: document.getElementById('patient-address-district').value,
-      address_state: document.getElementById('patient-address-state').value,
-      address_pincode: document.getElementById('patient-address-pincode').value,
-      address: document.getElementById('patient-address').value,
+      address_hno: document.getElementById('patient-address-hno').value || null,
+      address_street: document.getElementById('patient-address-street').value || null,
+      address_apartment: document.getElementById('patient-address-apartment').value || null,
+      address_area: document.getElementById('patient-address-area').value || null,
+      address_district: document.getElementById('patient-address-district').value || null,
+      address_state: document.getElementById('patient-address-state').value || null,
+      address_pincode: document.getElementById('patient-address-pincode').value || null,
+      address: document.getElementById('patient-address').value || null,
       
       // Referred by
-      referred_by_name: document.getElementById('patient-referred-by').value,
-      referred_by_phone: document.getElementById('patient-referred-by-phone').value,
-      referred_by_address: document.getElementById('patient-referred-by-address').value,
+      referred_by_name: document.getElementById('patient-referred-by').value || null,
+      referred_by_phone: document.getElementById('patient-referred-by-phone').value || null,
+      referred_by_address: document.getElementById('patient-referred-by-address').value || null,
       
       // Medical history
-      medical_history: document.getElementById('patient-medical-history').value,
+      medical_history: document.getElementById('patient-medical-history').value || null,
       
       // Additional phones as JSON
       additional_phones: additionalPhones.length > 0 ? JSON.stringify(additionalPhones) : null,
@@ -695,7 +708,7 @@ async function savePatient() {
         }
       }
       
-      alert('Patient updated successfully! Patient ID: ' + (await axios.get(`${API_BASE}/patients/${id}`)).data.data.patient_id);
+      alert('✅ Patient updated successfully!\n\nPatient ID: ' + (await axios.get(`${API_BASE}/patients/${id}`)).data.data.patient_id);
     } else {
       const result = await axios.post(`${API_BASE}/patients`, data);
       const patientId = result.data.data.patient_id;
@@ -708,14 +721,15 @@ async function savePatient() {
         }
       }
       
-      alert(`Patient added successfully! Patient ID: ${patientId}`);
+      alert(`✅ Patient added successfully!\n\nPatient ID: ${patientId}\nName: ${name}\nPhone: ${countryCode} ${phone}`);
     }
     
     closePatientModal();
     loadPatients();
   } catch (error) {
     console.error('Save patient error:', error);
-    alert('Error saving patient: ' + (error.response?.data?.error || error.message));
+    const errorMsg = error.response?.data?.error || error.message || 'Unknown error';
+    alert('❌ Error saving patient:\n\n' + errorMsg + '\n\nPlease check all fields and try again.');
   } finally {
     hideLoading();
   }
