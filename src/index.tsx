@@ -14,6 +14,135 @@ app.use('/api/*', cors())
 // Serve static files
 app.use('/static/*', serveStatic({ root: './public' }))
 
+// ==================== AUTHENTICATION API ====================
+
+// Helper function to generate session token
+function generateSessionToken(): string {
+  return crypto.randomUUID() + '-' + Date.now()
+}
+
+// Helper function to check if user is authenticated
+async function isAuthenticated(c: any): Promise<any> {
+  const sessionToken = c.req.cookie('session_token')
+  
+  if (!sessionToken) {
+    return null
+  }
+  
+  const session = await c.env.DB.prepare(`
+    SELECT s.*, u.id as user_id, u.email, u.name, u.role, u.profile_picture
+    FROM sessions s
+    JOIN users u ON s.user_id = u.id
+    WHERE s.session_token = ? AND s.expires_at > datetime('now') AND u.is_active = 1
+  `).bind(sessionToken).first()
+  
+  return session
+}
+
+// Login with Google (or email for now)
+app.post('/api/auth/login', async (c) => {
+  try {
+    const { email, name, google_id, profile_picture } = await c.req.json()
+    
+    if (!email) {
+      return c.json({ success: false, error: 'Email is required' }, 400)
+    }
+    
+    // Find or create user
+    let user = await c.env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email).first()
+    
+    if (!user) {
+      // Create new user
+      const result = await c.env.DB.prepare(`
+        INSERT INTO users (email, name, google_id, profile_picture)
+        VALUES (?, ?, ?, ?)
+      `).bind(email, name || email, google_id || null, profile_picture || null).run()
+      
+      user = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(result.meta.last_row_id).first()
+    } else {
+      // Update last login and profile info
+      await c.env.DB.prepare(`
+        UPDATE users 
+        SET last_login = datetime('now'), 
+            google_id = COALESCE(?, google_id),
+            profile_picture = COALESCE(?, profile_picture)
+        WHERE id = ?
+      `).bind(google_id || null, profile_picture || null, (user as any).id).run()
+    }
+    
+    if (!(user as any).is_active) {
+      return c.json({ success: false, error: 'Account is inactive' }, 403)
+    }
+    
+    // Create session
+    const sessionToken = generateSessionToken()
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + 7) // 7 days expiry
+    
+    await c.env.DB.prepare(`
+      INSERT INTO sessions (user_id, session_token, expires_at)
+      VALUES (?, ?, ?)
+    `).bind((user as any).id, sessionToken, expiresAt.toISOString()).run()
+    
+    // Set cookie
+    c.header('Set-Cookie', `session_token=${sessionToken}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${7 * 24 * 60 * 60}`)
+    
+    return c.json({ 
+      success: true, 
+      user: {
+        id: (user as any).id,
+        email: (user as any).email,
+        name: (user as any).name,
+        role: (user as any).role,
+        profile_picture: (user as any).profile_picture
+      }
+    })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Logout
+app.post('/api/auth/logout', async (c) => {
+  try {
+    const sessionToken = c.req.cookie('session_token')
+    
+    if (sessionToken) {
+      await c.env.DB.prepare('DELETE FROM sessions WHERE session_token = ?').bind(sessionToken).run()
+    }
+    
+    c.header('Set-Cookie', 'session_token=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0')
+    return c.json({ success: true })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Check authentication status
+app.get('/api/auth/me', async (c) => {
+  try {
+    const user = await isAuthenticated(c)
+    
+    if (!user) {
+      return c.json({ success: false, authenticated: false }, 401)
+    }
+    
+    return c.json({ 
+      success: true, 
+      authenticated: true,
+      user: {
+        id: user.user_id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        profile_picture: user.profile_picture
+      }
+    })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
 // ==================== PATIENTS API ====================
 
 // Get all patients with search and filter
@@ -1145,6 +1274,170 @@ app.get('/api/stats', async (c) => {
 
 // ==================== HOME PAGE ====================
 
+app.get('/login', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Login - TPS DHANVANTRI AYURVEDA</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
+    </head>
+    <body class="bg-gradient-to-br from-green-50 to-emerald-100 min-h-screen flex items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+            <div class="text-center mb-8">
+                <div class="bg-gradient-to-r from-green-600 to-emerald-600 text-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-leaf text-4xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">TPS DHANVANTRI</h1>
+                <p class="text-gray-600">Ayurveda Clinic Management</p>
+            </div>
+
+            <div id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                    <input type="email" id="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="your.email@gmail.com" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                    <input type="text" id="name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Your Name" required>
+                </div>
+
+                <button onclick="loginWithEmail()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition duration-200 flex items-center justify-center">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    Sign In
+                </button>
+
+                <div class="relative my-6">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-4 bg-white text-gray-500">Or continue with</span>
+                    </div>
+                </div>
+
+                <!-- Google Sign-In Button -->
+                <div id="g_id_onload"
+                     data-client_id="YOUR_GOOGLE_CLIENT_ID"
+                     data-callback="handleGoogleLogin"
+                     data-auto_prompt="false">
+                </div>
+                <div class="g_id_signin" 
+                     data-type="standard"
+                     data-size="large"
+                     data-theme="outline"
+                     data-text="sign_in_with"
+                     data-shape="rectangular"
+                     data-logo_alignment="left"
+                     data-width="384">
+                </div>
+            </div>
+
+            <div id="error-message" class="hidden mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm"></div>
+            <div id="success-message" class="hidden mt-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-lg text-sm"></div>
+
+            <p class="text-center text-xs text-gray-500 mt-6">
+                <i class="fas fa-lock mr-1"></i>
+                Secure authentication powered by session management
+            </p>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script>
+            const API_BASE = '/api';
+
+            async function loginWithEmail() {
+                const email = document.getElementById('email').value;
+                const name = document.getElementById('name').value;
+
+                if (!email || !name) {
+                    showError('Please enter both email and name');
+                    return;
+                }
+
+                if (!email.includes('@')) {
+                    showError('Please enter a valid email address');
+                    return;
+                }
+
+                try {
+                    const res = await axios.post(\`\${API_BASE}/auth/login\`, {
+                        email: email,
+                        name: name
+                    });
+
+                    if (res.data.success) {
+                        showSuccess('Login successful! Redirecting...');
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1000);
+                    } else {
+                        showError(res.data.error || 'Login failed');
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    showError(error.response?.data?.error || 'Login failed. Please try again.');
+                }
+            }
+
+            async function handleGoogleLogin(response) {
+                try {
+                    // Decode Google JWT token
+                    const payload = JSON.parse(atob(response.credential.split('.')[1]));
+                    
+                    const res = await axios.post(\`\${API_BASE}/auth/login\`, {
+                        email: payload.email,
+                        name: payload.name,
+                        google_id: payload.sub,
+                        profile_picture: payload.picture
+                    });
+
+                    if (res.data.success) {
+                        showSuccess('Google login successful! Redirecting...');
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1000);
+                    } else {
+                        showError(res.data.error || 'Login failed');
+                    }
+                } catch (error) {
+                    console.error('Google login error:', error);
+                    showError('Google login failed. Please try again.');
+                }
+            }
+
+            function showError(message) {
+                const errorDiv = document.getElementById('error-message');
+                errorDiv.textContent = message;
+                errorDiv.classList.remove('hidden');
+                document.getElementById('success-message').classList.add('hidden');
+            }
+
+            function showSuccess(message) {
+                const successDiv = document.getElementById('success-message');
+                successDiv.textContent = message;
+                successDiv.classList.remove('hidden');
+                document.getElementById('error-message').classList.add('hidden');
+            }
+
+            // Allow Enter key to submit
+            document.getElementById('email').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') loginWithEmail();
+            });
+            document.getElementById('name').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') loginWithEmail();
+            });
+        </script>
+    </body>
+    </html>
+  `)
+})
+
 app.get('/', (c) => {
   return c.html(`
     <!DOCTYPE html>
@@ -1181,6 +1474,28 @@ app.get('/', (c) => {
             }
           }
         </script>
+        <style>
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+            .print-content, .print-content * {
+              visibility: visible;
+            }
+            .print-content {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+            }
+            .no-print {
+              display: none !important;
+            }
+            @page {
+              margin: 1cm;
+            }
+          }
+        </style>
     </head>
     <body class="bg-gray-50">
         <!-- Navigation -->
@@ -1210,6 +1525,21 @@ app.get('/', (c) => {
                         <button onclick="showSection('settings')" class="nav-btn hover:bg-ayurveda-800 px-3 py-2 rounded transition">
                             <i class="fas fa-cog mr-2"></i>Settings
                         </button>
+                        <div class="border-l border-ayurveda-500 pl-4 ml-2">
+                            <div class="flex items-center space-x-3">
+                                <div class="text-right">
+                                    <p class="text-sm font-semibold" id="user-name">Loading...</p>
+                                    <p class="text-xs opacity-75" id="user-email"></p>
+                                </div>
+                                <img id="user-avatar" src="" alt="User" class="w-10 h-10 rounded-full border-2 border-white hidden">
+                                <div id="user-avatar-placeholder" class="w-10 h-10 rounded-full bg-ayurveda-500 flex items-center justify-center font-bold text-lg">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <button onclick="logout()" class="hover:bg-ayurveda-800 px-3 py-2 rounded transition" title="Logout">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1891,6 +2221,101 @@ app.get('/', (c) => {
                             <button type="submit" class="px-6 py-2 bg-ayurveda-600 hover:bg-ayurveda-700 text-white rounded-lg">Save Record</button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- PRESCRIPTION SUMMARY/PREVIEW MODAL -->
+        <div id="prescription-summary-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-8 max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-ayurveda-700">
+                        <i class="fas fa-file-medical mr-2"></i>Prescription Summary
+                    </h3>
+                    <button onclick="closeSummaryModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+
+                <div id="summary-content" class="print-content">
+                    <!-- Clinic Header -->
+                    <div class="text-center mb-6 pb-4 border-b-2 border-ayurveda-600">
+                        <h1 class="text-3xl font-bold text-ayurveda-700">TPS DHANVANTRI AYURVEDA</h1>
+                        <p class="text-gray-600 mt-2">Ayurvedic Treatment & Wellness Center</p>
+                        <p class="text-sm text-gray-500 mt-1" id="clinic-contact-info"></p>
+                    </div>
+
+                    <!-- Patient Information -->
+                    <div class="mb-6 bg-blue-50 p-4 rounded-lg">
+                        <h4 class="font-bold text-lg mb-3 text-blue-800">
+                            <i class="fas fa-user-circle mr-2"></i>Patient Information
+                        </h4>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                            <div><span class="font-semibold">Patient ID:</span> <span id="summary-patient-id"></span></div>
+                            <div><span class="font-semibold">Name:</span> <span id="summary-patient-name"></span></div>
+                            <div><span class="font-semibold">Age/Gender:</span> <span id="summary-patient-age-gender"></span></div>
+                            <div><span class="font-semibold">Phone:</span> <span id="summary-patient-phone"></span></div>
+                            <div><span class="font-semibold">Country:</span> <span id="summary-patient-country"></span></div>
+                            <div><span class="font-semibold">Weight/Height:</span> <span id="summary-patient-weight-height"></span></div>
+                            <div class="col-span-2 md:col-span-3"><span class="font-semibold">Address:</span> <span id="summary-patient-address"></span></div>
+                            <div class="col-span-2 md:col-span-3"><span class="font-semibold">Health Issue:</span> <span class="text-red-600" id="summary-patient-health-issue"></span></div>
+                        </div>
+                    </div>
+
+                    <!-- Treatment Details -->
+                    <div class="mb-6">
+                        <h4 class="font-bold text-lg mb-3 text-ayurveda-700">
+                            <i class="fas fa-leaf mr-2"></i>Treatment Details
+                        </h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm bg-gray-50 p-4 rounded-lg">
+                            <div><span class="font-semibold">Given Date:</span> <span id="summary-given-date"></span></div>
+                            <div><span class="font-semibold">Treatment Duration:</span> <span id="summary-treatment-months"></span></div>
+                            <div><span class="font-semibold">Follow-up Date:</span> <span class="text-red-600 font-bold" id="summary-followup-date"></span></div>
+                            <div><span class="font-semibold">Course:</span> <span id="summary-course"></span></div>
+                            <div class="col-span-2 md:col-span-4"><span class="font-semibold">Diagnosis:</span> <span id="summary-diagnosis"></span></div>
+                        </div>
+                    </div>
+
+                    <!-- Medicines List -->
+                    <div class="mb-6">
+                        <h4 class="font-bold text-lg mb-3 text-ayurveda-700">
+                            <i class="fas fa-pills mr-2"></i>Prescribed Medicines
+                        </h4>
+                        <div id="summary-medicines-list" class="space-y-3"></div>
+                    </div>
+
+                    <!-- Payment Details -->
+                    <div class="mb-6 bg-green-50 p-4 rounded-lg">
+                        <h4 class="font-bold text-lg mb-3 text-green-800">
+                            <i class="fas fa-rupee-sign mr-2"></i>Payment Details
+                        </h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                            <div><span class="font-semibold">Total Amount:</span> <span class="text-lg font-bold" id="summary-total-amount"></span></div>
+                            <div><span class="font-semibold">Advance Paid:</span> <span id="summary-advance-paid"></span></div>
+                            <div><span class="font-semibold">Balance Due:</span> <span class="text-lg font-bold text-red-600" id="summary-balance-due"></span></div>
+                            <div class="col-span-2 md:col-span-4"><span class="font-semibold">Notes:</span> <span id="summary-payment-notes"></span></div>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="mt-8 pt-4 border-t text-center text-sm text-gray-600">
+                        <p class="mb-2"><strong>Important Instructions:</strong> Take medicines as prescribed. Follow the dosage schedule strictly.</p>
+                        <p>For any queries, please contact the clinic.</p>
+                        <p class="mt-4"><strong>Next Follow-up:</strong> <span class="text-red-600 font-bold" id="summary-followup-reminder"></span></p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end space-x-3 mt-6 no-print">
+                    <button onclick="printSummary()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                        <i class="fas fa-print mr-2"></i>Print
+                    </button>
+                    <button onclick="confirmSaveHerbsRoutes()" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">
+                        <i class="fas fa-check mr-2"></i>Confirm & Save
+                    </button>
+                    <button onclick="closeSummaryModal()" class="px-6 py-2 border rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-edit mr-2"></i>Edit
+                    </button>
                 </div>
             </div>
         </div>

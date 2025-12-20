@@ -4,6 +4,56 @@ let currentPatients = [];
 let currentAppointments = [];
 let currentHerbsRoutes = [];
 let currentReminders = [];
+let currentUser = null;
+
+// Authentication check
+async function checkAuth() {
+  try {
+    const res = await axios.get(`${API_BASE}/auth/me`);
+    if (res.data.authenticated) {
+      currentUser = res.data.user;
+      updateUserUI();
+      return true;
+    } else {
+      window.location.href = '/login';
+      return false;
+    }
+  } catch (error) {
+    console.error('Auth check error:', error);
+    window.location.href = '/login';
+    return false;
+  }
+}
+
+// Update user UI
+function updateUserUI() {
+  if (currentUser) {
+    document.getElementById('user-name').textContent = currentUser.name;
+    document.getElementById('user-email').textContent = currentUser.email;
+    
+    if (currentUser.profile_picture) {
+      document.getElementById('user-avatar').src = currentUser.profile_picture;
+      document.getElementById('user-avatar').classList.remove('hidden');
+      document.getElementById('user-avatar-placeholder').classList.add('hidden');
+    } else {
+      const initial = currentUser.name.charAt(0).toUpperCase();
+      document.getElementById('user-avatar-placeholder').textContent = initial;
+    }
+  }
+}
+
+// Logout function
+async function logout() {
+  if (confirm('Are you sure you want to logout?')) {
+    try {
+      await axios.post(`${API_BASE}/auth/logout`);
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
+      window.location.href = '/login';
+    }
+  }
+}
 
 // Country data with codes
 const countries = [
@@ -1129,6 +1179,10 @@ async function saveSettings() {
 }
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
-  loadDashboard();
+document.addEventListener('DOMContentLoaded', async () => {
+  // Check authentication first
+  const isAuthenticated = await checkAuth();
+  if (isAuthenticated) {
+    loadDashboard();
+  }
 });
