@@ -1210,10 +1210,6 @@ async function saveSettings() {
 }
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', async () => {
-  // Check authentication first
-  const isAuthenticated = await checkAuth();
-  if (isAuthenticated) {
-    loadDashboard();
-  }
+document.addEventListener('DOMContentLoaded', () => {
+  loadDashboard();
 });
