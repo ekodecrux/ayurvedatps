@@ -1,84 +1,58 @@
-// API Base URL
+// TPS DHANVANTRI AYURVEDA - Complete Application
 const API_BASE = '/api';
-
-// Global state
 let currentPatients = [];
 let currentAppointments = [];
-let currentMedicines = [];
-let currentPrescriptions = [];
+let currentHerbsRoutes = [];
 let currentReminders = [];
-let currentSettings = {};
 
-// Utility Functions
-function showLoading() {
-  document.getElementById('loading-overlay').classList.remove('hidden');
-}
+// Country data with codes
+const countries = [
+  { name: 'India', code: '+91' },
+  { name: 'USA', code: '+1' },
+  { name: 'UK', code: '+44' },
+  { name: 'Australia', code: '+61' },
+  { name: 'Canada', code: '+1' },
+  { name: 'UAE', code: '+971' },
+  { name: 'Singapore', code: '+65' },
+  { name: 'Malaysia', code: '+60' },
+  { name: 'Saudi Arabia', code: '+966' }
+];
 
-function hideLoading() {
-  document.getElementById('loading-overlay').classList.add('hidden');
-}
+const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+
+function showLoading() { document.body.style.cursor = 'wait'; }
+function hideLoading() { document.body.style.cursor = 'default'; }
 
 function showSection(sectionName) {
-  // Hide all sections
-  document.querySelectorAll('.section').forEach(section => {
-    section.classList.add('hidden');
-  });
+  document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+  document.getElementById(`${sectionName}-section`)?.classList.remove('hidden');
   
-  // Show selected section
-  document.getElementById(`${sectionName}-section`).classList.remove('hidden');
-  
-  // Load section data
   switch(sectionName) {
-    case 'dashboard':
-      loadDashboard();
-      break;
-    case 'patients':
-      loadPatients();
-      break;
-    case 'appointments':
-      loadAppointments();
-      break;
-    case 'prescriptions':
-      loadPrescriptions();
-      break;
-    case 'reminders':
-      loadReminders();
-      break;
-    case 'settings':
-      loadSettings();
-      break;
+    case 'dashboard': loadDashboard(); break;
+    case 'patients': loadPatients(); break;
+    case 'appointments': loadAppointments(); break;
+    case 'prescriptions': loadHerbsRoutes(); break;
+    case 'reminders': loadReminders(); break;
+    case 'settings': loadSettings(); break;
   }
 }
 
 function formatDate(dateString) {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-IN', { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
-  });
+  return date.toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 function formatDateTime(dateString) {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
-  return date.toLocaleString('en-IN', { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  return date.toLocaleString('en-IN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 // ==================== DASHBOARD ====================
-
 async function loadDashboard() {
   try {
     showLoading();
-    
-    // Load stats
     const statsRes = await axios.get(`${API_BASE}/stats`);
     if (statsRes.data.success) {
       const stats = statsRes.data.data;
@@ -86,266 +60,157 @@ async function loadDashboard() {
       document.getElementById('stat-appointments').textContent = stats.todayAppointments;
       document.getElementById('stat-reminders').textContent = stats.pendingReminders;
     }
+
+    const apptRes = await axios.get(`${API_BASE}/appointments?limit=5`);
+    const remRes = await axios.get(`${API_BASE}/reminders?limit=5`);
     
-    // Load recent appointments
-    const appointmentsRes = await axios.get(`${API_BASE}/appointments`);
-    if (appointmentsRes.data.success) {
-      const appointments = appointmentsRes.data.data.slice(0, 5);
-      const html = appointments.length > 0 ? appointments.map(apt => `
-        <div class="flex items-center justify-between border-b pb-2">
-          <div>
-            <p class="font-semibold">${apt.patient_name}</p>
-            <p class="text-sm text-gray-600">${formatDateTime(apt.appointment_date)}</p>
-          </div>
-          <span class="px-2 py-1 text-xs rounded ${
-            apt.status === 'completed' ? 'bg-green-100 text-green-800' :
-            apt.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-            'bg-blue-100 text-blue-800'
-          }">${apt.status}</span>
-        </div>
-      `).join('') : '<p class="text-gray-500">No recent appointments</p>';
-      document.getElementById('recent-appointments').innerHTML = html;
-    }
-    
-    // Load upcoming reminders
-    const remindersRes = await axios.get(`${API_BASE}/reminders/pending`);
-    if (remindersRes.data.success) {
-      const reminders = remindersRes.data.data.slice(0, 5);
-      const html = reminders.length > 0 ? reminders.map(reminder => `
-        <div class="flex items-center justify-between border-b pb-2">
-          <div>
-            <p class="font-semibold">${reminder.patient_name}</p>
-            <p class="text-sm text-gray-600">${reminder.reminder_type}: ${formatDate(reminder.reminder_date)}</p>
-          </div>
-          <button onclick="sendReminder(${reminder.id})" class="text-ayurveda-600 hover:text-ayurveda-800">
-            <i class="fas fa-paper-plane"></i>
-          </button>
-        </div>
-      `).join('') : '<p class="text-gray-500">No pending reminders</p>';
-      document.getElementById('upcoming-reminders').innerHTML = html;
-    }
-    
-    hideLoading();
+    renderDashboardAppointments(apptRes.data.data || []);
+    renderDashboardReminders(remRes.data.data || []);
   } catch (error) {
-    console.error('Error loading dashboard:', error);
+    console.error('Dashboard error:', error);
+  } finally {
     hideLoading();
   }
 }
 
-// ==================== PATIENTS ====================
+function renderDashboardAppointments(appointments) {
+  const html = appointments.slice(0, 5).map(apt => `
+    <div class="flex justify-between items-center p-4 hover:bg-gray-50 rounded">
+      <div>
+        <p class="font-medium">${apt.patient_name}</p>
+        <p class="text-sm text-gray-600">${formatDateTime(apt.appointment_date)}</p>
+      </div>
+      <span class="px-3 py-1 rounded-full text-sm ${apt.status === 'completed' ? 'bg-green-100 text-green-800' : apt.status === 'confirmed' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}">${apt.status}</span>
+    </div>
+  `).join('') || '<p class="text-gray-500 p-4">No recent appointments</p>';
+  document.getElementById('recent-appointments').innerHTML = html;
+}
 
-async function loadPatients(search = '', gender = '') {
+function renderDashboardReminders(reminders) {
+  const html = reminders.slice(0, 5).map(rem => `
+    <div class="flex justify-between items-center p-4 hover:bg-gray-50 rounded">
+      <div>
+        <p class="font-medium">${rem.patient_name}</p>
+        <p class="text-sm text-gray-600">${formatDate(rem.reminder_date)}</p>
+      </div>
+      <span class="px-3 py-1 rounded-full text-sm ${rem.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${rem.status}</span>
+    </div>
+  `).join('') || '<p class="text-gray-500 p-4">No upcoming reminders</p>';
+  document.getElementById('upcoming-reminders').innerHTML = html;
+}
+
+// ==================== PATIENTS ====================
+async function loadPatients() {
   try {
     showLoading();
-    let url = `${API_BASE}/patients`;
-    const params = [];
-    if (search) params.push(`search=${encodeURIComponent(search)}`);
-    if (gender) params.push(`gender=${encodeURIComponent(gender)}`);
-    if (params.length > 0) url += '?' + params.join('&');
+    const search = document.getElementById('patient-search')?.value || '';
+    const country = document.getElementById('patient-filter-country')?.value || '';
+    
+    let url = `${API_BASE}/patients?search=${search}`;
+    if (country) url += `&country=${country}`;
     
     const res = await axios.get(url);
-    if (res.data.success) {
-      currentPatients = res.data.data;
-      renderPatients();
-    }
-    hideLoading();
+    currentPatients = res.data.data || [];
+    renderPatients();
   } catch (error) {
-    console.error('Error loading patients:', error);
+    console.error('Load patients error:', error);
+    alert('Error loading patients');
+  } finally {
     hideLoading();
   }
 }
 
 function renderPatients() {
-  const section = document.getElementById('patients-section');
-  section.innerHTML = `
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-3xl font-bold text-gray-800">
-        <i class="fas fa-users mr-3 text-ayurveda-600"></i>Patients (${currentPatients.length})
-      </h2>
-      <button onclick="showPatientForm()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg shadow">
-        <i class="fas fa-plus mr-2"></i>Add Patient
-      </button>
-    </div>
-    
-    <!-- Search and Filter -->
-    <div class="bg-white rounded-lg shadow p-4 mb-4">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="md:col-span-2">
-          <input type="text" id="patient-search" placeholder="Search by name, phone, patient ID, email..." 
-            class="w-full border border-gray-300 rounded px-3 py-2"
-            onkeyup="if(event.key==='Enter') applyPatientFilter()">
-        </div>
-        <div class="flex gap-2">
-          <select id="patient-gender-filter" class="flex-1 border border-gray-300 rounded px-3 py-2">
-            <option value="">All Genders</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-            <option value="Other">Other</option>
-          </select>
-          <button onclick="applyPatientFilter()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded">
-            <i class="fas fa-search"></i>
-          </button>
-          <button onclick="clearPatientFilter()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded" title="Clear">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-    
-    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Patient ID</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Age/Gender</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            ${currentPatients.map(patient => `
-              <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="px-2 py-1 text-xs font-mono bg-blue-100 text-blue-800 rounded">${patient.patient_id || 'N/A'}</span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="font-medium text-gray-900">${patient.name}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  ${patient.age || 'N/A'} / ${patient.gender || 'N/A'}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${patient.phone}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${patient.email || 'N/A'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                  <button onclick="viewPatientDetails(${patient.id})" class="text-blue-600 hover:text-blue-800" title="View Details">
-                    <i class="fas fa-eye"></i>
-                  </button>
-                  <button onclick="editPatient(${patient.id})" class="text-green-600 hover:text-green-800" title="Edit">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button onclick="deletePatient(${patient.id})" class="text-red-600 hover:text-red-800" title="Delete">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                  <button onclick="createPrescriptionForPatient(${patient.id})" class="text-purple-600 hover:text-purple-800" title="New Prescription">
-                    <i class="fas fa-file-prescription"></i>
-                  </button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>
-    
-    <div id="patient-form-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg p-6 max-w-2xl w-full max-h-screen overflow-y-auto">
-        <h3 class="text-2xl font-bold mb-4" id="patient-form-title">Add Patient</h3>
-        <form id="patient-form" onsubmit="savePatient(event)">
-          <input type="hidden" id="patient-id">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-              <input type="text" id="patient-name" required class="w-full border border-gray-300 rounded px-3 py-2">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Age</label>
-              <input type="number" id="patient-age" class="w-full border border-gray-300 rounded px-3 py-2">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-              <select id="patient-gender" class="w-full border border-gray-300 rounded px-3 py-2">
-                <option value="">Select</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
-              <input type="tel" id="patient-phone" required class="w-full border border-gray-300 rounded px-3 py-2">
-            </div>
-            <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input type="email" id="patient-email" class="w-full border border-gray-300 rounded px-3 py-2">
-            </div>
-            <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
-              <textarea id="patient-address" rows="2" class="w-full border border-gray-300 rounded px-3 py-2"></textarea>
-            </div>
-            <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Medical History</label>
-              <textarea id="patient-history" rows="3" class="w-full border border-gray-300 rounded px-3 py-2"></textarea>
-            </div>
-          </div>
-          <div class="flex justify-end space-x-3 mt-6">
-            <button type="button" onclick="closePatientForm()" class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
-            <button type="submit" class="px-4 py-2 bg-ayurveda-600 text-white rounded hover:bg-ayurveda-700">Save</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  `;
+  const html = currentPatients.map(p => `
+    <tr class="hover:bg-gray-50">
+      <td class="px-6 py-4 border-b">${p.patient_id || 'N/A'}</td>
+      <td class="px-6 py-4 border-b font-medium">${p.name}</td>
+      <td class="px-6 py-4 border-b">${p.age || 'N/A'} / ${p.gender || 'N/A'}</td>
+      <td class="px-6 py-4 border-b">${p.country_code || ''} ${p.phone}</td>
+      <td class="px-6 py-4 border-b">${p.country || 'N/A'}</td>
+      <td class="px-6 py-4 border-b">${formatDate(p.created_at)}</td>
+      <td class="px-6 py-4 border-b">
+        <button onclick="viewPatient(${p.id})" class="text-blue-600 hover:text-blue-800 mr-2"><i class="fas fa-eye"></i></button>
+        <button onclick="editPatient(${p.id})" class="text-green-600 hover:text-green-800 mr-2"><i class="fas fa-edit"></i></button>
+        <button onclick="deletePatient(${p.id})" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No patients found</td></tr>';
+  
+  document.getElementById('patients-table-body').innerHTML = html;
 }
 
-function showPatientForm(patient = null) {
-  document.getElementById('patient-form-modal').classList.remove('hidden');
-  document.getElementById('patient-form-title').textContent = patient ? 'Edit Patient' : 'Add Patient';
+function showPatientModal(patient = null) {
+  const modal = document.getElementById('patient-modal');
+  const title = document.getElementById('patient-modal-title');
+  const form = document.getElementById('patient-form');
+  
+  title.textContent = patient ? 'Edit Patient' : 'Add New Patient';
   
   if (patient) {
     document.getElementById('patient-id').value = patient.id;
-    document.getElementById('patient-name').value = patient.name;
+    document.getElementById('patient-name').value = patient.name || '';
     document.getElementById('patient-age').value = patient.age || '';
     document.getElementById('patient-gender').value = patient.gender || '';
-    document.getElementById('patient-phone').value = patient.phone;
+    document.getElementById('patient-country').value = patient.country || 'India';
+    document.getElementById('patient-country-code').value = patient.country_code || '+91';
+    document.getElementById('patient-phone').value = patient.phone || '';
     document.getElementById('patient-email').value = patient.email || '';
+    document.getElementById('patient-weight').value = patient.weight || '';
+    document.getElementById('patient-height').value = patient.height || '';
     document.getElementById('patient-address').value = patient.address || '';
-    document.getElementById('patient-history').value = patient.medical_history || '';
+    document.getElementById('patient-medical-history').value = patient.medical_history || '';
+    document.getElementById('patient-referred-by').value = patient.referred_by_name || '';
   } else {
-    document.getElementById('patient-form').reset();
+    form.reset();
     document.getElementById('patient-id').value = '';
+    document.getElementById('patient-country').value = 'India';
+    document.getElementById('patient-country-code').value = '+91';
   }
+  
+  modal.classList.remove('hidden');
 }
 
-function closePatientForm() {
-  document.getElementById('patient-form-modal').classList.add('hidden');
+function closePatientModal() {
+  document.getElementById('patient-modal').classList.add('hidden');
 }
 
-async function savePatient(event) {
-  event.preventDefault();
-  
-  const id = document.getElementById('patient-id').value;
-  const data = {
-    name: document.getElementById('patient-name').value,
-    age: parseInt(document.getElementById('patient-age').value) || null,
-    gender: document.getElementById('patient-gender').value || null,
-    phone: document.getElementById('patient-phone').value,
-    email: document.getElementById('patient-email').value || null,
-    address: document.getElementById('patient-address').value || null,
-    medical_history: document.getElementById('patient-history').value || null
-  };
-  
+async function savePatient() {
   try {
     showLoading();
+    const id = document.getElementById('patient-id').value;
+    
+    const data = {
+      name: document.getElementById('patient-name').value,
+      age: parseInt(document.getElementById('patient-age').value) || null,
+      gender: document.getElementById('patient-gender').value,
+      country: document.getElementById('patient-country').value,
+      country_code: document.getElementById('patient-country-code').value,
+      phone: document.getElementById('patient-phone').value,
+      email: document.getElementById('patient-email').value,
+      weight: parseFloat(document.getElementById('patient-weight').value) || null,
+      height: parseFloat(document.getElementById('patient-height').value) || null,
+      address: document.getElementById('patient-address').value,
+      medical_history: document.getElementById('patient-medical-history').value,
+      referred_by_name: document.getElementById('patient-referred-by').value
+    };
+    
     if (id) {
       await axios.put(`${API_BASE}/patients/${id}`, data);
+      alert('Patient updated successfully');
     } else {
       await axios.post(`${API_BASE}/patients`, data);
+      alert('Patient added successfully');
     }
-    closePatientForm();
+    
+    closePatientModal();
     loadPatients();
   } catch (error) {
-    console.error('Error saving patient:', error);
+    console.error('Save patient error:', error);
     alert('Error saving patient');
+  } finally {
     hideLoading();
   }
-}
-
-function editPatient(id) {
-  const patient = currentPatients.find(p => p.id === id);
-  if (patient) showPatientForm(patient);
 }
 
 async function deletePatient(id) {
@@ -354,282 +219,154 @@ async function deletePatient(id) {
   try {
     showLoading();
     await axios.delete(`${API_BASE}/patients/${id}`);
+    alert('Patient deleted successfully');
     loadPatients();
   } catch (error) {
-    console.error('Error deleting patient:', error);
+    console.error('Delete patient error:', error);
     alert('Error deleting patient');
+  } finally {
     hideLoading();
   }
 }
 
-function applyPatientFilter() {
-  const search = document.getElementById('patient-search').value;
-  const gender = document.getElementById('patient-gender-filter').value;
-  loadPatients(search, gender);
-}
-
-function clearPatientFilter() {
-  document.getElementById('patient-search').value = '';
-  document.getElementById('patient-gender-filter').value = '';
-  loadPatients();
-}
-
-async function viewPatientDetails(id) {
+async function editPatient(id) {
   try {
     showLoading();
-    const [patientRes, appointmentsRes, prescriptionsRes] = await Promise.all([
-      axios.get(`${API_BASE}/patients/${id}`),
-      axios.get(`${API_BASE}/patients/${id}/appointments`),
-      axios.get(`${API_BASE}/patients/${id}/prescriptions`)
-    ]);
-    
-    const patient = patientRes.data.data;
-    const appointments = appointmentsRes.data.data;
-    const prescriptions = prescriptionsRes.data.data;
-    
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-    modal.innerHTML = `
-      <div class="bg-white rounded-lg p-6 max-w-4xl w-full max-h-screen overflow-y-auto">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-2xl font-bold">Patient Details</h3>
-          <button onclick="this.closest('.fixed').remove()" class="text-gray-600 hover:text-gray-800">
-            <i class="fas fa-times text-xl"></i>
-          </button>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div><strong>Name:</strong> ${patient.name}</div>
-          <div><strong>Age/Gender:</strong> ${patient.age || 'N/A'} / ${patient.gender || 'N/A'}</div>
-          <div><strong>Phone:</strong> ${patient.phone}</div>
-          <div><strong>Email:</strong> ${patient.email || 'N/A'}</div>
-          <div class="md:col-span-2"><strong>Address:</strong> ${patient.address || 'N/A'}</div>
-          <div class="md:col-span-2"><strong>Medical History:</strong> ${patient.medical_history || 'N/A'}</div>
-        </div>
-        
-        <div class="mb-6">
-          <h4 class="text-xl font-bold mb-3">Recent Appointments</h4>
-          ${appointments.length > 0 ? `
-            <div class="space-y-2">
-              ${appointments.slice(0, 5).map(apt => `
-                <div class="border rounded p-3">
-                  <div class="flex justify-between">
-                    <span><strong>Date:</strong> ${formatDateTime(apt.appointment_date)}</span>
-                    <span class="px-2 py-1 text-xs rounded ${
-                      apt.status === 'completed' ? 'bg-green-100 text-green-800' :
-                      apt.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                      'bg-blue-100 text-blue-800'
-                    }">${apt.status}</span>
-                  </div>
-                  <div><strong>Purpose:</strong> ${apt.purpose || 'N/A'}</div>
-                </div>
-              `).join('')}
-            </div>
-          ` : '<p class="text-gray-500">No appointments yet</p>'}
-        </div>
-        
-        <div>
-          <h4 class="text-xl font-bold mb-3">Recent Prescriptions</h4>
-          ${prescriptions.length > 0 ? `
-            <div class="space-y-2">
-              ${prescriptions.slice(0, 5).map(presc => `
-                <div class="border rounded p-3">
-                  <div><strong>Date:</strong> ${formatDate(presc.created_at)}</div>
-                  <div><strong>Diagnosis:</strong> ${presc.diagnosis || 'N/A'}</div>
-                  <div><strong>Follow-up:</strong> ${formatDate(presc.next_followup_date)}</div>
-                </div>
-              `).join('')}
-            </div>
-          ` : '<p class="text-gray-500">No prescriptions yet</p>'}
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-    hideLoading();
+    const res = await axios.get(`${API_BASE}/patients/${id}`);
+    showPatientModal(res.data.data);
   } catch (error) {
-    console.error('Error loading patient details:', error);
+    console.error('Load patient error:', error);
+    alert('Error loading patient details');
+  } finally {
     hideLoading();
+  }
+}
+
+async function viewPatient(id) {
+  editPatient(id);
+}
+
+async function exportPatients() {
+  try {
+    const country = document.getElementById('patient-filter-country')?.value || '';
+    let url = `${API_BASE}/patients/export?format=csv`;
+    if (country) url += `&country=${country}`;
+    
+    window.open(url, '_blank');
+  } catch (error) {
+    console.error('Export error:', error);
+    alert('Error exporting patients');
   }
 }
 
 // ==================== APPOINTMENTS ====================
-
 async function loadAppointments() {
   try {
     showLoading();
-    const [appointmentsRes, patientsRes] = await Promise.all([
-      axios.get(`${API_BASE}/appointments`),
-      axios.get(`${API_BASE}/patients`)
-    ]);
+    const search = document.getElementById('appointment-search')?.value || '';
+    const status = document.getElementById('appointment-filter-status')?.value || '';
     
-    if (appointmentsRes.data.success) {
-      currentAppointments = appointmentsRes.data.data;
-    }
-    if (patientsRes.data.success) {
-      currentPatients = patientsRes.data.data;
-    }
+    let url = `${API_BASE}/appointments?search=${search}`;
+    if (status) url += `&status=${status}`;
     
+    const res = await axios.get(url);
+    currentAppointments = res.data.data || [];
     renderAppointments();
-    hideLoading();
   } catch (error) {
-    console.error('Error loading appointments:', error);
+    console.error('Load appointments error:', error);
+    alert('Error loading appointments');
+  } finally {
     hideLoading();
   }
 }
 
 function renderAppointments() {
-  const section = document.getElementById('appointments-section');
-  section.innerHTML = `
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-3xl font-bold text-gray-800">
-        <i class="fas fa-calendar-alt mr-3 text-ayurveda-600"></i>Appointments
-      </h2>
-      <button onclick="showAppointmentForm()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg shadow">
-        <i class="fas fa-plus mr-2"></i>Add Appointment
-      </button>
-    </div>
-    
-    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Patient</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date & Time</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Purpose</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            ${currentAppointments.map(apt => `
-              <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="font-medium text-gray-900">${apt.patient_name}</div>
-                  <div class="text-sm text-gray-500">${apt.patient_phone}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  ${formatDateTime(apt.appointment_date)}
-                </td>
-                <td class="px-6 py-4 text-sm text-gray-600">${apt.purpose || 'N/A'}</td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="px-2 py-1 text-xs rounded ${
-                    apt.status === 'completed' ? 'bg-green-100 text-green-800' :
-                    apt.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                    'bg-blue-100 text-blue-800'
-                  }">${apt.status}</span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                  <button onclick="editAppointment(${apt.id})" class="text-green-600 hover:text-green-800" title="Edit">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button onclick="deleteAppointment(${apt.id})" class="text-red-600 hover:text-red-800" title="Delete">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>
-    
-    <div id="appointment-form-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg p-6 max-w-xl w-full">
-        <h3 class="text-2xl font-bold mb-4" id="appointment-form-title">Add Appointment</h3>
-        <form id="appointment-form" onsubmit="saveAppointment(event)">
-          <input type="hidden" id="appointment-id">
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Patient *</label>
-              <select id="appointment-patient" required class="w-full border border-gray-300 rounded px-3 py-2">
-                <option value="">Select Patient</option>
-                ${currentPatients.map(p => `<option value="${p.id}">${p.name} (${p.phone})</option>`).join('')}
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Date & Time *</label>
-              <input type="datetime-local" id="appointment-date" required class="w-full border border-gray-300 rounded px-3 py-2">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Purpose</label>
-              <input type="text" id="appointment-purpose" class="w-full border border-gray-300 rounded px-3 py-2">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select id="appointment-status" class="w-full border border-gray-300 rounded px-3 py-2">
-                <option value="scheduled">Scheduled</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-              <textarea id="appointment-notes" rows="3" class="w-full border border-gray-300 rounded px-3 py-2"></textarea>
-            </div>
-          </div>
-          <div class="flex justify-end space-x-3 mt-6">
-            <button type="button" onclick="closeAppointmentForm()" class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
-            <button type="submit" class="px-4 py-2 bg-ayurveda-600 text-white rounded hover:bg-ayurveda-700">Save</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  `;
+  const html = currentAppointments.map(apt => `
+    <tr class="hover:bg-gray-50">
+      <td class="px-6 py-4 border-b">${formatDateTime(apt.appointment_date)}</td>
+      <td class="px-6 py-4 border-b font-medium">${apt.patient_name}</td>
+      <td class="px-6 py-4 border-b">${apt.patient_phone}</td>
+      <td class="px-6 py-4 border-b">${apt.reason || 'N/A'}</td>
+      <td class="px-6 py-4 border-b">
+        <span class="px-3 py-1 rounded-full text-sm ${apt.status === 'completed' ? 'bg-green-100 text-green-800' : apt.status === 'confirmed' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}">${apt.status}</span>
+      </td>
+      <td class="px-6 py-4 border-b">
+        <button onclick="editAppointment(${apt.id})" class="text-green-600 hover:text-green-800 mr-2"><i class="fas fa-edit"></i></button>
+        <button onclick="deleteAppointment(${apt.id})" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No appointments found</td></tr>';
+  
+  document.getElementById('appointments-table-body').innerHTML = html;
 }
 
-function showAppointmentForm(appointment = null) {
-  document.getElementById('appointment-form-modal').classList.remove('hidden');
-  document.getElementById('appointment-form-title').textContent = appointment ? 'Edit Appointment' : 'Add Appointment';
+function showAppointmentModal(appointment = null) {
+  const modal = document.getElementById('appointment-modal');
+  const title = document.getElementById('appointment-modal-title');
+  
+  title.textContent = appointment ? 'Edit Appointment' : 'Add New Appointment';
   
   if (appointment) {
     document.getElementById('appointment-id').value = appointment.id;
     document.getElementById('appointment-patient').value = appointment.patient_id;
-    document.getElementById('appointment-date').value = new Date(appointment.appointment_date).toISOString().slice(0, 16);
-    document.getElementById('appointment-purpose').value = appointment.purpose || '';
-    document.getElementById('appointment-status').value = appointment.status;
-    document.getElementById('appointment-notes').value = appointment.notes || '';
+    document.getElementById('appointment-date').value = appointment.appointment_date ? appointment.appointment_date.substring(0, 16) : '';
+    document.getElementById('appointment-reason').value = appointment.reason || '';
+    document.getElementById('appointment-status').value = appointment.status || 'scheduled';
   } else {
     document.getElementById('appointment-form').reset();
     document.getElementById('appointment-id').value = '';
+    document.getElementById('appointment-status').value = 'scheduled';
+  }
+  
+  loadPatientsForSelect();
+  modal.classList.remove('hidden');
+}
+
+function closeAppointmentModal() {
+  document.getElementById('appointment-modal').classList.add('hidden');
+}
+
+async function loadPatientsForSelect() {
+  try {
+    const res = await axios.get(`${API_BASE}/patients`);
+    const patients = res.data.data || [];
+    const select = document.getElementById('appointment-patient');
+    
+    select.innerHTML = '<option value="">Select Patient</option>' + 
+      patients.map(p => `<option value="${p.id}">${p.name} (${p.phone})</option>`).join('');
+  } catch (error) {
+    console.error('Load patients error:', error);
   }
 }
 
-function closeAppointmentForm() {
-  document.getElementById('appointment-form-modal').classList.add('hidden');
-}
-
-async function saveAppointment(event) {
-  event.preventDefault();
-  
-  const id = document.getElementById('appointment-id').value;
-  const data = {
-    patient_id: parseInt(document.getElementById('appointment-patient').value),
-    appointment_date: new Date(document.getElementById('appointment-date').value).toISOString(),
-    purpose: document.getElementById('appointment-purpose').value || null,
-    status: document.getElementById('appointment-status').value,
-    notes: document.getElementById('appointment-notes').value || null
-  };
-  
+async function saveAppointment() {
   try {
     showLoading();
+    const id = document.getElementById('appointment-id').value;
+    
+    const data = {
+      patient_id: parseInt(document.getElementById('appointment-patient').value),
+      appointment_date: document.getElementById('appointment-date').value,
+      reason: document.getElementById('appointment-reason').value,
+      status: document.getElementById('appointment-status').value
+    };
+    
     if (id) {
       await axios.put(`${API_BASE}/appointments/${id}`, data);
+      alert('Appointment updated successfully');
     } else {
       await axios.post(`${API_BASE}/appointments`, data);
+      alert('Appointment added successfully');
     }
-    closeAppointmentForm();
+    
+    closeAppointmentModal();
     loadAppointments();
   } catch (error) {
-    console.error('Error saving appointment:', error);
+    console.error('Save appointment error:', error);
     alert('Error saving appointment');
+  } finally {
     hideLoading();
   }
-}
-
-function editAppointment(id) {
-  const appointment = currentAppointments.find(a => a.id === id);
-  if (appointment) showAppointmentForm(appointment);
 }
 
 async function deleteAppointment(id) {
@@ -638,561 +375,319 @@ async function deleteAppointment(id) {
   try {
     showLoading();
     await axios.delete(`${API_BASE}/appointments/${id}`);
+    alert('Appointment deleted successfully');
     loadAppointments();
   } catch (error) {
-    console.error('Error deleting appointment:', error);
+    console.error('Delete appointment error:', error);
     alert('Error deleting appointment');
+  } finally {
     hideLoading();
   }
 }
 
-// Continue in next part...
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
-  loadDashboard();
-  
-  // Register service worker for PWA
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/static/sw.js')
-      .then(reg => console.log('Service Worker registered'))
-      .catch(err => console.log('Service Worker registration failed', err));
-  }
-});
-// ==================== PRESCRIPTIONS ====================
-
-async function loadPrescriptions() {
+async function editAppointment(id) {
   try {
     showLoading();
-    const [prescriptionsRes, patientsRes, medicinesRes] = await Promise.all([
-      axios.get(`${API_BASE}/prescriptions`),
-      axios.get(`${API_BASE}/patients`),
-      axios.get(`${API_BASE}/medicines`)
-    ]);
-    
-    if (prescriptionsRes.data.success) {
-      currentPrescriptions = prescriptionsRes.data.data;
-    }
-    if (patientsRes.data.success) {
-      currentPatients = patientsRes.data.data;
-    }
-    if (medicinesRes.data.success) {
-      currentMedicines = medicinesRes.data.data;
-    }
-    
-    renderPrescriptions();
-    hideLoading();
+    const res = await axios.get(`${API_BASE}/appointments/${id}`);
+    showAppointmentModal(res.data.data);
   } catch (error) {
-    console.error('Error loading prescriptions:', error);
+    console.error('Load appointment error:', error);
+    alert('Error loading appointment details');
+  } finally {
     hideLoading();
   }
 }
 
-function renderPrescriptions() {
-  const section = document.getElementById('prescriptions-section');
-  section.innerHTML = `
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-3xl font-bold text-gray-800">
-        <i class="fas fa-file-prescription mr-3 text-ayurveda-600"></i>Prescriptions
-      </h2>
-      <button onclick="showPrescriptionForm()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg shadow">
-        <i class="fas fa-plus mr-2"></i>New Prescription
-      </button>
-    </div>
+// ==================== HERBS & ROUTES (PRESCRIPTIONS) ====================
+async function loadHerbsRoutes() {
+  try {
+    showLoading();
+    const search = document.getElementById('prescription-search')?.value || '';
     
-    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Patient</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Diagnosis</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Follow-up</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            ${currentPrescriptions.map(presc => `
-              <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="font-medium text-gray-900">${presc.patient_name}</div>
-                  <div class="text-sm text-gray-500">${presc.patient_phone}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  ${formatDate(presc.created_at)}
-                </td>
-                <td class="px-6 py-4 text-sm text-gray-600">${presc.diagnosis || 'N/A'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  ${formatDate(presc.next_followup_date)}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                  <button onclick="viewPrescription(${presc.id})" class="text-blue-600 hover:text-blue-800" title="View">
-                    <i class="fas fa-eye"></i>
-                  </button>
-                  <button onclick="editPrescription(${presc.id})" class="text-purple-600 hover:text-purple-800" title="Edit">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button onclick="printPrescription(${presc.id})" class="text-green-600 hover:text-green-800" title="Print">
-                    <i class="fas fa-print"></i>
-                  </button>
-                  <button onclick="deletePrescription(${presc.id})" class="text-red-600 hover:text-red-800" title="Delete">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>
-    
-    <div id="prescription-form-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
-      <div class="bg-white rounded-lg p-6 max-w-4xl w-full my-8">
-        <h3 class="text-2xl font-bold mb-4">New Prescription</h3>
-        <form id="prescription-form" onsubmit="savePrescription(event)">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Patient *</label>
-              <select id="prescription-patient" required class="w-full border border-gray-300 rounded px-3 py-2">
-                <option value="">Select Patient</option>
-                ${currentPatients.map(p => `<option value="${p.id}">${p.name} (${p.phone})</option>`).join('')}
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Next Follow-up Date</label>
-              <input type="date" id="prescription-followup" class="w-full border border-gray-300 rounded px-3 py-2">
-            </div>
-            <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Diagnosis</label>
-              <textarea id="prescription-diagnosis" rows="2" class="w-full border border-gray-300 rounded px-3 py-2"></textarea>
-            </div>
-            <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-              <textarea id="prescription-notes" rows="2" class="w-full border border-gray-300 rounded px-3 py-2"></textarea>
-            </div>
-          </div>
-          
-          <div class="border-t pt-4 mb-4">
-            <div class="flex items-center justify-between mb-3">
-              <h4 class="text-lg font-bold">Medicines</h4>
-              <button type="button" onclick="addMedicineRow()" class="text-ayurveda-600 hover:text-ayurveda-800">
-                <i class="fas fa-plus-circle mr-1"></i>Add Medicine
-              </button>
-            </div>
-            <div id="medicines-list" class="space-y-3">
-              <!-- Medicine rows will be added here -->
-            </div>
-          </div>
-          
-          <div class="flex justify-end space-x-3 mt-6">
-            <button type="button" onclick="closePrescriptionForm()" class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
-            <button type="submit" class="px-4 py-2 bg-ayurveda-600 text-white rounded hover:bg-ayurveda-700">Save Prescription</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  `;
+    const res = await axios.get(`${API_BASE}/herbs-routes?search=${search}`);
+    currentHerbsRoutes = res.data.data || [];
+    renderHerbsRoutes();
+  } catch (error) {
+    console.error('Load herbs & routes error:', error);
+    alert('Error loading herbs & routes');
+  } finally {
+    hideLoading();
+  }
 }
 
-function showPrescriptionForm() {
-  document.getElementById('prescription-form-modal').classList.remove('hidden');
+function renderHerbsRoutes() {
+  const html = currentHerbsRoutes.map(hr => `
+    <tr class="hover:bg-gray-50">
+      <td class="px-6 py-4 border-b">${formatDate(hr.given_date)}</td>
+      <td class="px-6 py-4 border-b font-medium">${hr.patient_name}</td>
+      <td class="px-6 py-4 border-b">${hr.problem || 'N/A'}</td>
+      <td class="px-6 py-4 border-b">${hr.course || 'N/A'}</td>
+      <td class="px-6 py-4 border-b">₹${hr.total_amount || 0}</td>
+      <td class="px-6 py-4 border-b">${hr.months || 0} months</td>
+      <td class="px-6 py-4 border-b">${formatDate(hr.next_followup_date)}</td>
+      <td class="px-6 py-4 border-b">
+        <button onclick="viewHerbsRoutes(${hr.id})" class="text-blue-600 hover:text-blue-800 mr-2"><i class="fas fa-eye"></i></button>
+        <button onclick="printHerbsRoutes(${hr.id})" class="text-purple-600 hover:text-purple-800 mr-2"><i class="fas fa-print"></i></button>
+        <button onclick="deleteHerbsRoutes(${hr.id})" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No records found</td></tr>';
+  
+  document.getElementById('prescriptions-table-body').innerHTML = html;
+}
+
+function showHerbsRoutesModal() {
+  const modal = document.getElementById('prescription-modal');
+  document.getElementById('prescription-modal-title').textContent = 'New Herbs & Routes Record';
   document.getElementById('prescription-form').reset();
+  document.getElementById('prescription-id').value = '';
   document.getElementById('medicines-list').innerHTML = '';
+  
   addMedicineRow();
+  loadPatientsForHerbsRoutes();
+  
+  modal.classList.remove('hidden');
 }
 
-function createPrescriptionForPatient(patientId) {
-  showSection('prescriptions');
-  setTimeout(() => {
-    showPrescriptionForm();
-    document.getElementById('prescription-patient').value = patientId;
-  }, 100);
+function closeHerbsRoutesModal() {
+  document.getElementById('prescription-modal').classList.add('hidden');
 }
 
-function closePrescriptionForm() {
-  document.getElementById('prescription-form-modal').classList.add('hidden');
+async function loadPatientsForHerbsRoutes() {
+  try {
+    const res = await axios.get(`${API_BASE}/patients`);
+    const patients = res.data.data || [];
+    const select = document.getElementById('prescription-patient');
+    
+    select.innerHTML = '<option value="">Select Patient</option>' + 
+      patients.map(p => `<option value="${p.id}">${p.name} (${p.patient_id || p.phone})</option>`).join('');
+  } catch (error) {
+    console.error('Load patients error:', error);
+  }
 }
+
+let medicineCounter = 0;
 
 function addMedicineRow() {
-  const container = document.getElementById('medicines-list');
-  const index = container.children.length;
-  const row = document.createElement('div');
-  row.className = 'grid grid-cols-12 gap-2 items-end';
-  row.innerHTML = `
-    <div class="col-span-3">
-      <label class="block text-xs font-medium text-gray-700 mb-1">Medicine</label>
-      <select class="medicine-select w-full border border-gray-300 rounded px-2 py-1 text-sm">
-        <option value="">Select</option>
-        ${currentMedicines.map(m => `<option value="${m.id}">${m.name}</option>`).join('')}
-      </select>
-    </div>
-    <div class="col-span-2">
-      <label class="block text-xs font-medium text-gray-700 mb-1">Dosage</label>
-      <input type="text" class="medicine-dosage w-full border border-gray-300 rounded px-2 py-1 text-sm" placeholder="e.g., 500mg">
-    </div>
-    <div class="col-span-2">
-      <label class="block text-xs font-medium text-gray-700 mb-1">Frequency</label>
-      <input type="text" class="medicine-frequency w-full border border-gray-300 rounded px-2 py-1 text-sm" placeholder="e.g., Twice daily">
-    </div>
-    <div class="col-span-2">
-      <label class="block text-xs font-medium text-gray-700 mb-1">Duration</label>
-      <input type="text" class="medicine-duration w-full border border-gray-300 rounded px-2 py-1 text-sm" placeholder="e.g., 7 days">
-    </div>
-    <div class="col-span-2">
-      <label class="block text-xs font-medium text-gray-700 mb-1">Instructions</label>
-      <input type="text" class="medicine-instructions w-full border border-gray-300 rounded px-2 py-1 text-sm" placeholder="After meal">
-    </div>
-    <div class="col-span-1">
-      <button type="button" onclick="this.parentElement.parentElement.remove()" class="w-full text-red-600 hover:text-red-800 py-1">
-        <i class="fas fa-trash"></i>
-      </button>
-    </div>
-  `;
-  container.appendChild(row);
-}
-
-async function savePrescription(event) {
-  event.preventDefault();
+  medicineCounter++;
+  const romanId = romanNumerals[medicineCounter - 1] || `#${medicineCounter}`;
   
-  const patientId = parseInt(document.getElementById('prescription-patient').value);
-  const followupDate = document.getElementById('prescription-followup').value || null;
-  const diagnosis = document.getElementById('prescription-diagnosis').value || null;
-  const notes = document.getElementById('prescription-notes').value || null;
-  
-  // Collect medicines
-  const medicineRows = document.querySelectorAll('#medicines-list > div');
-  const medicines = [];
-  medicineRows.forEach(row => {
-    const medicineId = row.querySelector('.medicine-select').value;
-    const dosage = row.querySelector('.medicine-dosage').value;
-    if (medicineId && dosage) {
-      medicines.push({
-        medicine_id: parseInt(medicineId),
-        dosage: dosage,
-        frequency: row.querySelector('.medicine-frequency').value || null,
-        duration: row.querySelector('.medicine-duration').value || null,
-        instructions: row.querySelector('.medicine-instructions').value || null
-      });
-    }
-  });
-  
-  const data = {
-    patient_id: patientId,
-    appointment_id: null,
-    diagnosis: diagnosis,
-    notes: notes,
-    next_followup_date: followupDate,
-    medicines: medicines
-  };
-  
-  try {
-    showLoading();
-    await axios.post(`${API_BASE}/prescriptions`, data);
-    closePrescriptionForm();
-    loadPrescriptions();
-  } catch (error) {
-    console.error('Error saving prescription:', error);
-    alert('Error saving prescription');
-    hideLoading();
-  }
-}
-
-async function viewPrescription(id) {
-  try {
-    showLoading();
-    const res = await axios.get(`${API_BASE}/prescriptions/${id}`);
-    if (!res.data.success) {
-      alert('Error loading prescription');
-      hideLoading();
-      return;
-    }
-    
-    const presc = res.data.data;
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-    modal.innerHTML = `
-      <div class="bg-white rounded-lg p-8 max-w-3xl w-full max-h-screen overflow-y-auto">
-        <div class="flex justify-between items-center mb-6 border-b pb-4">
-          <h3 class="text-2xl font-bold text-ayurveda-700">Prescription Details</h3>
-          <button onclick="this.closest('.fixed').remove()" class="text-gray-600 hover:text-gray-800">
-            <i class="fas fa-times text-xl"></i>
-          </button>
-        </div>
-        
-        <div class="mb-6">
-          <div class="grid grid-cols-2 gap-4 mb-4">
-            <div><strong>Patient:</strong> ${presc.patient_name}</div>
-            <div><strong>Phone:</strong> ${presc.patient_phone}</div>
-            <div><strong>Date:</strong> ${formatDate(presc.created_at)}</div>
-            <div><strong>Follow-up:</strong> ${formatDate(presc.next_followup_date)}</div>
-          </div>
-          <div class="mb-2"><strong>Diagnosis:</strong></div>
-          <div class="bg-gray-50 p-3 rounded">${presc.diagnosis || 'N/A'}</div>
-          ${presc.notes ? `
-            <div class="mt-3 mb-2"><strong>Notes:</strong></div>
-            <div class="bg-gray-50 p-3 rounded">${presc.notes}</div>
-          ` : ''}
+  const html = `
+    <div class="medicine-row border rounded-lg p-4 mb-4 bg-gray-50" data-row="${medicineCounter}">
+      <div class="flex justify-between items-center mb-3">
+        <h4 class="font-semibold text-lg">M.M.(${romanId})</h4>
+        <button type="button" onclick="removeMedicineRow(${medicineCounter})" class="text-red-600 hover:text-red-800">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Medicine Name</label>
+          <input type="text" name="medicine_name_${medicineCounter}" class="w-full border rounded px-3 py-2" required>
         </div>
         
         <div>
-          <h4 class="text-xl font-bold mb-3">Prescribed Medicines</h4>
-          ${presc.medicines && presc.medicines.length > 0 ? `
-            <table class="w-full border">
-              <thead class="bg-gray-100">
-                <tr>
-                  <th class="border px-3 py-2 text-left">Medicine</th>
-                  <th class="border px-3 py-2 text-left">Dosage</th>
-                  <th class="border px-3 py-2 text-left">Frequency</th>
-                  <th class="border px-3 py-2 text-left">Duration</th>
-                  <th class="border px-3 py-2 text-left">Instructions</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${presc.medicines.map(med => `
-                  <tr>
-                    <td class="border px-3 py-2">${med.medicine_name}</td>
-                    <td class="border px-3 py-2">${med.dosage}</td>
-                    <td class="border px-3 py-2">${med.frequency || 'N/A'}</td>
-                    <td class="border px-3 py-2">${med.duration || 'N/A'}</td>
-                    <td class="border px-3 py-2">${med.instructions || 'N/A'}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          ` : '<p class="text-gray-500">No medicines prescribed</p>'}
+          <label class="block text-sm font-medium mb-1">Dosage Schedule</label>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <label class="flex items-center">
+              <input type="checkbox" name="morning_before_${medicineCounter}" class="mr-2">
+              Morning (Before)
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" name="morning_after_${medicineCounter}" class="mr-2">
+              Morning (After)
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" name="afternoon_before_${medicineCounter}" class="mr-2">
+              Afternoon (Before)
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" name="afternoon_after_${medicineCounter}" class="mr-2">
+              Afternoon (After)
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" name="evening_before_${medicineCounter}" class="mr-2">
+              Evening (Before)
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" name="evening_after_${medicineCounter}" class="mr-2">
+              Evening (After)
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" name="night_before_${medicineCounter}" class="mr-2">
+              Night (Before)
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" name="night_after_${medicineCounter}" class="mr-2">
+              Night (After)
+            </label>
+          </div>
         </div>
       </div>
-    `;
-    document.body.appendChild(modal);
-    hideLoading();
+    </div>
+  `;
+  
+  document.getElementById('medicines-list').insertAdjacentHTML('beforeend', html);
+}
+
+function removeMedicineRow(rowId) {
+  const row = document.querySelector(`.medicine-row[data-row="${rowId}"]`);
+  if (row) row.remove();
+}
+
+async function saveHerbsRoutes() {
+  try {
+    showLoading();
+    
+    const givenDate = document.getElementById('prescription-date').value;
+    const months = parseInt(document.getElementById('prescription-months').value) || 0;
+    
+    const nextFollowupDate = new Date(givenDate);
+    nextFollowupDate.setMonth(nextFollowupDate.getMonth() + months);
+    
+    const medicines = [];
+    document.querySelectorAll('.medicine-row').forEach((row, index) => {
+      const rowNum = row.dataset.row;
+      const romanId = romanNumerals[index] || `#${index + 1}`;
+      
+      medicines.push({
+        roman_id: romanId,
+        medicine_name: row.querySelector(`[name="medicine_name_${rowNum}"]`).value,
+        morning_before: row.querySelector(`[name="morning_before_${rowNum}"]`)?.checked || false,
+        morning_after: row.querySelector(`[name="morning_after_${rowNum}"]`)?.checked || false,
+        afternoon_before: row.querySelector(`[name="afternoon_before_${rowNum}"]`)?.checked || false,
+        afternoon_after: row.querySelector(`[name="afternoon_after_${rowNum}"]`)?.checked || false,
+        evening_before: row.querySelector(`[name="evening_before_${rowNum}"]`)?.checked || false,
+        evening_after: row.querySelector(`[name="evening_after_${rowNum}"]`)?.checked || false,
+        night_before: row.querySelector(`[name="night_before_${rowNum}"]`)?.checked || false,
+        night_after: row.querySelector(`[name="night_after_${rowNum}"]`)?.checked || false
+      });
+    });
+    
+    const data = {
+      patient_id: parseInt(document.getElementById('prescription-patient').value),
+      given_date: givenDate,
+      months: months,
+      next_followup_date: nextFollowupDate.toISOString().split('T')[0],
+      problem: document.getElementById('prescription-problem').value,
+      course: document.getElementById('prescription-course').value,
+      total_amount: parseFloat(document.getElementById('prescription-amount').value) || 0,
+      advance_paid: parseFloat(document.getElementById('prescription-advance').value) || 0,
+      balance_due: (parseFloat(document.getElementById('prescription-amount').value) || 0) - (parseFloat(document.getElementById('prescription-advance').value) || 0),
+      payment_notes: document.getElementById('prescription-payment-notes').value,
+      medicines: medicines
+    };
+    
+    await axios.post(`${API_BASE}/herbs-routes`, data);
+    alert('Herbs & Routes record created successfully');
+    
+    closeHerbsRoutesModal();
+    loadHerbsRoutes();
   } catch (error) {
-    console.error('Error viewing prescription:', error);
+    console.error('Save herbs & routes error:', error);
+    alert('Error saving herbs & routes record');
+  } finally {
     hideLoading();
   }
 }
 
-function printPrescription(id) {
-  viewPrescription(id);
-  setTimeout(() => window.print(), 500);
-}
-
-async function deletePrescription(id) {
-  if (!confirm('Are you sure you want to delete this prescription?')) return;
+async function deleteHerbsRoutes(id) {
+  if (!confirm('Are you sure you want to delete this record?')) return;
   
   try {
     showLoading();
-    await axios.delete(`${API_BASE}/prescriptions/${id}`);
-    loadPrescriptions();
+    await axios.delete(`${API_BASE}/herbs-routes/${id}`);
+    alert('Record deleted successfully');
+    loadHerbsRoutes();
   } catch (error) {
-    console.error('Error deleting prescription:', error);
-    alert('Error deleting prescription');
+    console.error('Delete error:', error);
+    alert('Error deleting record');
+  } finally {
     hideLoading();
+  }
+}
+
+async function viewHerbsRoutes(id) {
+  try {
+    showLoading();
+    const res = await axios.get(`${API_BASE}/herbs-routes/${id}`);
+    const hr = res.data.data;
+    
+    // Display in a modal or new section
+    alert(`Record Details:\n\nPatient: ${hr.patient_name}\nDate: ${formatDate(hr.given_date)}\nProblem: ${hr.problem}\nCourse: ${hr.course}\nAmount: ₹${hr.total_amount}`);
+  } catch (error) {
+    console.error('View error:', error);
+    alert('Error loading record details');
+  } finally {
+    hideLoading();
+  }
+}
+
+async function printHerbsRoutes(id) {
+  try {
+    // Open print view in new window
+    window.open(`/api/herbs-routes/${id}/print`, '_blank');
+  } catch (error) {
+    console.error('Print error:', error);
+    alert('Error printing record');
   }
 }
 
 // ==================== REMINDERS ====================
-
 async function loadReminders() {
   try {
     showLoading();
-    const [remindersRes, patientsRes] = await Promise.all([
-      axios.get(`${API_BASE}/reminders`),
-      axios.get(`${API_BASE}/patients`)
-    ]);
+    const search = document.getElementById('reminder-search')?.value || '';
+    const status = document.getElementById('reminder-filter-status')?.value || '';
     
-    if (remindersRes.data.success) {
-      currentReminders = remindersRes.data.data;
-    }
-    if (patientsRes.data.success) {
-      currentPatients = patientsRes.data.data;
-    }
+    let url = `${API_BASE}/reminders?search=${search}`;
+    if (status) url += `&status=${status}`;
     
+    const res = await axios.get(url);
+    currentReminders = res.data.data || [];
     renderReminders();
-    hideLoading();
   } catch (error) {
-    console.error('Error loading reminders:', error);
+    console.error('Load reminders error:', error);
+    alert('Error loading reminders');
+  } finally {
     hideLoading();
   }
 }
 
 function renderReminders() {
-  const section = document.getElementById('reminders-section');
-  const pendingReminders = currentReminders.filter(r => r.status === 'pending');
-  const sentReminders = currentReminders.filter(r => r.status === 'sent');
+  const html = currentReminders.map(rem => `
+    <tr class="hover:bg-gray-50">
+      <td class="px-6 py-4 border-b">${formatDate(rem.reminder_date)}</td>
+      <td class="px-6 py-4 border-b font-medium">${rem.patient_name}</td>
+      <td class="px-6 py-4 border-b">${rem.patient_phone}</td>
+      <td class="px-6 py-4 border-b">${rem.reminder_type}</td>
+      <td class="px-6 py-4 border-b">${rem.message || 'N/A'}</td>
+      <td class="px-6 py-4 border-b">
+        <span class="px-3 py-1 rounded-full text-sm ${rem.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${rem.status}</span>
+      </td>
+      <td class="px-6 py-4 border-b">
+        <button onclick="markReminderSent(${rem.id})" class="text-green-600 hover:text-green-800 mr-2" ${rem.status === 'sent' ? 'disabled' : ''}>
+          <i class="fas fa-check"></i>
+        </button>
+        <button onclick="deleteReminder(${rem.id})" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No reminders found</td></tr>';
   
-  section.innerHTML = `
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-3xl font-bold text-gray-800">
-        <i class="fas fa-bell mr-3 text-ayurveda-600"></i>Reminders & Notifications
-      </h2>
-      <button onclick="showReminderForm()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg shadow">
-        <i class="fas fa-plus mr-2"></i>Add Reminder
-      </button>
-    </div>
-    
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div class="bg-white rounded-lg shadow-lg p-6">
-        <h3 class="text-xl font-bold mb-4 text-yellow-700">
-          <i class="fas fa-clock mr-2"></i>Pending Reminders (${pendingReminders.length})
-        </h3>
-        <div class="space-y-3 max-h-96 overflow-y-auto">
-          ${pendingReminders.length > 0 ? pendingReminders.map(reminder => `
-            <div class="border rounded-lg p-4 ${new Date(reminder.reminder_date) < new Date() ? 'border-red-300 bg-red-50' : 'border-gray-200'}">
-              <div class="flex justify-between items-start mb-2">
-                <div>
-                  <div class="font-semibold text-gray-900">${reminder.patient_name}</div>
-                  <div class="text-sm text-gray-600">${reminder.patient_phone}</div>
-                </div>
-                <span class="px-2 py-1 text-xs rounded ${
-                  reminder.reminder_type === 'followup' ? 'bg-blue-100 text-blue-800' :
-                  reminder.reminder_type === 'medicine' ? 'bg-green-100 text-green-800' :
-                  'bg-gray-100 text-gray-800'
-                }">${reminder.reminder_type}</span>
-              </div>
-              <div class="text-sm mb-2">
-                <strong>Date:</strong> ${formatDateTime(reminder.reminder_date)}
-              </div>
-              <div class="text-sm mb-3">${reminder.message || 'No message'}</div>
-              <div class="flex items-center space-x-2 text-xs mb-3">
-                ${reminder.send_whatsapp ? '<span class="px-2 py-1 bg-green-100 text-green-700 rounded"><i class="fab fa-whatsapp mr-1"></i>WhatsApp</span>' : ''}
-                ${reminder.send_sms ? '<span class="px-2 py-1 bg-blue-100 text-blue-700 rounded"><i class="fas fa-sms mr-1"></i>SMS</span>' : ''}
-              </div>
-              <div class="flex space-x-2">
-                <button onclick="sendReminder(${reminder.id})" class="flex-1 bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-3 py-1 rounded text-sm">
-                  <i class="fas fa-paper-plane mr-1"></i>Send Now
-                </button>
-                <button onclick="deleteReminder(${reminder.id})" class="px-3 py-1 text-red-600 hover:text-red-800 border border-red-300 rounded text-sm">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </div>
-            </div>
-          `).join('') : '<p class="text-gray-500 text-center py-8">No pending reminders</p>'}
-        </div>
-      </div>
-      
-      <div class="bg-white rounded-lg shadow-lg p-6">
-        <h3 class="text-xl font-bold mb-4 text-green-700">
-          <i class="fas fa-check-circle mr-2"></i>Sent Reminders (${sentReminders.length})
-        </h3>
-        <div class="space-y-3 max-h-96 overflow-y-auto">
-          ${sentReminders.length > 0 ? sentReminders.slice(0, 20).map(reminder => `
-            <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
-              <div class="flex justify-between items-start mb-2">
-                <div>
-                  <div class="font-semibold text-gray-900">${reminder.patient_name}</div>
-                  <div class="text-sm text-gray-600">${reminder.patient_phone}</div>
-                </div>
-                <span class="px-2 py-1 text-xs rounded ${
-                  reminder.reminder_type === 'followup' ? 'bg-blue-100 text-blue-800' :
-                  reminder.reminder_type === 'medicine' ? 'bg-green-100 text-green-800' :
-                  'bg-gray-100 text-gray-800'
-                }">${reminder.reminder_type}</span>
-              </div>
-              <div class="text-sm mb-2">
-                <strong>Sent:</strong> ${formatDateTime(reminder.sent_at)}
-              </div>
-              <div class="text-sm text-gray-600">${reminder.message || 'No message'}</div>
-            </div>
-          `).join('') : '<p class="text-gray-500 text-center py-8">No sent reminders</p>'}
-        </div>
-      </div>
-    </div>
-    
-    <div id="reminder-form-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg p-6 max-w-xl w-full">
-        <h3 class="text-2xl font-bold mb-4">Add Reminder</h3>
-        <form id="reminder-form" onsubmit="saveReminder(event)">
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Patient *</label>
-              <select id="reminder-patient" required class="w-full border border-gray-300 rounded px-3 py-2">
-                <option value="">Select Patient</option>
-                ${currentPatients.map(p => `<option value="${p.id}">${p.name} (${p.phone})</option>`).join('')}
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Reminder Type *</label>
-              <select id="reminder-type" required class="w-full border border-gray-300 rounded px-3 py-2">
-                <option value="followup">Follow-up Appointment</option>
-                <option value="medicine">Medicine Refill</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Reminder Date & Time *</label>
-              <input type="datetime-local" id="reminder-date" required class="w-full border border-gray-300 rounded px-3 py-2">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Message</label>
-              <textarea id="reminder-message" rows="3" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Reminder message..."></textarea>
-            </div>
-            <div class="flex items-center space-x-4">
-              <label class="flex items-center">
-                <input type="checkbox" id="reminder-whatsapp" checked class="mr-2">
-                <i class="fab fa-whatsapp text-green-600 mr-1"></i>
-                <span class="text-sm">Send WhatsApp</span>
-              </label>
-              <label class="flex items-center">
-                <input type="checkbox" id="reminder-sms" checked class="mr-2">
-                <i class="fas fa-sms text-blue-600 mr-1"></i>
-                <span class="text-sm">Send SMS</span>
-              </label>
-            </div>
-          </div>
-          <div class="flex justify-end space-x-3 mt-6">
-            <button type="button" onclick="closeReminderForm()" class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
-            <button type="submit" class="px-4 py-2 bg-ayurveda-600 text-white rounded hover:bg-ayurveda-700">Save</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  `;
+  document.getElementById('reminders-table-body').innerHTML = html;
 }
 
-function showReminderForm() {
-  document.getElementById('reminder-form-modal').classList.remove('hidden');
-  document.getElementById('reminder-form').reset();
-}
-
-function closeReminderForm() {
-  document.getElementById('reminder-form-modal').classList.add('hidden');
-}
-
-async function saveReminder(event) {
-  event.preventDefault();
-  
-  const data = {
-    patient_id: parseInt(document.getElementById('reminder-patient').value),
-    prescription_id: null,
-    reminder_type: document.getElementById('reminder-type').value,
-    reminder_date: new Date(document.getElementById('reminder-date').value).toISOString(),
-    message: document.getElementById('reminder-message').value || null,
-    send_whatsapp: document.getElementById('reminder-whatsapp').checked,
-    send_sms: document.getElementById('reminder-sms').checked
-  };
-  
+async function markReminderSent(id) {
   try {
     showLoading();
-    await axios.post(`${API_BASE}/reminders`, data);
-    closeReminderForm();
+    await axios.put(`${API_BASE}/reminders/${id}`, { status: 'sent' });
+    alert('Reminder marked as sent');
     loadReminders();
   } catch (error) {
-    console.error('Error saving reminder:', error);
-    alert('Error saving reminder');
-    hideLoading();
-  }
-}
-
-async function sendReminder(id) {
-  try {
-    showLoading();
-    await axios.put(`${API_BASE}/reminders/${id}/sent`);
-    alert('Reminder marked as sent! In production, this would trigger WhatsApp/SMS notifications.');
-    loadReminders();
-  } catch (error) {
-    console.error('Error sending reminder:', error);
-    alert('Error sending reminder');
+    console.error('Update reminder error:', error);
+    alert('Error updating reminder');
+  } finally {
     hideLoading();
   }
 }
@@ -1203,132 +698,59 @@ async function deleteReminder(id) {
   try {
     showLoading();
     await axios.delete(`${API_BASE}/reminders/${id}`);
+    alert('Reminder deleted successfully');
     loadReminders();
   } catch (error) {
-    console.error('Error deleting reminder:', error);
+    console.error('Delete reminder error:', error);
     alert('Error deleting reminder');
+  } finally {
     hideLoading();
   }
 }
 
 // ==================== SETTINGS ====================
-
 async function loadSettings() {
   try {
     showLoading();
     const res = await axios.get(`${API_BASE}/settings`);
-    if (res.data.success) {
-      currentSettings = res.data.data;
-      renderSettings();
-    }
-    hideLoading();
+    const settings = res.data.data || [];
+    
+    settings.forEach(setting => {
+      const input = document.getElementById(`setting-${setting.setting_key}`);
+      if (input) input.value = setting.setting_value || '';
+    });
   } catch (error) {
-    console.error('Error loading settings:', error);
+    console.error('Load settings error:', error);
+  } finally {
     hideLoading();
   }
 }
 
-function renderSettings() {
-  const section = document.getElementById('settings-section');
-  section.innerHTML = `
-    <h2 class="text-3xl font-bold text-gray-800 mb-6">
-      <i class="fas fa-cog mr-3 text-ayurveda-600"></i>Settings
-    </h2>
-    
-    <div class="bg-white rounded-lg shadow-lg p-6">
-      <form id="settings-form" onsubmit="saveSettings(event)">
-        <div class="space-y-6">
-          <div>
-            <h3 class="text-xl font-bold mb-4 border-b pb-2">Clinic Information</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Clinic Name</label>
-                <input type="text" id="setting-clinic-name" value="${currentSettings.clinic_name || ''}" class="w-full border border-gray-300 rounded px-3 py-2">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Doctor Name</label>
-                <input type="text" id="setting-doctor-name" value="${currentSettings.doctor_name || ''}" class="w-full border border-gray-300 rounded px-3 py-2">
-              </div>
-            </div>
-          </div>
-          
-          <div>
-            <h3 class="text-xl font-bold mb-4 border-b pb-2">Notification Settings</h3>
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Reminder Days Before Follow-up</label>
-                <input type="number" id="setting-reminder-days" value="${currentSettings.reminder_days_before || '3'}" class="w-full border border-gray-300 rounded px-3 py-2">
-                <p class="text-xs text-gray-500 mt-1">Number of days before follow-up to send reminder</p>
-              </div>
-              <div class="flex items-center space-x-6">
-                <label class="flex items-center">
-                  <input type="checkbox" id="setting-whatsapp-enabled" ${currentSettings.whatsapp_enabled === 'true' ? 'checked' : ''} class="mr-2">
-                  <i class="fab fa-whatsapp text-green-600 mr-2"></i>
-                  <span>Enable WhatsApp Notifications</span>
-                </label>
-                <label class="flex items-center">
-                  <input type="checkbox" id="setting-sms-enabled" ${currentSettings.sms_enabled === 'true' ? 'checked' : ''} class="mr-2">
-                  <i class="fas fa-sms text-blue-600 mr-2"></i>
-                  <span>Enable SMS Notifications</span>
-                </label>
-              </div>
-            </div>
-          </div>
-          
-          <div>
-            <h3 class="text-xl font-bold mb-4 border-b pb-2">API Configuration</h3>
-            <div class="bg-yellow-50 border border-yellow-200 rounded p-4 mb-4">
-              <p class="text-sm text-yellow-800">
-                <i class="fas fa-info-circle mr-2"></i>
-                To enable automated WhatsApp and SMS reminders, you need to configure API keys from service providers like Twilio, MSG91, or similar services.
-              </p>
-            </div>
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp API Key</label>
-                <input type="password" id="setting-whatsapp-key" value="${currentSettings.whatsapp_api_key || ''}" placeholder="Enter your WhatsApp API key" class="w-full border border-gray-300 rounded px-3 py-2">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">SMS API Key</label>
-                <input type="password" id="setting-sms-key" value="${currentSettings.sms_api_key || ''}" placeholder="Enter your SMS API key" class="w-full border border-gray-300 rounded px-3 py-2">
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="flex justify-end mt-6">
-          <button type="submit" class="px-6 py-2 bg-ayurveda-600 text-white rounded-lg hover:bg-ayurveda-700 shadow">
-            <i class="fas fa-save mr-2"></i>Save Settings
-          </button>
-        </div>
-      </form>
-    </div>
-  `;
-}
-
-async function saveSettings(event) {
-  event.preventDefault();
-  
-  const settings = {
-    clinic_name: document.getElementById('setting-clinic-name').value,
-    doctor_name: document.getElementById('setting-doctor-name').value,
-    reminder_days_before: document.getElementById('setting-reminder-days').value,
-    whatsapp_enabled: document.getElementById('setting-whatsapp-enabled').checked ? 'true' : 'false',
-    sms_enabled: document.getElementById('setting-sms-enabled').checked ? 'true' : 'false',
-    whatsapp_api_key: document.getElementById('setting-whatsapp-key').value,
-    sms_api_key: document.getElementById('setting-sms-key').value
-  };
-  
+async function saveSettings() {
   try {
     showLoading();
+    
+    const settings = {
+      clinic_name: document.getElementById('setting-clinic_name')?.value || '',
+      clinic_phone: document.getElementById('setting-clinic_phone')?.value || '',
+      clinic_email: document.getElementById('setting-clinic_email')?.value || '',
+      whatsapp_enabled: document.getElementById('setting-whatsapp_enabled')?.checked || false
+    };
+    
     for (const [key, value] of Object.entries(settings)) {
-      await axios.put(`${API_BASE}/settings/${key}`, { value });
+      await axios.post(`${API_BASE}/settings`, { key, value });
     }
-    alert('Settings saved successfully!');
-    hideLoading();
+    
+    alert('Settings saved successfully');
   } catch (error) {
-    console.error('Error saving settings:', error);
+    console.error('Save settings error:', error);
     alert('Error saving settings');
+  } finally {
     hideLoading();
   }
 }
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+  loadDashboard();
+});
