@@ -839,53 +839,61 @@ function renderReminders() {
   document.getElementById('reminders-table-body').innerHTML = html;
 }
 
-// Send reminder via WhatsApp
+// Send reminder via WhatsApp (using Business API)
 async function sendReminderWhatsApp(id, phone, patientName, message) {
   if (!confirm(`Send WhatsApp reminder to ${unescape(patientName)} (${phone})?`)) return;
   
   try {
     showLoading();
     
-    // Format WhatsApp message
     const whatsappMessage = unescape(message) || `Dear ${unescape(patientName)}, this is a reminder from TPS DHANVANTRI AYURVEDA for your upcoming consultation.`;
     
-    // Open WhatsApp (this will work on mobile and desktop with WhatsApp installed)
-    const whatsappURL = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(whatsappMessage)}`;
-    window.open(whatsappURL, '_blank');
+    const response = await axios.post(`${API_BASE}/send-whatsapp`, {
+      to: phone,
+      message: whatsappMessage,
+      reminderId: id
+    });
     
-    // Mark as sent after opening WhatsApp
-    await axios.put(`${API_BASE}/reminders/${id}`, { status: 'Sent' });
-    alert('WhatsApp opened! Please send the message. Reminder marked as sent.');
-    loadReminders();
+    if (response.data.success) {
+      alert('✅ WhatsApp message sent successfully!');
+      loadReminders();
+    } else {
+      alert('❌ Failed to send WhatsApp: ' + response.data.error);
+    }
   } catch (error) {
     console.error('WhatsApp send error:', error);
-    alert('Error: ' + (error.response?.data?.error || error.message));
+    const errorMsg = error.response?.data?.error || error.message;
+    alert('❌ WhatsApp Error: ' + errorMsg + '\n\nPlease check your WhatsApp settings.');
   } finally {
     hideLoading();
   }
 }
 
-// Send reminder via SMS
+// Send reminder via SMS (using SMS Gateway)
 async function sendReminderSMS(id, phone, patientName, message) {
   if (!confirm(`Send SMS reminder to ${unescape(patientName)} (${phone})?`)) return;
   
   try {
     showLoading();
     
-    // Format SMS message
     const smsMessage = unescape(message) || `Dear ${unescape(patientName)}, this is a reminder from TPS DHANVANTRI AYURVEDA for your upcoming consultation.`;
     
-    // Open SMS (this will work on mobile)
-    const smsURL = `sms:${phone}?body=${encodeURIComponent(smsMessage)}`;
-    window.open(smsURL, '_blank');
+    const response = await axios.post(`${API_BASE}/send-sms`, {
+      to: phone,
+      message: smsMessage,
+      reminderId: id
+    });
     
-    // Mark as sent after opening SMS
-    await axios.put(`${API_BASE}/reminders/${id}`, { status: 'Sent' });
-    alert('SMS app opened! Please send the message. Reminder marked as sent.');
-    loadReminders();
+    if (response.data.success) {
+      alert('✅ SMS sent successfully!');
+      loadReminders();
+    } else {
+      alert('❌ Failed to send SMS: ' + response.data.error);
+    }
   } catch (error) {
     console.error('SMS send error:', error);
-    alert('Error: ' + (error.response?.data?.error || error.message));
+    const errorMsg = error.response?.data?.error || error.message;
+    alert('❌ SMS Error: ' + errorMsg + '\n\nPlease check your SMS settings.');
   } finally {
     hideLoading();
   }
@@ -928,10 +936,40 @@ async function loadSettings() {
     const res = await axios.get(`${API_BASE}/settings`);
     const settings = res.data.data || [];
     
+    // Create a settings map for easy lookup
+    const settingsMap = {};
     settings.forEach(setting => {
-      const input = document.getElementById(`setting-${setting.setting_key}`);
-      if (input) input.value = setting.setting_value || '';
+      settingsMap[setting.key] = setting.value;
     });
+    
+    // Load all settings fields
+    const fields = [
+      'clinic_name', 'clinic_phone', 'clinic_email',
+      'whatsapp_phone_id', 'whatsapp_token',
+      'sms_provider', 'sms_api_key', 'sms_auth_token', 'sms_sender_id'
+    ];
+    
+    fields.forEach(field => {
+      const input = document.getElementById(`setting-${field}`);
+      if (input) {
+        if (input.type === 'checkbox') {
+          input.checked = settingsMap[field] === 'true' || settingsMap[field] === true;
+        } else {
+          input.value = settingsMap[field] || '';
+        }
+      }
+    });
+    
+    // Load checkboxes
+    const whatsappEnabled = document.getElementById('setting-whatsapp_enabled');
+    if (whatsappEnabled) {
+      whatsappEnabled.checked = settingsMap['whatsapp_enabled'] === 'true';
+    }
+    
+    const smsEnabled = document.getElementById('setting-sms_enabled');
+    if (smsEnabled) {
+      smsEnabled.checked = settingsMap['sms_enabled'] === 'true';
+    }
   } catch (error) {
     console.error('Load settings error:', error);
   } finally {
@@ -943,21 +981,30 @@ async function saveSettings() {
   try {
     showLoading();
     
+    // Collect all settings
     const settings = {
       clinic_name: document.getElementById('setting-clinic_name')?.value || '',
       clinic_phone: document.getElementById('setting-clinic_phone')?.value || '',
       clinic_email: document.getElementById('setting-clinic_email')?.value || '',
-      whatsapp_enabled: document.getElementById('setting-whatsapp_enabled')?.checked || false
+      whatsapp_enabled: document.getElementById('setting-whatsapp_enabled')?.checked ? 'true' : 'false',
+      whatsapp_phone_id: document.getElementById('setting-whatsapp_phone_id')?.value || '',
+      whatsapp_token: document.getElementById('setting-whatsapp_token')?.value || '',
+      sms_enabled: document.getElementById('setting-sms_enabled')?.checked ? 'true' : 'false',
+      sms_provider: document.getElementById('setting-sms_provider')?.value || 'twilio',
+      sms_api_key: document.getElementById('setting-sms_api_key')?.value || '',
+      sms_auth_token: document.getElementById('setting-sms_auth_token')?.value || '',
+      sms_sender_id: document.getElementById('setting-sms_sender_id')?.value || ''
     };
     
+    // Save each setting
     for (const [key, value] of Object.entries(settings)) {
       await axios.post(`${API_BASE}/settings`, { key, value });
     }
     
-    alert('Settings saved successfully');
+    alert('Settings saved successfully! You can now send WhatsApp and SMS reminders.');
   } catch (error) {
     console.error('Save settings error:', error);
-    alert('Error saving settings');
+    alert('Error saving settings: ' + (error.response?.data?.error || error.message));
   } finally {
     hideLoading();
   }

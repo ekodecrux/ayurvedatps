@@ -609,6 +609,208 @@ app.delete('/api/prescriptions/:id', async (c) => {
   }
 })
 
+// ==================== NOTIFICATION APIs ====================
+
+// Send WhatsApp message
+app.post('/api/send-whatsapp', async (c) => {
+  try {
+    const { to, message, reminderId } = await c.req.json()
+    
+    // Get WhatsApp settings
+    const phoneIdSetting = await c.env.DB.prepare(
+      "SELECT setting_value FROM settings WHERE setting_key = 'whatsapp_phone_id'"
+    ).first()
+    
+    const tokenSetting = await c.env.DB.prepare(
+      "SELECT setting_value FROM settings WHERE setting_key = 'whatsapp_token'"
+    ).first()
+    
+    if (!phoneIdSetting || !tokenSetting) {
+      return c.json({ 
+        success: false, 
+        error: 'WhatsApp not configured. Please add Phone ID and Access Token in Settings.' 
+      }, 400)
+    }
+    
+    const phoneNumberId = (phoneIdSetting as any).setting_value
+    const accessToken = (tokenSetting as any).setting_value
+    
+    // Send via WhatsApp Business API
+    const whatsappResponse = await fetch(
+      `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: to.replace(/\D/g, ''), // Remove non-digits
+          type: 'text',
+          text: { body: message }
+        })
+      }
+    )
+    
+    const result = await whatsappResponse.json()
+    
+    if (!whatsappResponse.ok) {
+      return c.json({ 
+        success: false, 
+        error: result.error?.message || 'Failed to send WhatsApp message',
+        details: result
+      }, 500)
+    }
+    
+    // Update reminder status if provided
+    if (reminderId) {
+      await c.env.DB.prepare(
+        "UPDATE reminders SET status = 'Sent' WHERE id = ?"
+      ).bind(reminderId).run()
+    }
+    
+    return c.json({ 
+      success: true, 
+      message: 'WhatsApp message sent successfully',
+      messageId: result.messages?.[0]?.id
+    })
+  } catch (error: any) {
+    console.error('WhatsApp send error:', error)
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Send SMS
+app.post('/api/send-sms', async (c) => {
+  try {
+    const { to, message, reminderId } = await c.req.json()
+    
+    // Get SMS settings
+    const providerSetting = await c.env.DB.prepare(
+      "SELECT setting_value FROM settings WHERE setting_key = 'sms_provider'"
+    ).first()
+    
+    const apiKeySetting = await c.env.DB.prepare(
+      "SELECT setting_value FROM settings WHERE setting_key = 'sms_api_key'"
+    ).first()
+    
+    const authTokenSetting = await c.env.DB.prepare(
+      "SELECT setting_value FROM settings WHERE setting_key = 'sms_auth_token'"
+    ).first()
+    
+    const senderIdSetting = await c.env.DB.prepare(
+      "SELECT setting_value FROM settings WHERE setting_key = 'sms_sender_id'"
+    ).first()
+    
+    if (!providerSetting || !apiKeySetting) {
+      return c.json({ 
+        success: false, 
+        error: 'SMS not configured. Please add SMS provider and API key in Settings.' 
+      }, 400)
+    }
+    
+    const provider = (providerSetting as any).value
+    const apiKey = (apiKeySetting as any).value
+    const authToken = (authTokenSetting as any)?.value || ''
+    const senderId = (senderIdSetting as any)?.value || 'TPSDHAN'
+    
+    let smsResponse: any
+    
+    // Send based on provider
+    if (provider === 'twilio') {
+      // Twilio SMS
+      const accountSid = apiKey
+      const authString = Buffer.from(`${accountSid}:${authToken}`).toString('base64')
+      
+      smsResponse = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${authString}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams({
+            To: to,
+            From: senderId,
+            Body: message
+          })
+        }
+      )
+    } else if (provider === 'msg91') {
+      // MSG91 SMS
+      smsResponse = await fetch(
+        'https://api.msg91.com/api/v5/flow/',
+        {
+          method: 'POST',
+          headers: {
+            'authkey': apiKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            sender: senderId,
+            route: '4',
+            country: '91',
+            sms: [{
+              message: message,
+              to: [to.replace(/\D/g, '')]
+            }]
+          })
+        }
+      )
+    } else if (provider === 'textlocal') {
+      // TextLocal SMS
+      smsResponse = await fetch(
+        'https://api.textlocal.in/send/',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams({
+            apikey: apiKey,
+            numbers: to.replace(/\D/g, ''),
+            sender: senderId,
+            message: message
+          })
+        }
+      )
+    } else {
+      return c.json({ 
+        success: false, 
+        error: 'Unsupported SMS provider' 
+      }, 400)
+    }
+    
+    const result = await smsResponse.json()
+    
+    if (!smsResponse.ok) {
+      return c.json({ 
+        success: false, 
+        error: 'Failed to send SMS',
+        details: result
+      }, 500)
+    }
+    
+    // Update reminder status if provided
+    if (reminderId) {
+      await c.env.DB.prepare(
+        "UPDATE reminders SET status = 'Sent' WHERE id = ?"
+      ).bind(reminderId).run()
+    }
+    
+    return c.json({ 
+      success: true, 
+      message: 'SMS sent successfully',
+      details: result
+    })
+  } catch (error: any) {
+    console.error('SMS send error:', error)
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
 // ==================== REMINDERS API ====================
 
 // Get all reminders with search and filter
@@ -1068,28 +1270,108 @@ app.get('/', (c) => {
             <div id="settings-section" class="section hidden">
                 <h2 class="text-2xl font-bold text-gray-800 mb-6">Settings</h2>
                 
-                <div class="bg-white rounded-lg shadow-lg p-6">
-                    <h3 class="text-xl font-bold mb-4">Clinic Information</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium mb-1">Clinic Name</label>
-                            <input type="text" id="setting-clinic_name" class="border rounded px-3 py-2 w-full" value="TPS DHANVANTRI AYURVEDA">
+                <div class="space-y-6">
+                    <!-- Clinic Information -->
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <h3 class="text-xl font-bold mb-4 text-ayurveda-700">Clinic Information</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Clinic Name</label>
+                                <input type="text" id="setting-clinic_name" class="border rounded px-3 py-2 w-full" value="TPS DHANVANTRI AYURVEDA">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Phone</label>
+                                <input type="text" id="setting-clinic_phone" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Email</label>
+                                <input type="text" id="setting-clinic_email" class="border rounded px-3 py-2 w-full">
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-1">Phone</label>
-                            <input type="text" id="setting-clinic_phone" class="border rounded px-3 py-2 w-full">
+                    </div>
+                    
+                    <!-- WhatsApp Business API Settings -->
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <h3 class="text-xl font-bold mb-4 text-green-700">
+                            <i class="fab fa-whatsapp mr-2"></i>WhatsApp Business API
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center mb-4">
+                                <input type="checkbox" id="setting-whatsapp_enabled" class="mr-2 w-5 h-5">
+                                <label for="setting-whatsapp_enabled" class="font-medium">Enable WhatsApp Notifications</label>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">WhatsApp Business Phone Number ID</label>
+                                <input type="text" id="setting-whatsapp_phone_id" class="border rounded px-3 py-2 w-full" placeholder="Enter your WhatsApp Business Phone Number ID">
+                                <p class="text-xs text-gray-500 mt-1">From WhatsApp Business API Dashboard</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">WhatsApp Business Access Token</label>
+                                <input type="password" id="setting-whatsapp_token" class="border rounded px-3 py-2 w-full" placeholder="Enter your access token">
+                                <p class="text-xs text-gray-500 mt-1">Get from Meta Business Manager</p>
+                            </div>
+                            <div class="bg-blue-50 border border-blue-200 rounded p-4">
+                                <p class="text-sm text-blue-800">
+                                    <strong>How to get WhatsApp Business API:</strong><br>
+                                    1. Go to <a href="https://business.facebook.com" target="_blank" class="underline">Meta Business Manager</a><br>
+                                    2. Create a WhatsApp Business account<br>
+                                    3. Get your Phone Number ID and Access Token<br>
+                                    4. Enter them here to enable automatic WhatsApp reminders
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-1">Email</label>
-                            <input type="text" id="setting-clinic_email" class="border rounded px-3 py-2 w-full">
+                    </div>
+                    
+                    <!-- SMS Gateway Settings -->
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <h3 class="text-xl font-bold mb-4 text-blue-700">
+                            <i class="fas fa-sms mr-2"></i>SMS Gateway
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center mb-4">
+                                <input type="checkbox" id="setting-sms_enabled" class="mr-2 w-5 h-5">
+                                <label for="setting-sms_enabled" class="font-medium">Enable SMS Notifications</label>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">SMS Provider</label>
+                                <select id="setting-sms_provider" class="border rounded px-3 py-2 w-full">
+                                    <option value="twilio">Twilio</option>
+                                    <option value="msg91">MSG91</option>
+                                    <option value="textlocal">TextLocal</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">API Key / Account SID</label>
+                                <input type="password" id="setting-sms_api_key" class="border rounded px-3 py-2 w-full" placeholder="Enter your SMS API key">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Auth Token / Password</label>
+                                <input type="password" id="setting-sms_auth_token" class="border rounded px-3 py-2 w-full" placeholder="Enter your auth token">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Sender ID / From Number</label>
+                                <input type="text" id="setting-sms_sender_id" class="border rounded px-3 py-2 w-full" placeholder="e.g., TPSDHAN or +1234567890">
+                                <p class="text-xs text-gray-500 mt-1">Your registered sender ID or phone number</p>
+                            </div>
+                            <div class="bg-blue-50 border border-blue-200 rounded p-4">
+                                <p class="text-sm text-blue-800">
+                                    <strong>Popular SMS Providers:</strong><br>
+                                    • <strong>Twilio</strong>: Global, reliable (~$0.01/SMS)<br>
+                                    • <strong>MSG91</strong>: India-focused (~₹0.20/SMS)<br>
+                                    • <strong>TextLocal</strong>: India, UK (~₹0.15/SMS)<br>
+                                    Sign up with any provider and enter credentials here.
+                                </p>
+                            </div>
                         </div>
-                        <div class="flex items-center">
-                            <input type="checkbox" id="setting-whatsapp_enabled" class="mr-2">
-                            <label for="setting-whatsapp_enabled">Enable WhatsApp Notifications</label>
-                        </div>
-                        <button onclick="saveSettings()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-6 py-2 rounded-lg">
-                            Save Settings
+                    </div>
+                    
+                    <!-- Save Button -->
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <button onclick="saveSettings()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-8 py-3 rounded-lg text-lg font-semibold">
+                            <i class="fas fa-save mr-2"></i>Save All Settings
                         </button>
+                        <p class="text-sm text-gray-600 mt-2">Settings are saved securely and used for automatic notifications.</p>
                     </div>
                 </div>
             </div>
