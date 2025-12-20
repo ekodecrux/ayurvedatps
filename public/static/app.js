@@ -552,6 +552,15 @@ function showHerbsRoutesModal() {
   document.getElementById('prescription-form').reset();
   document.getElementById('prescription-id').value = '';
   document.getElementById('medicines-list').innerHTML = '';
+  medicineCounter = 0;
+  
+  // Set today's date as default
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('prescription-date').value = today;
+  
+  // Reset balance display
+  const balanceDisplay = document.getElementById('prescription-balance-display');
+  if (balanceDisplay) balanceDisplay.textContent = '₹0.00';
   
   addMedicineRow();
   loadPatientsForHerbsRoutes();
@@ -653,52 +662,82 @@ async function saveHerbsRoutes() {
     const givenDate = document.getElementById('prescription-date').value;
     const months = parseInt(document.getElementById('prescription-months').value) || 0;
     
+    // Auto-calculate follow-up date
     const nextFollowupDate = new Date(givenDate);
     nextFollowupDate.setMonth(nextFollowupDate.getMonth() + months);
     
+    // Collect medicines with dosage schedule
     const medicines = [];
     document.querySelectorAll('.medicine-row').forEach((row, index) => {
       const rowNum = row.dataset.row;
       const romanId = romanNumerals[index] || `#${index + 1}`;
       
+      const medicineName = row.querySelector(`[name="medicine_name_${rowNum}"]`).value;
+      if (!medicineName) return; // Skip empty medicine rows
+      
       medicines.push({
         roman_id: romanId,
-        medicine_name: row.querySelector(`[name="medicine_name_${rowNum}"]`).value,
-        morning_before: row.querySelector(`[name="morning_before_${rowNum}"]`)?.checked || false,
-        morning_after: row.querySelector(`[name="morning_after_${rowNum}"]`)?.checked || false,
-        afternoon_before: row.querySelector(`[name="afternoon_before_${rowNum}"]`)?.checked || false,
-        afternoon_after: row.querySelector(`[name="afternoon_after_${rowNum}"]`)?.checked || false,
-        evening_before: row.querySelector(`[name="evening_before_${rowNum}"]`)?.checked || false,
-        evening_after: row.querySelector(`[name="evening_after_${rowNum}"]`)?.checked || false,
-        night_before: row.querySelector(`[name="night_before_${rowNum}"]`)?.checked || false,
-        night_after: row.querySelector(`[name="night_after_${rowNum}"]`)?.checked || false
+        medicine_name: medicineName,
+        given_date: givenDate,
+        treatment_months: months,
+        morning_before: row.querySelector(`[name="morning_before_${rowNum}"]`)?.checked ? 1 : 0,
+        morning_after: row.querySelector(`[name="morning_after_${rowNum}"]`)?.checked ? 1 : 0,
+        afternoon_before: row.querySelector(`[name="afternoon_before_${rowNum}"]`)?.checked ? 1 : 0,
+        afternoon_after: row.querySelector(`[name="afternoon_after_${rowNum}"]`)?.checked ? 1 : 0,
+        evening_before: row.querySelector(`[name="evening_before_${rowNum}"]`)?.checked ? 1 : 0,
+        evening_after: row.querySelector(`[name="evening_after_${rowNum}"]`)?.checked ? 1 : 0,
+        night_before: row.querySelector(`[name="night_before_${rowNum}"]`)?.checked ? 1 : 0,
+        night_after: row.querySelector(`[name="night_after_${rowNum}"]`)?.checked ? 1 : 0
       });
     });
+    
+    if (medicines.length === 0) {
+      alert('Please add at least one medicine');
+      hideLoading();
+      return;
+    }
+    
+    const totalAmount = parseFloat(document.getElementById('prescription-amount').value) || 0;
+    const advancePaid = parseFloat(document.getElementById('prescription-advance').value) || 0;
     
     const data = {
       patient_id: parseInt(document.getElementById('prescription-patient').value),
       given_date: givenDate,
-      months: months,
-      next_followup_date: nextFollowupDate.toISOString().split('T')[0],
-      problem: document.getElementById('prescription-problem').value,
-      course: document.getElementById('prescription-course').value,
-      total_amount: parseFloat(document.getElementById('prescription-amount').value) || 0,
-      advance_paid: parseFloat(document.getElementById('prescription-advance').value) || 0,
-      balance_due: (parseFloat(document.getElementById('prescription-amount').value) || 0) - (parseFloat(document.getElementById('prescription-advance').value) || 0),
+      treatment_months: months,
+      follow_up_date: nextFollowupDate.toISOString().split('T')[0],
+      diagnosis: document.getElementById('prescription-problem').value || 'Not specified',
+      notes: '',
+      course: parseInt(document.getElementById('prescription-course').value) || null,
+      payment_amount: totalAmount,
+      advance_payment: advancePaid,
+      due_balance: totalAmount - advancePaid,
       payment_notes: document.getElementById('prescription-payment-notes').value,
       medicines: medicines
     };
     
-    await axios.post(`${API_BASE}/herbs-routes`, data);
-    alert('Herbs & Routes record created successfully');
+    const result = await axios.post(`${API_BASE}/prescriptions`, data);
+    alert(`Herbs & Routes record created successfully! Follow-up date: ${formatDate(data.follow_up_date)}`);
     
     closeHerbsRoutesModal();
     loadHerbsRoutes();
   } catch (error) {
     console.error('Save herbs & routes error:', error);
-    alert('Error saving herbs & routes record');
+    alert('Error saving herbs & routes record: ' + (error.response?.data?.error || error.message));
   } finally {
     hideLoading();
+  }
+}
+
+// Auto-calculate balance when amount or advance changes
+function calculateBalance() {
+  const total = parseFloat(document.getElementById('prescription-amount').value) || 0;
+  const advance = parseFloat(document.getElementById('prescription-advance').value) || 0;
+  const balance = total - advance;
+  
+  // Show balance in the UI (if we have a balance display field)
+  const balanceDisplay = document.getElementById('prescription-balance-display');
+  if (balanceDisplay) {
+    balanceDisplay.textContent = `₹${balance.toFixed(2)}`;
   }
 }
 

@@ -1388,19 +1388,23 @@ app.get('/', (c) => {
                         </div>
                         
                         <div class="border-t pt-6 mb-6">
-                            <h4 class="font-bold text-lg mb-4">Payment Details</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <h4 class="font-bold text-lg mb-4 text-ayurveda-700">Payment Details</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium mb-1">Total Amount</label>
-                                    <input type="number" step="0.01" id="prescription-amount" class="border rounded px-3 py-2 w-full">
+                                    <label class="block text-sm font-medium mb-1">Total Amount (₹)</label>
+                                    <input type="number" step="0.01" id="prescription-amount" class="border rounded px-3 py-2 w-full" oninput="calculateBalance()" placeholder="0.00">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium mb-1">Advance Paid</label>
-                                    <input type="number" step="0.01" id="prescription-advance" class="border rounded px-3 py-2 w-full">
+                                    <label class="block text-sm font-medium mb-1">Advance Paid (₹)</label>
+                                    <input type="number" step="0.01" id="prescription-advance" class="border rounded px-3 py-2 w-full" oninput="calculateBalance()" placeholder="0.00">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Balance Due</label>
+                                    <div class="border rounded px-3 py-2 bg-gray-100 text-lg font-bold text-red-600" id="prescription-balance-display">₹0.00</div>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium mb-1">Payment Notes</label>
-                                    <input type="text" id="prescription-payment-notes" class="border rounded px-3 py-2 w-full">
+                                    <input type="text" id="prescription-payment-notes" class="border rounded px-3 py-2 w-full" placeholder="Optional notes">
                                 </div>
                             </div>
                         </div>
