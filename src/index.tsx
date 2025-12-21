@@ -874,16 +874,20 @@ app.get('/api/prescriptions', async (c) => {
         'SELECT * FROM medicines_tracking WHERE herbs_route_id = ?'
       ).bind(hr.id).all()
       
+      // Get payment collections for this record
+      const { results: collections } = await c.env.DB.prepare(
+        'SELECT * FROM payment_collections WHERE herbs_route_id = ?'
+      ).bind(hr.id).all()
+      
       // Calculate totals
       let totalAmount = 0
       let totalAdvance = 0
-      let totalBalance = 0
+      let totalCollected = 0
       let activeCourseMonths = 0
       
       medicines.forEach((med: any) => {
         totalAmount += parseFloat(med.payment_amount || 0)
         totalAdvance += parseFloat(med.advance_payment || 0)
-        totalBalance += parseFloat(med.balance_due || 0)
         
         // Sum treatment months from active courses
         if (med.is_active) {
@@ -891,10 +895,17 @@ app.get('/api/prescriptions', async (c) => {
         }
       })
       
+      collections.forEach((col: any) => {
+        totalCollected += parseFloat(col.amount || 0)
+      })
+      
+      const totalBalance = totalAmount - totalAdvance - totalCollected
+      
       return {
         ...hr,
         total_amount: totalAmount,
         total_advance: totalAdvance,
+        total_collected: totalCollected,
         total_balance: totalBalance,
         active_course_months: activeCourseMonths
       }
