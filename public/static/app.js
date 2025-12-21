@@ -1526,7 +1526,7 @@ function addPaymentCollection(courseId, existingData = null) {
         </div>
         <div class="col-span-3">
           <label class="block text-xs mb-1">Amount *</label>
-          <input type="number" step="0.01" name="collection_amount_${collectionId}" class="w-full border rounded px-2 py-1 text-xs" placeholder="0.00" value="${existingData?.amount || ''}">
+          <input type="number" step="0.01" name="collection_amount_${collectionId}" class="w-full border rounded px-2 py-1 text-xs" placeholder="0.00" value="${existingData?.amount || ''}" oninput="updatePaymentSummary()">
         </div>
         <div class="col-span-2">
           <label class="block text-xs mb-1">Method</label>
@@ -1781,17 +1781,19 @@ async function editHerbsRoutes(id) {
     
     // Add medicines from database
     if (hr.medicines && hr.medicines.length > 0) {
-      // Group medicines by course
+      // Group medicines by course - use same logic as VIEW (given_date, treatment_months, payment details)
       const courseGroups = {};
       hr.medicines.forEach(med => {
-        if (!courseGroups[med.course_number]) {
-          courseGroups[med.course_number] = [];
+        // Create unique key for each course based on its characteristics
+        const courseKey = `${med.given_date}_${med.treatment_months}_${med.payment_amount}_${med.advance_payment}`;
+        if (!courseGroups[courseKey]) {
+          courseGroups[courseKey] = [];
         }
-        courseGroups[med.course_number].push(med);
+        courseGroups[courseKey].push(med);
       });
       
       // Create a course for each group
-      Object.keys(courseGroups).sort().forEach(courseNum => {
+      Object.keys(courseGroups).forEach(courseKey => {
         const meds = courseGroups[courseNum];
         const firstMed = meds[0];
         
