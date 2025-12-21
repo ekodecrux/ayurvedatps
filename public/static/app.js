@@ -1636,9 +1636,9 @@ async function editHerbsRoutes(id) {
     document.getElementById('prescription-followup').value = hr.follow_up_date || '';
     document.getElementById('prescription-problem').value = hr.diagnosis || '';
     
-    // Set patient - hr.patient_id is the FK (database ID)
+    // Set patient - hr.patient_db_id is the FK (database ID)
     const patientSelect = document.getElementById('prescription-patient');
-    patientSelect.value = hr.patient_id;
+    patientSelect.value = hr.patient_db_id || hr.patient_fk;
     
     // Manually trigger change event to display patient info
     const event = new Event('change');
@@ -1841,7 +1841,7 @@ async function viewHerbsRoutes(id) {
     };
     
     setTextIfExists('summary-patient-name', hr.patient_name);
-    setTextIfExists('summary-patient-id', hr.patient_id);
+    setTextIfExists('summary-patient-id', hr.patient_identifier || hr.patient_id);
     
     // Age/Gender combined
     const ageGenderEl = document.getElementById('summary-patient-age-gender');

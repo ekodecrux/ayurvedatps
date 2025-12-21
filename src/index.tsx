@@ -926,8 +926,13 @@ app.get('/api/prescriptions/:id', async (c) => {
     
     // Get herbs & routes details
     const herbsRoute = await c.env.DB.prepare(`
-      SELECT h.*, p.name as patient_name, p.phone as patient_phone, p.email as patient_email, 
-             p.patient_id, p.age, p.gender, p.country, p.weight, p.height,
+      SELECT h.id, h.patient_id as patient_fk, h.appointment_id, h.diagnosis, h.notes, 
+             h.next_followup_date, h.created_at, h.updated_at, h.given_date,
+             h.treatment_months, h.payment_amount, h.advance_payment, h.payment_notes,
+             h.due_balance, h.course, h.currency,
+             p.name as patient_name, p.phone as patient_phone, p.email as patient_email, 
+             p.patient_id as patient_identifier, p.id as patient_db_id,
+             p.age, p.gender, p.country, p.weight, p.height,
              p.present_health_issue, p.present_medicine, p.mg_value
       FROM herbs_routes h
       LEFT JOIN patients p ON h.patient_id = p.id
