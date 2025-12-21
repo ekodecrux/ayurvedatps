@@ -1228,7 +1228,7 @@ function addMedicineRow() {
       
       <div class="border-t border-gray-300 pt-4">
         <h5 class="font-medium text-sm text-blue-700 mb-3"><i class="fas fa-money-bill-wave mr-2"></i>Payment Details for this Course</h5>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
           <div>
             <label class="block text-xs font-medium mb-1 course-amount-label">Amount</label>
             <input type="number" step="0.01" name="payment_amount_${medicineCounter}" class="w-full border rounded px-3 py-2 text-sm medicine-payment-amount" placeholder="0.00" oninput="updatePaymentSummary()">
@@ -1244,6 +1244,19 @@ function addMedicineRow() {
           <div>
             <label class="block text-xs font-medium mb-1">Payment Notes</label>
             <input type="text" name="payment_notes_${medicineCounter}" class="w-full border rounded px-3 py-2 text-sm" placeholder="Optional">
+          </div>
+        </div>
+        
+        <!-- Payment Collections Section -->
+        <div class="mt-4 pt-3 border-t border-gray-200">
+          <div class="flex justify-between items-center mb-2">
+            <h6 class="font-medium text-xs text-green-700"><i class="fas fa-receipt mr-1"></i>Payment Collections</h6>
+            <button type="button" onclick="addPaymentCollection(${medicineCounter})" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs">
+              <i class="fas fa-plus mr-1"></i>Collect Payment
+            </button>
+          </div>
+          <div id="payment-collections-${medicineCounter}" class="space-y-2">
+            <!-- Payment collections will be added here -->
           </div>
         </div>
       </div>
@@ -1480,6 +1493,57 @@ function calculateSmartFollowUp() {
     } else {
       followUpInput.value = '';
     }
+  }
+}
+
+// Payment Collection Functions
+let paymentCollectionCounter = 0;
+
+function addPaymentCollection(courseId, existingData = null) {
+  paymentCollectionCounter++;
+  const collectionId = `${courseId}_${paymentCollectionCounter}`;
+  
+  const html = `
+    <div class="payment-collection-item bg-green-50 border border-green-200 rounded p-2" data-collection="${collectionId}" data-course="${courseId}">
+      <div class="grid grid-cols-12 gap-2 items-center">
+        <div class="col-span-3">
+          <label class="block text-xs mb-1">Date *</label>
+          <input type="date" name="collection_date_${collectionId}" class="w-full border rounded px-2 py-1 text-xs" value="${existingData?.collection_date || ''}" required>
+        </div>
+        <div class="col-span-3">
+          <label class="block text-xs mb-1">Amount *</label>
+          <input type="number" step="0.01" name="collection_amount_${collectionId}" class="w-full border rounded px-2 py-1 text-xs" placeholder="0.00" value="${existingData?.amount || ''}" required>
+        </div>
+        <div class="col-span-2">
+          <label class="block text-xs mb-1">Method</label>
+          <select name="collection_method_${collectionId}" class="w-full border rounded px-2 py-1 text-xs">
+            <option value="Cash" ${existingData?.payment_method === 'Cash' ? 'selected' : ''}>Cash</option>
+            <option value="Card" ${existingData?.payment_method === 'Card' ? 'selected' : ''}>Card</option>
+            <option value="UPI" ${existingData?.payment_method === 'UPI' ? 'selected' : ''}>UPI</option>
+            <option value="Check" ${existingData?.payment_method === 'Check' ? 'selected' : ''}>Check</option>
+          </select>
+        </div>
+        <div class="col-span-3">
+          <label class="block text-xs mb-1">Notes</label>
+          <input type="text" name="collection_notes_${collectionId}" class="w-full border rounded px-2 py-1 text-xs" placeholder="Optional" value="${existingData?.notes || ''}">
+        </div>
+        <div class="col-span-1 flex items-end">
+          <button type="button" onclick="removePaymentCollection('${collectionId}')" class="text-red-600 hover:text-red-800 text-xs p-1">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      ${existingData?.id ? `<input type="hidden" name="collection_id_${collectionId}" value="${existingData.id}">` : ''}
+    </div>
+  `;
+  
+  document.getElementById(`payment-collections-${courseId}`).insertAdjacentHTML('beforeend', html);
+}
+
+function removePaymentCollection(collectionId) {
+  const element = document.querySelector(`[data-collection="${collectionId}"]`);
+  if (element) {
+    element.remove();
   }
 }
 

@@ -959,6 +959,14 @@ app.get('/api/prescriptions/:id', async (c) => {
       'SELECT * FROM medicines_tracking WHERE herbs_route_id = ? ORDER BY roman_id'
     ).bind(id).all()
     
+    // Get payment collections for each medicine
+    for (const medicine of medicines as any[]) {
+      const { results: payments } = await c.env.DB.prepare(
+        'SELECT * FROM payment_collections WHERE medicine_id = ? ORDER BY collection_date DESC'
+      ).bind(medicine.id).all()
+      medicine.payment_collections = payments
+    }
+    
     return c.json({ 
       success: true, 
       data: { 
@@ -1116,6 +1124,56 @@ app.delete('/api/prescriptions/:id', async (c) => {
   try {
     const id = c.req.param('id')
     await c.env.DB.prepare('DELETE FROM herbs_routes WHERE id = ?').bind(id).run()
+    return c.json({ success: true })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// ==================== PAYMENT COLLECTION APIs ====================
+
+// Get payment collections for a medicine/course
+app.get('/api/medicines/:medicineId/payments', async (c) => {
+  try {
+    const medicineId = c.req.param('medicineId')
+    const { results: payments } = await c.env.DB.prepare(
+      'SELECT * FROM payment_collections WHERE medicine_id = ? ORDER BY collection_date DESC'
+    ).bind(medicineId).all()
+    
+    return c.json({ success: true, data: payments })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Add a payment collection
+app.post('/api/medicines/:medicineId/payments', async (c) => {
+  try {
+    const medicineId = c.req.param('medicineId')
+    const body = await c.req.json()
+    
+    const result = await c.env.DB.prepare(`
+      INSERT INTO payment_collections (medicine_id, collection_date, amount, payment_method, notes)
+      VALUES (?, ?, ?, ?, ?)
+    `).bind(
+      medicineId,
+      body.collection_date,
+      body.amount,
+      body.payment_method || 'Cash',
+      body.notes || ''
+    ).run()
+    
+    return c.json({ success: true, id: result.meta.last_row_id })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Delete a payment collection
+app.delete('/api/payments/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    await c.env.DB.prepare('DELETE FROM payment_collections WHERE id = ?').bind(id).run()
     return c.json({ success: true })
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
