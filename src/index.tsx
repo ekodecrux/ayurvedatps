@@ -2259,7 +2259,7 @@ app.get('/', (c) => {
 
             <!-- HERBS & ROUTES MODAL -->
             <div id="prescription-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div class="bg-white rounded-lg p-8 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="bg-white rounded-lg p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto mx-4">
                     <div class="flex justify-between items-center mb-6">
                         <h3 id="prescription-modal-title" class="text-2xl font-bold"><i class="fas fa-leaf mr-2 text-ayurveda-600"></i>New Herbs & Routes Record</h3>
                         <button onclick="closeHerbsRoutesModal()" class="text-gray-500 hover:text-gray-700">
@@ -2394,15 +2394,14 @@ app.get('/', (c) => {
                                 </div>
                             </div>
                             <p class="text-xs text-gray-500 mt-3 text-center"><i class="fas fa-info-circle mr-1"></i>Summary automatically calculated from individual course payments</p>
-                            </div>
                         </div>
                         
                         <!-- Action Buttons - Bottom Right Corner -->
-                        <div class="flex justify-end space-x-3 mt-6 pt-4">
-                            <button type="button" onclick="closeHerbsRoutesModal()" class="px-8 py-3 border-2 border-gray-400 rounded-lg hover:bg-gray-100 text-gray-700 font-semibold text-lg">
+                        <div class="flex justify-end space-x-3 mt-6 pt-4 mb-2">
+                            <button type="button" onclick="closeHerbsRoutesModal()" class="px-8 py-3 border-2 border-gray-400 rounded-lg hover:bg-gray-100 text-gray-700 font-semibold">
                                 <i class="fas fa-times mr-2"></i>Cancel
                             </button>
-                            <button type="submit" class="px-8 py-3 bg-ayurveda-600 hover:bg-ayurveda-700 text-white rounded-lg font-semibold text-lg shadow-lg">
+                            <button type="submit" class="px-8 py-3 bg-ayurveda-600 hover:bg-ayurveda-700 text-white rounded-lg font-semibold shadow-lg">
                                 <i class="fas fa-save mr-2"></i>Save Record
                             </button>
                         </div>
