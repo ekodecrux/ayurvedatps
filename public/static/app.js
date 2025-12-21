@@ -1618,16 +1618,22 @@ async function editHerbsRoutes(id) {
     const res = await axios.get(`${API_BASE}/prescriptions/${id}`);
     const hr = res.data.data;
     
+    // Show modal first
+    document.getElementById('prescription-modal').classList.remove('hidden');
+    
+    // Load patients list first
+    await loadPatientsForHerbsRoutes();
+    
     // Populate the modal with existing data
     document.getElementById('prescription-modal-title').textContent = 'Edit Herbs & Routes Record';
     document.getElementById('prescription-id').value = id;
-    document.getElementById('prescription-patient').value = hr.patient_id;
     document.getElementById('prescription-currency').value = hr.currency || 'INR';
     document.getElementById('prescription-course').value = hr.course || 1;
     document.getElementById('prescription-followup').value = hr.follow_up_date || '';
     document.getElementById('prescription-problem').value = hr.diagnosis || '';
     
-    // Load patient info
+    // Set patient and trigger patient info display
+    document.getElementById('prescription-patient').value = hr.patient_id;
     await displayPatientInfo();
     
     // Clear existing medicines list
@@ -1817,20 +1823,87 @@ async function viewHerbsRoutes(id) {
     const res = await axios.get(`${API_BASE}/prescriptions/${id}`);
     const hr = res.data.data;
     
-    // Display in a modal or new section
-    alert(`Record Details:\n\nPatient: ${hr.patient_name}\nDate: ${formatDate(hr.given_date)}\nProblem: ${hr.problem}\nCourse: ${hr.course}\nAmount: ₹${hr.total_amount}`);
+    // Populate summary modal
+    document.getElementById('summary-patient-name').textContent = hr.patient_name || 'N/A';
+    document.getElementById('summary-patient-id').textContent = hr.patient_id || 'N/A';
+    document.getElementById('summary-patient-age').textContent = hr.age || 'N/A';
+    document.getElementById('summary-patient-gender').textContent = hr.gender || 'N/A';
+    document.getElementById('summary-patient-phone').textContent = hr.patient_phone || 'N/A';
+    document.getElementById('summary-patient-email').textContent = hr.patient_email || 'N/A';
+    
+    // Show problem/diagnosis
+    document.getElementById('summary-diagnosis').textContent = hr.diagnosis || 'N/A';
+    document.getElementById('summary-given-date').textContent = formatDate(hr.created_at);
+    document.getElementById('summary-followup-date').textContent = formatDate(hr.follow_up_date) || 'Not set';
+    
+    // Show medicines
+    const medicinesHtml = (hr.medicines || []).map((med, index) => `
+      <div class="mb-4 p-4 border rounded-lg">
+        <h5 class="font-semibold text-blue-700 mb-2">
+          <span class="mr-2">${med.roman_id || ''}</span>
+          ${med.medicine_name}
+        </h5>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+          ${med.morning_before ? '<span class="badge">Morning (Before)</span>' : ''}
+          ${med.morning_after ? '<span class="badge">Morning (After)</span>' : ''}
+          ${med.afternoon_before ? '<span class="badge">Afternoon (Before)</span>' : ''}
+          ${med.afternoon_after ? '<span class="badge">Afternoon (After)</span>' : ''}
+          ${med.evening_before ? '<span class="badge">Evening (Before)</span>' : ''}
+          ${med.evening_after ? '<span class="badge">Evening (After)</span>' : ''}
+          ${med.night_before ? '<span class="badge">Night (Before)</span>' : ''}
+          ${med.night_after ? '<span class="badge">Night (After)</span>' : ''}
+        </div>
+        <div class="mt-2 text-sm">
+          <strong>Course:</strong> ${med.treatment_months || 0} months | 
+          <strong>Given Date:</strong> ${formatDate(med.given_date)} |
+          <strong>Status:</strong> ${med.is_active ? '<span class="text-green-600">Active</span>' : '<span class="text-gray-500">Inactive</span>'}
+        </div>
+      </div>
+    `).join('') || '<p class="text-gray-500">No medicines prescribed</p>';
+    
+    document.getElementById('summary-medicines-list').innerHTML = medicinesHtml;
+    
+    // Calculate and show payment summary
+    const currency = hr.currency || 'INR';
+    const symbol = currency === 'USD' ? '$' : '₹';
+    let totalAmount = 0;
+    let totalAdvance = 0;
+    (hr.medicines || []).forEach(med => {
+      totalAmount += parseFloat(med.payment_amount || 0);
+      totalAdvance += parseFloat(med.advance_payment || 0);
+    });
+    const totalBalance = totalAmount - totalAdvance;
+    
+    document.getElementById('summary-total-amount').textContent = `${symbol}${totalAmount.toFixed(2)}`;
+    document.getElementById('summary-advance-paid').textContent = `${symbol}${totalAdvance.toFixed(2)}`;
+    document.getElementById('summary-balance-due').textContent = `${symbol}${totalBalance.toFixed(2)}`;
+    document.getElementById('summary-followup-reminder').textContent = formatDate(hr.follow_up_date) || 'Not set';
+    
+    // Show the modal
+    document.getElementById('prescription-summary-modal').classList.remove('hidden');
   } catch (error) {
     console.error('View error:', error);
-    alert('Error loading record details');
+    alert('Error loading record details: ' + (error.response?.data?.error || error.message));
   } finally {
     hideLoading();
   }
 }
 
+function closeSummaryModal() {
+  document.getElementById('prescription-summary-modal').classList.add('hidden');
+}
+
+function printSummary() {
+  window.print();
+}
+
 async function printHerbsRoutes(id) {
   try {
-    // Open print view in new window
-    window.open(`/api/prescriptions/${id}/print`, '_blank');
+    // Load the data and show in summary modal, then print
+    await viewHerbsRoutes(id);
+    setTimeout(() => {
+      window.print();
+    }, 500);
   } catch (error) {
     console.error('Print error:', error);
     alert('Error printing record');
