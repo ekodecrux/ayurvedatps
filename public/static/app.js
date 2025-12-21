@@ -1010,15 +1010,30 @@ function showHerbsRoutesModal() {
   document.getElementById('medicines-list').innerHTML = '';
   medicineCounter = 0;
   
-  // Set today's date as default
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('prescription-date').value = today;
+  // Reset payment summary
+  if (document.getElementById('overall-total-amount')) {
+    document.getElementById('overall-total-amount').textContent = '₹0.00';
+    document.getElementById('overall-advance-paid').textContent = '₹0.00';
+    document.getElementById('overall-balance-due').textContent = '₹0.00';
+    document.getElementById('overall-active-count').textContent = '0';
+  }
   
-  // Reset balance display
-  const balanceDisplay = document.getElementById('prescription-balance-display');
-  if (balanceDisplay) balanceDisplay.textContent = '₹0.00';
+  // Reset follow-up date
+  if (document.getElementById('prescription-followup')) {
+    document.getElementById('prescription-followup').value = '';
+  }
+  
+  // Set today's date as default for the first medicine
+  const today = new Date().toISOString().split('T')[0];
   
   addMedicineRow();
+  
+  // Set today's date to first medicine's given date
+  setTimeout(() => {
+    const firstDateInput = document.querySelector('[name="given_date_1"]');
+    if (firstDateInput) firstDateInput.value = today;
+  }, 100);
+  
   loadPatientsForHerbsRoutes();
   
   modal.classList.remove('hidden');
