@@ -2388,12 +2388,12 @@ app.get('/', (c) => {
                                         <p class="text-3xl font-bold text-red-600" id="overall-balance-due">₹0.00</p>
                                     </div>
                                     <div class="text-center">
-                                        <p class="text-sm text-gray-600 mb-1">Active Medicines</p>
+                                        <p class="text-sm text-gray-600 mb-1">Active Courses</p>
                                         <p class="text-3xl font-bold text-purple-600" id="overall-active-count">0</p>
                                     </div>
                                 </div>
                             </div>
-                            <p class="text-xs text-gray-500 mt-3 text-center"><i class="fas fa-info-circle mr-1"></i>Summary automatically calculated from individual medicine payments</p>
+                            <p class="text-xs text-gray-500 mt-3 text-center"><i class="fas fa-info-circle mr-1"></i>Summary automatically calculated from individual course payments</p>
                             </div>
                         </div>
                         
