@@ -2320,7 +2320,14 @@ app.get('/', (c) => {
                             </div>
                         </div>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Currency *</label>
+                                <select id="prescription-currency" class="border rounded px-3 py-2 w-full" onchange="updateAllCurrencyDisplays()">
+                                    <option value="INR">₹ Indian Rupee (INR)</option>
+                                    <option value="USD">$ US Dollar (USD)</option>
+                                </select>
+                            </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">Entire Course (1-16)</label>
                                 <select id="prescription-course" class="border rounded px-3 py-2 w-full">

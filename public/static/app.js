@@ -1011,6 +1011,10 @@ function showHerbsRoutesModal() {
   medicineCounter = 0;
   courseToMedicineMap = {};
   
+  // Reset currency to INR
+  const currencySelect = document.getElementById('prescription-currency');
+  if (currencySelect) currencySelect.value = 'INR';
+  
   // Reset payment summary
   document.getElementById('overall-total-amount').textContent = '₹0.00';
   document.getElementById('overall-advance-paid').textContent = '₹0.00';
@@ -1189,16 +1193,7 @@ function addMedicineRow() {
       </div>
       
       <div class="border-t border-gray-300 pt-4">
-        <div class="flex items-center justify-between mb-3">
-          <h5 class="font-medium text-sm text-blue-700"><i class="fas fa-rupee-sign mr-2"></i>Payment Details for this Course</h5>
-          <div class="flex items-center space-x-2">
-            <label class="text-xs font-medium">Currency:</label>
-            <select name="currency_${medicineCounter}" class="border rounded px-2 py-1 text-sm course-currency" onchange="updatePaymentSummary()">
-              <option value="INR">₹ INR</option>
-              <option value="USD">$ USD</option>
-            </select>
-          </div>
-        </div>
+        <h5 class="font-medium text-sm text-blue-700 mb-3"><i class="fas fa-money-bill-wave mr-2"></i>Payment Details for this Course</h5>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label class="block text-xs font-medium mb-1">Amount</label>
@@ -1210,7 +1205,7 @@ function addMedicineRow() {
           </div>
           <div>
             <label class="block text-xs font-medium mb-1">Balance</label>
-            <div class="border rounded px-3 py-2 bg-gray-100 text-sm font-bold text-red-600" name="balance_due_${medicineCounter}">₹0.00</div>
+            <div class="border rounded px-3 py-2 bg-gray-100 text-sm font-bold text-red-600 course-balance-display" data-row="${medicineCounter}">₹0.00</div>
           </div>
           <div>
             <label class="block text-xs font-medium mb-1">Payment Notes</label>
@@ -1333,6 +1328,11 @@ function removeMedicineRow(rowId) {
 
 // Update overall payment summary from individual medicine payments
 function updatePaymentSummary() {
+  // Get global currency
+  const currencySelect = document.getElementById('prescription-currency');
+  const currency = currencySelect ? currencySelect.value : 'INR';
+  const symbol = currency === 'USD' ? '$' : '₹';
+  
   let totalAmount = 0;
   let totalAdvance = 0;
   let totalBalance = 0;
@@ -1350,13 +1350,13 @@ function updatePaymentSummary() {
     const advance = parseFloat(row.querySelector(`[name="advance_payment_${rowNum}"]`).value) || 0;
     const balance = amount - advance;
     
-    // Update individual balance display
-    const balanceDisplay = row.querySelector(`[name="balance_due_${rowNum}"]`);
+    // Update individual balance display with correct currency
+    const balanceDisplay = row.querySelector(`.course-balance-display[data-row="${rowNum}"]`);
     if (balanceDisplay) {
-      balanceDisplay.textContent = `₹${balance.toFixed(2)}`;
+      balanceDisplay.textContent = `${symbol}${balance.toFixed(2)}`;
       balanceDisplay.className = balance > 0 ? 
-        'border rounded px-3 py-2 bg-gray-100 text-sm font-bold text-red-600' : 
-        'border rounded px-3 py-2 bg-gray-100 text-sm font-bold text-green-600';
+        'border rounded px-3 py-2 bg-gray-100 text-sm font-bold text-red-600 course-balance-display' : 
+        'border rounded px-3 py-2 bg-gray-100 text-sm font-bold text-green-600 course-balance-display';
     }
     
     // Sum totals (all medicines, not just active)
@@ -1365,21 +1365,26 @@ function updatePaymentSummary() {
     totalBalance += balance;
   });
   
-  // Update overall summary display
+  // Update overall summary display with correct currency
   const overallTotal = document.getElementById('overall-total-amount');
   const overallAdvance = document.getElementById('overall-advance-paid');
   const overallBalance = document.getElementById('overall-balance-due');
   const overallActive = document.getElementById('overall-active-count');
   
-  if (overallTotal) overallTotal.textContent = `₹${totalAmount.toFixed(2)}`;
-  if (overallAdvance) overallAdvance.textContent = `₹${totalAdvance.toFixed(2)}`;
+  if (overallTotal) overallTotal.textContent = `${symbol}${totalAmount.toFixed(2)}`;
+  if (overallAdvance) overallAdvance.textContent = `${symbol}${totalAdvance.toFixed(2)}`;
   if (overallBalance) {
-    overallBalance.textContent = `₹${totalBalance.toFixed(2)}`;
+    overallBalance.textContent = `${symbol}${totalBalance.toFixed(2)}`;
     overallBalance.className = totalBalance > 0 ?
       'text-3xl font-bold text-red-600' :
       'text-3xl font-bold text-green-600';
   }
   if (overallActive) overallActive.textContent = activeCount;
+}
+
+// Update all currency displays when global currency changes
+function updateAllCurrencyDisplays() {
+  updatePaymentSummary();
 }
 
 // Smart follow-up calculation: Find the latest end date from ACTIVE medicines only
@@ -1490,12 +1495,16 @@ async function saveHerbsRoutes() {
     // Get follow-up date (auto-calculated from active medicines)
     const followUpDate = document.getElementById('prescription-followup').value;
     
+    // Get global currency
+    const currency = document.getElementById('prescription-currency').value || 'INR';
+    
     const data = {
       patient_id: patientId,
       follow_up_date: followUpDate || null,
       diagnosis: document.getElementById('prescription-problem').value || 'Not specified',
       notes: '',
       course: parseInt(document.getElementById('prescription-course').value) || null,
+      currency: currency,
       medicines: medicines
     };
     
