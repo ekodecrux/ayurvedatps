@@ -1696,35 +1696,59 @@ app.get('/', (c) => {
         </script>
         <style>
           @media print {
+            /* Hide everything except print content */
             body * {
               visibility: hidden;
             }
             .print-content, .print-content * {
               visibility: visible;
             }
+            
+            /* Position print content at absolute top */
             .print-content {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
-              padding-top: 0 !important;
-              margin-top: 0 !important;
-            }
-            .no-print {
-              display: none !important;
-            }
-            /* Remove extra spacing at top */
-            #prescription-summary-modal .print-content > div:first-child {
-              padding-top: 0 !important;
-              margin-top: 0 !important;
-            }
-            /* Remove modal padding in print */
-            .modal-content {
+              position: fixed !important;
+              left: 0 !important;
+              top: 0 !important;
+              width: 100% !important;
               padding: 0 !important;
               margin: 0 !important;
             }
+            
+            /* Remove all spacing from modal in print */
+            #prescription-summary-modal {
+              padding: 0 !important;
+              margin: 0 !important;
+            }
+            
+            #prescription-summary-modal > div {
+              padding: 0 !important;
+              margin: 0 !important;
+              max-height: none !important;
+              overflow: visible !important;
+            }
+            
+            /* Remove spacing from first elements */
+            .print-content > div:first-child,
+            .print-content > div:first-child > * {
+              margin-top: 0 !important;
+              padding-top: 0 !important;
+            }
+            
+            /* Hide non-print elements */
+            .no-print {
+              display: none !important;
+            }
+            
+            /* Page settings */
             @page {
-              margin: 1cm;
+              margin: 0.5cm;
+              size: A4;
+            }
+            
+            /* Ensure body starts at top */
+            body {
+              margin: 0 !important;
+              padding: 0 !important;
             }
           }
         </style>
