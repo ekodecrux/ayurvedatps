@@ -1990,7 +1990,7 @@ async function editHerbsRoutes(id) {
     document.getElementById('prescription-modal').classList.remove('hidden');
   } catch (error) {
     console.error('Edit error:', error);
-    alert('Error loading record for editing');
+    alert('Error loading record for editing: ' + (error.message || error));
   } finally {
     hideLoading();
   }
