@@ -1745,6 +1745,7 @@ async function deleteHerbsRoutes(id) {
 }
 
 async function editHerbsRoutes(id) {
+  console.log('editHerbsRoutes called with id:', id);
   try {
     showLoading();
     const res = await axios.get(`${API_BASE}/prescriptions/${id}`);
@@ -1996,6 +1997,7 @@ async function editHerbsRoutes(id) {
 }
 
 async function viewHerbsRoutes(id) {
+  console.log('viewHerbsRoutes called with id:', id);
   try {
     showLoading();
     const res = await axios.get(`${API_BASE}/prescriptions/${id}`);
@@ -2241,6 +2243,7 @@ function printSummary() {
 }
 
 async function printHerbsRoutes(id) {
+  console.log('printHerbsRoutes called with id:', id);
   try {
     // Load the data and show in summary modal, then print
     await viewHerbsRoutes(id);
