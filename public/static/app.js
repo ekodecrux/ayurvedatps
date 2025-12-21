@@ -1866,13 +1866,24 @@ async function viewHerbsRoutes(id) {
       weightHeightEl.textContent = `${hr.weight || 'N/A'} kg / ${hr.height || 'N/A'} cm`;
     }
     
-    setTextIfExists('summary-patient-address', 'N/A'); // Address not in current data
+    // Build address from components
+    const addressParts = [
+      hr.address_hno,
+      hr.address_street,
+      hr.address_apartment,
+      hr.address_area,
+      hr.address_district,
+      hr.address_state,
+      hr.address_pincode
+    ].filter(p => p); // Remove null/undefined/empty
+    const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : 'N/A';
+    setTextIfExists('summary-patient-address', fullAddress);
     setTextIfExists('summary-patient-health-issue', hr.present_health_issue);
     
     // Treatment details
     setTextIfExists('summary-given-date', formatDate(hr.created_at));
     setTextIfExists('summary-treatment-months', 'See individual medicines');
-    setTextIfExists('summary-followup-date', formatDate(hr.follow_up_date));
+    setTextIfExists('summary-followup-date', formatDate(hr.next_followup_date));
     setTextIfExists('summary-course', hr.course);
     setTextIfExists('summary-diagnosis', hr.diagnosis);
     
