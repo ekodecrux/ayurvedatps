@@ -2082,6 +2082,7 @@ async function viewHerbsRoutes(id) {
         courseDisplayNum++;
         const meds = courseGroups[courseKey];
         const firstMed = meds[0];
+        const actualCourseId = firstMed.course_number || courseDisplayNum;
         
         // Calculate course totals
         const courseAmount = parseFloat(firstMed.payment_amount || 0);
@@ -2148,7 +2149,7 @@ async function viewHerbsRoutes(id) {
               <!-- Payment Collections for this Course -->
               ${(() => {
                 if (hr.payment_collections && hr.payment_collections.length > 0) {
-                  const courseCollections = hr.payment_collections.filter(c => parseInt(c.course_id) === parseInt(courseId));
+                  const courseCollections = hr.payment_collections.filter(c => parseInt(c.course_id) === parseInt(actualCourseId));
                   if (courseCollections.length > 0) {
                     const collectionsHtml = courseCollections.map(collection => `
                       <div class="flex items-center gap-2 text-xs p-2 bg-green-50 border border-green-200 rounded">
