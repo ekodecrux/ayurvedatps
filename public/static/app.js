@@ -1135,15 +1135,21 @@ function addMedicineRow() {
   const romanId = romanNumerals[medicineCounter - 1] || `#${medicineCounter}`;
   
   const html = `
-    <div class="medicine-row border rounded-lg p-4 mb-4 bg-gray-50" data-row="${medicineCounter}">
+    <div class="medicine-row border rounded-lg p-4 mb-4 bg-gradient-to-r from-white to-blue-50" data-row="${medicineCounter}">
       <div class="flex justify-between items-center mb-3">
-        <h4 class="font-semibold text-lg">Course ${medicineCounter}</h4>
+        <div class="flex items-center space-x-4">
+          <h4 class="font-semibold text-lg text-ayurveda-700">Course ${medicineCounter}</h4>
+          <label class="flex items-center cursor-pointer">
+            <input type="checkbox" name="is_active_${medicineCounter}" class="mr-2 w-5 h-5 medicine-active-checkbox" checked onchange="updatePaymentSummary(); calculateSmartFollowUp();">
+            <span class="font-medium text-sm text-green-600">Active</span>
+          </label>
+        </div>
         <button type="button" onclick="removeMedicineRow(${medicineCounter})" class="text-red-600 hover:text-red-800">
           <i class="fas fa-times"></i>
         </button>
       </div>
       
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
         <div>
           <label class="block text-sm font-medium mb-1">Medicine Name *</label>
           <input type="text" name="medicine_name_${medicineCounter}" class="w-full border rounded px-3 py-2" required>
@@ -1167,9 +1173,32 @@ function addMedicineRow() {
             <option value="XII">XII</option>
           </select>
         </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-1">Given Date *</label>
+          <input type="date" name="given_date_${medicineCounter}" class="w-full border rounded px-3 py-2 medicine-given-date" required onchange="calculateSmartFollowUp()">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-1">Treatment Months *</label>
+          <select name="treatment_months_${medicineCounter}" class="w-full border rounded px-3 py-2 medicine-treatment-months" required onchange="calculateSmartFollowUp()">
+            <option value="1">1 Month</option>
+            <option value="2">2 Months</option>
+            <option value="3">3 Months</option>
+            <option value="4">4 Months</option>
+            <option value="5">5 Months</option>
+            <option value="6">6 Months</option>
+            <option value="7">7 Months</option>
+            <option value="8">8 Months</option>
+            <option value="9">9 Months</option>
+            <option value="10">10 Months</option>
+            <option value="11">11 Months</option>
+            <option value="12">12 Months</option>
+          </select>
+        </div>
       </div>
       
-      <div class="mb-3">
+      <div class="mb-4">
         <label class="block text-sm font-medium mb-2">Dosage Schedule</label>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
           <label class="flex items-center">
@@ -1206,44 +1235,184 @@ function addMedicineRow() {
           </label>
         </div>
       </div>
+      
+      <div class="border-t border-gray-300 pt-4">
+        <h5 class="font-medium text-sm mb-3 text-blue-700"><i class="fas fa-rupee-sign mr-2"></i>Payment Details for this Course</h5>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs font-medium mb-1">Amount (₹)</label>
+            <input type="number" step="0.01" name="payment_amount_${medicineCounter}" class="w-full border rounded px-3 py-2 text-sm medicine-payment-amount" placeholder="0.00" oninput="updatePaymentSummary()">
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1">Advance (₹)</label>
+            <input type="number" step="0.01" name="advance_payment_${medicineCounter}" class="w-full border rounded px-3 py-2 text-sm medicine-advance-payment" placeholder="0.00" oninput="updatePaymentSummary()">
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1">Balance (₹)</label>
+            <div class="border rounded px-3 py-2 bg-gray-100 text-sm font-bold text-red-600" name="balance_due_${medicineCounter}">₹0.00</div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1">Payment Notes</label>
+            <input type="text" name="payment_notes_${medicineCounter}" class="w-full border rounded px-3 py-2 text-sm" placeholder="Optional">
+          </div>
+        </div>
+      </div>
     </div>
   `;
   
   document.getElementById('medicines-list').insertAdjacentHTML('beforeend', html);
+  updatePaymentSummary();
+  calculateSmartFollowUp();
 }
 
 function removeMedicineRow(rowId) {
   const row = document.querySelector(`.medicine-row[data-row="${rowId}"]`);
-  if (row) row.remove();
+  if (row) {
+    row.remove();
+    updatePaymentSummary();
+    calculateSmartFollowUp();
+  }
+}
+
+// Update overall payment summary from individual medicine payments
+function updatePaymentSummary() {
+  let totalAmount = 0;
+  let totalAdvance = 0;
+  let totalBalance = 0;
+  let activeCount = 0;
+  
+  document.querySelectorAll('.medicine-row').forEach((row) => {
+    const rowNum = row.dataset.row;
+    
+    // Check if medicine is active
+    const isActive = row.querySelector(`[name="is_active_${rowNum}"]`).checked;
+    if (isActive) activeCount++;
+    
+    // Get payment values
+    const amount = parseFloat(row.querySelector(`[name="payment_amount_${rowNum}"]`).value) || 0;
+    const advance = parseFloat(row.querySelector(`[name="advance_payment_${rowNum}"]`).value) || 0;
+    const balance = amount - advance;
+    
+    // Update individual balance display
+    const balanceDisplay = row.querySelector(`[name="balance_due_${rowNum}"]`);
+    if (balanceDisplay) {
+      balanceDisplay.textContent = `₹${balance.toFixed(2)}`;
+      balanceDisplay.className = balance > 0 ? 
+        'border rounded px-3 py-2 bg-gray-100 text-sm font-bold text-red-600' : 
+        'border rounded px-3 py-2 bg-gray-100 text-sm font-bold text-green-600';
+    }
+    
+    // Sum totals (all medicines, not just active)
+    totalAmount += amount;
+    totalAdvance += advance;
+    totalBalance += balance;
+  });
+  
+  // Update overall summary display
+  const overallTotal = document.getElementById('overall-total-amount');
+  const overallAdvance = document.getElementById('overall-advance-paid');
+  const overallBalance = document.getElementById('overall-balance-due');
+  const overallActive = document.getElementById('overall-active-count');
+  
+  if (overallTotal) overallTotal.textContent = `₹${totalAmount.toFixed(2)}`;
+  if (overallAdvance) overallAdvance.textContent = `₹${totalAdvance.toFixed(2)}`;
+  if (overallBalance) {
+    overallBalance.textContent = `₹${totalBalance.toFixed(2)}`;
+    overallBalance.className = totalBalance > 0 ?
+      'text-3xl font-bold text-red-600' :
+      'text-3xl font-bold text-green-600';
+  }
+  if (overallActive) overallActive.textContent = activeCount;
+}
+
+// Smart follow-up calculation: Find the latest end date from ACTIVE medicines only
+function calculateSmartFollowUp() {
+  let latestEndDate = null;
+  let hasActiveMedicines = false;
+  
+  document.querySelectorAll('.medicine-row').forEach((row) => {
+    const rowNum = row.dataset.row;
+    
+    // Check if medicine is active
+    const isActive = row.querySelector(`[name="is_active_${rowNum}"]`)?.checked;
+    if (!isActive) return; // Skip inactive medicines
+    
+    hasActiveMedicines = true;
+    
+    // Get given date and treatment months
+    const givenDateInput = row.querySelector(`[name="given_date_${rowNum}"]`);
+    const monthsInput = row.querySelector(`[name="treatment_months_${rowNum}"]`);
+    
+    if (givenDateInput && givenDateInput.value && monthsInput && monthsInput.value) {
+      const givenDate = new Date(givenDateInput.value);
+      const months = parseInt(monthsInput.value) || 0;
+      
+      // Calculate end date for this medicine
+      const endDate = new Date(givenDate);
+      endDate.setMonth(endDate.getMonth() + months);
+      
+      // Track the latest end date
+      if (!latestEndDate || endDate > latestEndDate) {
+        latestEndDate = endDate;
+      }
+    }
+  });
+  
+  // Update follow-up date field
+  const followUpInput = document.getElementById('prescription-followup');
+  if (followUpInput) {
+    if (hasActiveMedicines && latestEndDate) {
+      followUpInput.value = latestEndDate.toISOString().split('T')[0];
+    } else {
+      followUpInput.value = '';
+    }
+  }
 }
 
 async function saveHerbsRoutes() {
   try {
     showLoading();
     
-    const givenDate = document.getElementById('prescription-date').value;
-    const months = parseInt(document.getElementById('prescription-months').value) || 0;
     const patientId = parseInt(document.getElementById('prescription-patient').value);
+    if (!patientId) {
+      alert('Please select a patient');
+      hideLoading();
+      return;
+    }
     
-    // Auto-calculate follow-up date
-    const nextFollowupDate = new Date(givenDate);
-    nextFollowupDate.setMonth(nextFollowupDate.getMonth() + months);
-    const followUpDateStr = nextFollowupDate.toISOString().split('T')[0];
-    
-    // Collect medicines with dosage schedule
+    // Collect medicines with per-medicine dates, months, status, and payment
     const medicines = [];
     document.querySelectorAll('.medicine-row').forEach((row, index) => {
       const rowNum = row.dataset.row;
-      const romanId = romanNumerals[index] || `#${index + 1}`;
       
-      const medicineName = row.querySelector(`[name="medicine_name_${rowNum}"]`).value;
+      const medicineName = row.querySelector(`[name="medicine_name_${rowNum}"]`)?.value;
       if (!medicineName) return; // Skip empty medicine rows
       
+      const romanIdValue = row.querySelector(`[name="roman_id_${rowNum}"]`)?.value;
+      const givenDate = row.querySelector(`[name="given_date_${rowNum}"]`)?.value;
+      const treatmentMonths = parseInt(row.querySelector(`[name="treatment_months_${rowNum}"]`)?.value) || 1;
+      const isActive = row.querySelector(`[name="is_active_${rowNum}"]`)?.checked ? 1 : 0;
+      
+      const paymentAmount = parseFloat(row.querySelector(`[name="payment_amount_${rowNum}"]`)?.value) || 0;
+      const advancePayment = parseFloat(row.querySelector(`[name="advance_payment_${rowNum}"]`)?.value) || 0;
+      const balanceDue = paymentAmount - advancePayment;
+      const paymentNotes = row.querySelector(`[name="payment_notes_${rowNum}"]`)?.value || '';
+      
+      if (!givenDate) {
+        alert(`Please provide Given Date for ${medicineName}`);
+        throw new Error('Missing required field: Given Date');
+      }
+      
       medicines.push({
-        roman_id: romanId,
+        roman_id: romanIdValue || romanNumerals[index] || `#${index + 1}`,
         medicine_name: medicineName,
         given_date: givenDate,
-        treatment_months: months,
+        treatment_months: treatmentMonths,
+        is_active: isActive,
+        payment_amount: paymentAmount,
+        advance_payment: advancePayment,
+        balance_due: balanceDue,
+        payment_notes: paymentNotes,
         morning_before: row.querySelector(`[name="morning_before_${rowNum}"]`)?.checked ? 1 : 0,
         morning_after: row.querySelector(`[name="morning_after_${rowNum}"]`)?.checked ? 1 : 0,
         afternoon_before: row.querySelector(`[name="afternoon_before_${rowNum}"]`)?.checked ? 1 : 0,
@@ -1261,43 +1430,40 @@ async function saveHerbsRoutes() {
       return;
     }
     
-    const totalAmount = parseFloat(document.getElementById('prescription-amount').value) || 0;
-    const advancePaid = parseFloat(document.getElementById('prescription-advance').value) || 0;
+    // Get follow-up date (auto-calculated from active medicines)
+    const followUpDate = document.getElementById('prescription-followup').value;
     
     const data = {
       patient_id: patientId,
-      given_date: givenDate,
-      treatment_months: months,
-      follow_up_date: followUpDateStr,
+      follow_up_date: followUpDate || null,
       diagnosis: document.getElementById('prescription-problem').value || 'Not specified',
       notes: '',
       course: parseInt(document.getElementById('prescription-course').value) || null,
-      payment_amount: totalAmount,
-      advance_payment: advancePaid,
-      due_balance: totalAmount - advancePaid,
-      payment_notes: document.getElementById('prescription-payment-notes').value,
       medicines: medicines
     };
     
     // Save the Herbs & Routes record
     const result = await axios.post(`${API_BASE}/prescriptions`, data);
     
-    // Auto-create reminder for follow-up date
-    try {
-      const reminderData = {
-        patient_id: patientId,
-        reminder_date: followUpDateStr,
-        reminder_type: 'Follow-up',
-        notes: `Follow-up for Herbs & Routes treatment (${months} month${months > 1 ? 's' : ''} course)`
-      };
-      await axios.post(`${API_BASE}/reminders`, reminderData);
-      console.log('Reminder created automatically for follow-up date');
-    } catch (reminderError) {
-      console.error('Error creating reminder:', reminderError);
-      // Don't fail the whole operation if reminder creation fails
+    // Auto-create reminder for follow-up date (only if we have active medicines)
+    if (followUpDate) {
+      try {
+        const activeMedicines = medicines.filter(m => m.is_active);
+        const reminderData = {
+          patient_id: patientId,
+          reminder_date: followUpDate,
+          reminder_type: 'Follow-up',
+          notes: `Follow-up for Herbs & Routes treatment (${activeMedicines.length} active medicine${activeMedicines.length > 1 ? 's' : ''})`
+        };
+        await axios.post(`${API_BASE}/reminders`, reminderData);
+        console.log('Reminder created automatically for follow-up date');
+      } catch (reminderError) {
+        console.error('Error creating reminder:', reminderError);
+        // Don't fail the whole operation if reminder creation fails
+      }
     }
     
-    alert(`Herbs & Routes record created successfully!\nFollow-up date: ${formatDate(followUpDateStr)}\nReminder has been set automatically.`);
+    alert(`Herbs & Routes record created successfully!${followUpDate ? `\nFollow-up date: ${formatDate(followUpDate)}\nReminder has been set automatically.` : ''}`);
     
     closeHerbsRoutesModal();
     loadHerbsRoutes();

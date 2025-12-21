@@ -926,44 +926,42 @@ app.post('/api/prescriptions', async (c) => {
   try {
     const body = await c.req.json()
     
-    // Insert herbs_routes record
+    // Insert herbs_routes record (simplified - per-medicine data moved to medicines_tracking)
     const result = await c.env.DB.prepare(`
       INSERT INTO herbs_routes (
-        patient_id, given_date, treatment_months, next_followup_date,
-        diagnosis, notes, payment_amount, advance_payment, 
-        due_balance, payment_notes, course
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        patient_id, next_followup_date, diagnosis, notes, course
+      ) VALUES (?, ?, ?, ?, ?)
     `).bind(
       body.patient_id,
-      body.given_date,
-      body.treatment_months,
       body.follow_up_date || null,
       body.diagnosis || null,
       body.notes || null,
-      body.payment_amount || 0,
-      body.advance_payment || 0,
-      body.due_balance || 0,
-      body.payment_notes || null,
       body.course || null
     ).run()
     
     const herbsRouteId = result.meta.last_row_id
     
-    // Insert medicines
+    // Insert medicines with per-medicine fields
     if (body.medicines && body.medicines.length > 0) {
       for (const med of body.medicines) {
         await c.env.DB.prepare(`
           INSERT INTO medicines_tracking (
             herbs_route_id, roman_id, medicine_name, given_date, treatment_months,
+            is_active, payment_amount, advance_payment, balance_due, payment_notes,
             morning_before, morning_after, afternoon_before, afternoon_after,
             evening_before, evening_after, night_before, night_after
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           herbsRouteId,
           med.roman_id,
           med.medicine_name,
           med.given_date,
           med.treatment_months,
+          med.is_active ? 1 : 0,
+          med.payment_amount || 0,
+          med.advance_payment || 0,
+          med.balance_due || 0,
+          med.payment_notes || null,
           med.morning_before ? 1 : 0,
           med.morning_after ? 1 : 0,
           med.afternoon_before ? 1 : 0,
@@ -976,7 +974,7 @@ app.post('/api/prescriptions', async (c) => {
       }
     }
     
-    // Create follow-up reminder
+    // Create follow-up reminder (only if follow_up_date exists)
     if (body.follow_up_date) {
       await c.env.DB.prepare(`
         INSERT INTO reminders (
@@ -1004,25 +1002,17 @@ app.put('/api/prescriptions/:id', async (c) => {
     const id = c.req.param('id')
     const body = await c.req.json()
     
-    // Update herbs_routes record
+    // Update herbs_routes record (simplified - per-medicine data moved to medicines_tracking)
     await c.env.DB.prepare(`
       UPDATE herbs_routes SET 
-        patient_id = ?, given_date = ?, treatment_months = ?, next_followup_date = ?,
-        diagnosis = ?, notes = ?, payment_amount = ?, advance_payment = ?, 
-        due_balance = ?, payment_notes = ?, course = ?,
+        patient_id = ?, next_followup_date = ?, diagnosis = ?, notes = ?, course = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(
       body.patient_id,
-      body.given_date,
-      body.treatment_months,
       body.follow_up_date || null,
       body.diagnosis || null,
       body.notes || null,
-      body.payment_amount || 0,
-      body.advance_payment || 0,
-      body.due_balance || 0,
-      body.payment_notes || null,
       body.course || null,
       id
     ).run()
@@ -1032,21 +1022,27 @@ app.put('/api/prescriptions/:id', async (c) => {
       'DELETE FROM medicines_tracking WHERE herbs_route_id = ?'
     ).bind(id).run()
     
-    // Insert updated medicines
+    // Insert updated medicines with per-medicine fields
     if (body.medicines && body.medicines.length > 0) {
       for (const med of body.medicines) {
         await c.env.DB.prepare(`
           INSERT INTO medicines_tracking (
             herbs_route_id, roman_id, medicine_name, given_date, treatment_months,
+            is_active, payment_amount, advance_payment, balance_due, payment_notes,
             morning_before, morning_after, afternoon_before, afternoon_after,
             evening_before, evening_after, night_before, night_after
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           id,
           med.roman_id,
           med.medicine_name,
           med.given_date,
           med.treatment_months,
+          med.is_active ? 1 : 0,
+          med.payment_amount || 0,
+          med.advance_payment || 0,
+          med.balance_due || 0,
+          med.payment_notes || null,
           med.morning_before ? 1 : 0,
           med.morning_after ? 1 : 0,
           med.afternoon_before ? 1 : 0,
@@ -2324,32 +2320,7 @@ app.get('/', (c) => {
                             </div>
                         </div>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Given Date *</label>
-                                <input type="date" id="prescription-date" class="border rounded px-3 py-2 w-full" required onchange="calculateFollowUpDate()">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Treatment Months *</label>
-                                <select id="prescription-months" class="border rounded px-3 py-2 w-full" required onchange="calculateFollowUpDate()">
-                                    <option value="1">1 Month</option>
-                                    <option value="2">2 Months</option>
-                                    <option value="3">3 Months</option>
-                                    <option value="4">4 Months</option>
-                                    <option value="5">5 Months</option>
-                                    <option value="6">6 Months</option>
-                                    <option value="7">7 Months</option>
-                                    <option value="8">8 Months</option>
-                                    <option value="9">9 Months</option>
-                                    <option value="10">10 Months</option>
-                                    <option value="11">11 Months</option>
-                                    <option value="12">12 Months</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Follow-up Date</label>
-                                <input type="date" id="prescription-followup" class="border rounded px-3 py-2 w-full bg-gray-100" readonly>
-                            </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                             <div>
                                 <label class="block text-sm font-medium mb-1">Entire Course (1-16)</label>
                                 <select id="prescription-course" class="border rounded px-3 py-2 w-full">
@@ -2371,6 +2342,11 @@ app.get('/', (c) => {
                                     <option value="16">16</option>
                                 </select>
                             </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Next Follow-up Date</label>
+                                <input type="date" id="prescription-followup" class="border rounded px-3 py-2 w-full bg-gray-100" readonly>
+                                <p class="text-xs text-gray-500 mt-1">Auto-calculated from active medicines</p>
+                            </div>
                         </div>
                         
                         <div class="mb-6">
@@ -2389,24 +2365,28 @@ app.get('/', (c) => {
                         </div>
                         
                         <div class="border-t pt-6 mb-6">
-                            <h4 class="font-bold text-lg mb-4 text-ayurveda-700">Payment Details</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium mb-1">Total Amount (₹)</label>
-                                    <input type="number" step="0.01" id="prescription-amount" class="border rounded px-3 py-2 w-full" oninput="calculateBalance()" placeholder="0.00">
+                            <h4 class="font-bold text-lg mb-4 text-ayurveda-700">Overall Payment Summary</h4>
+                            <div class="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                    <div class="text-center">
+                                        <p class="text-sm text-gray-600 mb-1">Total Amount</p>
+                                        <p class="text-3xl font-bold text-blue-600" id="overall-total-amount">₹0.00</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-sm text-gray-600 mb-1">Total Advance Paid</p>
+                                        <p class="text-3xl font-bold text-green-600" id="overall-advance-paid">₹0.00</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-sm text-gray-600 mb-1">Total Balance Due</p>
+                                        <p class="text-3xl font-bold text-red-600" id="overall-balance-due">₹0.00</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-sm text-gray-600 mb-1">Active Medicines</p>
+                                        <p class="text-3xl font-bold text-purple-600" id="overall-active-count">0</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="block text-sm font-medium mb-1">Advance Paid (₹)</label>
-                                    <input type="number" step="0.01" id="prescription-advance" class="border rounded px-3 py-2 w-full" oninput="calculateBalance()" placeholder="0.00">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium mb-1">Balance Due</label>
-                                    <div class="border rounded px-3 py-2 bg-gray-100 text-lg font-bold text-red-600" id="prescription-balance-display">₹0.00</div>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium mb-1">Payment Notes</label>
-                                    <input type="text" id="prescription-payment-notes" class="border rounded px-3 py-2 w-full" placeholder="Optional notes">
-                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-3 text-center"><i class="fas fa-info-circle mr-1"></i>Summary automatically calculated from individual medicine payments</p>
                             </div>
                         </div>
                         
