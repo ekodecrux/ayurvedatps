@@ -1171,6 +1171,8 @@ let courseToMedicineMap = {}; // Track medicines per course
 
 function addMedicineRow() {
   medicineCounter++;
+  console.log('addMedicineRow called, medicineCounter:', medicineCounter);
+  console.log('Current courseToMedicineMap:', courseToMedicineMap);
   
   const html = `
     <div class="medicine-row border rounded-lg p-4 mb-4 bg-gradient-to-r from-white to-blue-50" data-row="${medicineCounter}">

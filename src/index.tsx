@@ -1707,9 +1707,21 @@ app.get('/', (c) => {
               left: 0;
               top: 0;
               width: 100%;
+              padding-top: 0 !important;
+              margin-top: 0 !important;
             }
             .no-print {
               display: none !important;
+            }
+            /* Remove extra spacing at top */
+            #prescription-summary-modal .print-content > div:first-child {
+              padding-top: 0 !important;
+              margin-top: 0 !important;
+            }
+            /* Remove modal padding in print */
+            .modal-content {
+              padding: 0 !important;
+              margin: 0 !important;
             }
             @page {
               margin: 1cm;
