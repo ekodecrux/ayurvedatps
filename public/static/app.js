@@ -1916,18 +1916,21 @@ async function viewHerbsRoutes(id) {
     // Show medicines grouped by course with payment details
     const medicinesListEl = document.getElementById('summary-medicines-list');
     if (medicinesListEl && hr.medicines && hr.medicines.length > 0) {
-      // Group medicines by course
+      // Group medicines by course - use combination of given_date, treatment_months, and payment_amount to identify unique courses
       const courseGroups = {};
       hr.medicines.forEach(med => {
-        const courseNum = med.course_number || 1;
-        if (!courseGroups[courseNum]) {
-          courseGroups[courseNum] = [];
+        // Create unique key for each course based on its characteristics
+        const courseKey = `${med.given_date}_${med.treatment_months}_${med.payment_amount}_${med.advance_payment}`;
+        if (!courseGroups[courseKey]) {
+          courseGroups[courseKey] = [];
         }
-        courseGroups[courseNum].push(med);
+        courseGroups[courseKey].push(med);
       });
       
-      const coursesHtml = Object.keys(courseGroups).sort((a, b) => a - b).map(courseNum => {
-        const meds = courseGroups[courseNum];
+      let courseDisplayNum = 0;
+      const coursesHtml = Object.keys(courseGroups).map(courseKey => {
+        courseDisplayNum++;
+        const meds = courseGroups[courseKey];
         const firstMed = meds[0];
         
         // Calculate course totals
@@ -1970,7 +1973,7 @@ async function viewHerbsRoutes(id) {
           <div class="mb-4 p-4 border-2 border-ayurveda-300 rounded-lg bg-gradient-to-r from-white to-green-50">
             <div class="flex justify-between items-center mb-3 pb-2 border-b border-ayurveda-300">
               <h5 class="font-bold text-lg text-ayurveda-700">
-                <i class="fas fa-leaf mr-2"></i>Course ${courseNum}
+                <i class="fas fa-leaf mr-2"></i>Course ${courseDisplayNum}
               </h5>
               <div class="text-sm text-gray-600">
                 <strong>Duration:</strong> ${firstMed.treatment_months || 0} months | 
@@ -1982,7 +1985,7 @@ async function viewHerbsRoutes(id) {
             
             <div class="mt-3 pt-3 border-t border-gray-300 bg-white rounded p-3">
               <h6 class="font-semibold text-sm text-green-700 mb-2">
-                <i class="fas fa-money-bill-wave mr-1"></i>Payment Details - Course ${courseNum}
+                <i class="fas fa-money-bill-wave mr-1"></i>Payment Details - Course ${courseDisplayNum}
               </h6>
               <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                 <div><span class="font-medium">Amount:</span> <span class="font-bold text-blue-600">${symbol}${courseAmount.toFixed(2)}</span></div>
