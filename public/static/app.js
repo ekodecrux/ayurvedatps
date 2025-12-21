@@ -1009,14 +1009,16 @@ function showHerbsRoutesModal() {
   document.getElementById('prescription-id').value = '';
   document.getElementById('medicines-list').innerHTML = '';
   medicineCounter = 0;
+  courseToMedicineMap = {};
   
-  // Set today's date as default
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('prescription-date').value = today;
+  // Reset payment summary
+  document.getElementById('summary-total-amount').textContent = '₹0.00';
+  document.getElementById('summary-total-advance').textContent = '₹0.00';
+  document.getElementById('summary-total-balance').textContent = '₹0.00';
+  document.getElementById('summary-active-count').textContent = '0';
   
-  // Reset balance display
-  const balanceDisplay = document.getElementById('prescription-balance-display');
-  if (balanceDisplay) balanceDisplay.textContent = '₹0.00';
+  // Reset follow-up date
+  document.getElementById('prescription-followup').value = '';
   
   addMedicineRow();
   loadPatientsForHerbsRoutes();
@@ -1129,10 +1131,10 @@ function calculateFollowUpDate() {
 
 
 let medicineCounter = 0;
+let courseToMedicineMap = {}; // Track medicines per course
 
 function addMedicineRow() {
   medicineCounter++;
-  const romanId = romanNumerals[medicineCounter - 1] || `#${medicineCounter}`;
   
   const html = `
     <div class="medicine-row border rounded-lg p-4 mb-4 bg-gradient-to-r from-white to-blue-50" data-row="${medicineCounter}">
@@ -1149,36 +1151,12 @@ function addMedicineRow() {
         </button>
       </div>
       
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-        <div>
-          <label class="block text-sm font-medium mb-1">Medicine Name *</label>
-          <input type="text" name="medicine_name_${medicineCounter}" class="w-full border rounded px-3 py-2" required>
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium mb-1">Roman ID</label>
-          <select name="roman_id_${medicineCounter}" class="w-full border rounded px-3 py-2">
-            <option value="">Select Roman ID</option>
-            <option value="I">I</option>
-            <option value="II">II</option>
-            <option value="III">III</option>
-            <option value="IV">IV</option>
-            <option value="V">V</option>
-            <option value="VI">VI</option>
-            <option value="VII">VII</option>
-            <option value="VIII">VIII</option>
-            <option value="IX">IX</option>
-            <option value="X">X</option>
-            <option value="XI">XI</option>
-            <option value="XII">XII</option>
-          </select>
-        </div>
-        
+      <!-- Given Date and Treatment Months at the beginning -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-300">
         <div>
           <label class="block text-sm font-medium mb-1">Given Date *</label>
           <input type="date" name="given_date_${medicineCounter}" class="w-full border rounded px-3 py-2 medicine-given-date" required onchange="calculateSmartFollowUp()">
         </div>
-        
         <div>
           <label class="block text-sm font-medium mb-1">Treatment Months *</label>
           <select name="treatment_months_${medicineCounter}" class="w-full border rounded px-3 py-2 medicine-treatment-months" required onchange="calculateSmartFollowUp()">
@@ -1198,57 +1176,40 @@ function addMedicineRow() {
         </div>
       </div>
       
+      <!-- Add Medicine button -->
       <div class="mb-4">
-        <label class="block text-sm font-medium mb-2">Dosage Schedule</label>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-          <label class="flex items-center">
-            <input type="checkbox" name="morning_before_${medicineCounter}" class="mr-2">
-            Morning (Before)
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="morning_after_${medicineCounter}" class="mr-2">
-            Morning (After)
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="afternoon_before_${medicineCounter}" class="mr-2">
-            Afternoon (Before)
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="afternoon_after_${medicineCounter}" class="mr-2">
-            Afternoon (After)
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="evening_before_${medicineCounter}" class="mr-2">
-            Evening (Before)
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="evening_after_${medicineCounter}" class="mr-2">
-            Evening (After)
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="night_before_${medicineCounter}" class="mr-2">
-            Night (Before)
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="night_after_${medicineCounter}" class="mr-2">
-            Night (After)
-          </label>
-        </div>
+        <button type="button" onclick="addMedicineToRow(${medicineCounter})" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+          <i class="fas fa-plus mr-2"></i>Add Medicine
+        </button>
+      </div>
+      
+      <!-- Medicines container -->
+      <div id="medicines-container-${medicineCounter}" class="space-y-3 mb-4">
+        <!-- Medicines will be added here -->
       </div>
       
       <div class="border-t border-gray-300 pt-4">
-        <h5 class="font-medium text-sm mb-3 text-blue-700"><i class="fas fa-rupee-sign mr-2"></i>Payment Details for this Course</h5>
+        <div class="flex items-center justify-between mb-3">
+          <h5 class="font-medium text-sm text-blue-700"><i class="fas fa-rupee-sign mr-2"></i>Payment Details for this Course</h5>
+          <div class="flex items-center space-x-2">
+            <label class="text-xs font-medium">Currency:</label>
+            <select name="currency_${medicineCounter}" class="border rounded px-2 py-1 text-sm course-currency" onchange="updatePaymentSummary()">
+              <option value="INR">₹ INR</option>
+              <option value="USD">$ USD</option>
+            </select>
+          </div>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label class="block text-xs font-medium mb-1">Amount (₹)</label>
+            <label class="block text-xs font-medium mb-1">Amount</label>
             <input type="number" step="0.01" name="payment_amount_${medicineCounter}" class="w-full border rounded px-3 py-2 text-sm medicine-payment-amount" placeholder="0.00" oninput="updatePaymentSummary()">
           </div>
           <div>
-            <label class="block text-xs font-medium mb-1">Advance (₹)</label>
+            <label class="block text-xs font-medium mb-1">Advance</label>
             <input type="number" step="0.01" name="advance_payment_${medicineCounter}" class="w-full border rounded px-3 py-2 text-sm medicine-advance-payment" placeholder="0.00" oninput="updatePaymentSummary()">
           </div>
           <div>
-            <label class="block text-xs font-medium mb-1">Balance (₹)</label>
+            <label class="block text-xs font-medium mb-1">Balance</label>
             <div class="border rounded px-3 py-2 bg-gray-100 text-sm font-bold text-red-600" name="balance_due_${medicineCounter}">₹0.00</div>
           </div>
           <div>
@@ -1261,8 +1222,104 @@ function addMedicineRow() {
   `;
   
   document.getElementById('medicines-list').insertAdjacentHTML('beforeend', html);
+  courseToMedicineMap[medicineCounter] = 0; // Initialize medicine counter for this course
+  addMedicineToRow(medicineCounter); // Add first medicine automatically
   updatePaymentSummary();
   calculateSmartFollowUp();
+}
+
+// Add a medicine to a specific course
+function addMedicineToRow(courseId) {
+  if (!courseToMedicineMap[courseId]) {
+    courseToMedicineMap[courseId] = 0;
+  }
+  courseToMedicineMap[courseId]++;
+  const medId = courseToMedicineMap[courseId];
+  
+  const html = `
+    <div class="medicine-item border border-blue-200 rounded-lg p-3 bg-blue-50" data-course="${courseId}" data-medicine="${medId}">
+      <div class="flex justify-between items-center mb-3">
+        <h5 class="font-medium text-sm text-blue-800">Medicine ${medId}</h5>
+        <button type="button" onclick="removeMedicineFromRow(${courseId}, ${medId})" class="text-red-600 hover:text-red-800 text-sm">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+        <div>
+          <label class="block text-xs font-medium mb-1">Roman ID</label>
+          <select name="roman_id_${courseId}_${medId}" class="w-full border rounded px-2 py-2 text-sm">
+            <option value="">Select Roman ID</option>
+            <option value="I">I</option>
+            <option value="II">II</option>
+            <option value="III">III</option>
+            <option value="IV">IV</option>
+            <option value="V">V</option>
+            <option value="VI">VI</option>
+            <option value="VII">VII</option>
+            <option value="VIII">VIII</option>
+            <option value="IX">IX</option>
+            <option value="X">X</option>
+            <option value="XI">XI</option>
+            <option value="XII">XII</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-xs font-medium mb-1">Medicine Name *</label>
+          <input type="text" name="medicine_name_${courseId}_${medId}" class="w-full border rounded px-2 py-2 text-sm" required>
+        </div>
+      </div>
+      
+      <div>
+        <label class="block text-xs font-medium mb-2">Dosage Schedule</label>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+          <label class="flex items-center">
+            <input type="checkbox" name="morning_before_${courseId}_${medId}" class="mr-1">
+            Morning (Before)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="morning_after_${courseId}_${medId}" class="mr-1">
+            Morning (After)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="afternoon_before_${courseId}_${medId}" class="mr-1">
+            Afternoon (Before)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="afternoon_after_${courseId}_${medId}" class="mr-1">
+            Afternoon (After)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="evening_before_${courseId}_${medId}" class="mr-1">
+            Evening (Before)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="evening_after_${courseId}_${medId}" class="mr-1">
+            Evening (After)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="night_before_${courseId}_${medId}" class="mr-1">
+            Night (Before)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="night_after_${courseId}_${medId}" class="mr-1">
+            Night (After)
+          </label>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById(`medicines-container-${courseId}`).insertAdjacentHTML('beforeend', html);
+}
+
+// Remove a medicine from a course
+function removeMedicineFromRow(courseId, medId) {
+  const medicine = document.querySelector(`.medicine-item[data-course="${courseId}"][data-medicine="${medId}"]`);
+  if (medicine) {
+    medicine.remove();
+  }
 }
 
 function removeMedicineRow(rowId) {
