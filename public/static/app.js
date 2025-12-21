@@ -1823,61 +1823,102 @@ async function viewHerbsRoutes(id) {
     const res = await axios.get(`${API_BASE}/prescriptions/${id}`);
     const hr = res.data.data;
     
-    // Populate summary modal
-    document.getElementById('summary-patient-name').textContent = hr.patient_name || 'N/A';
-    document.getElementById('summary-patient-id').textContent = hr.patient_id || 'N/A';
-    document.getElementById('summary-patient-age').textContent = hr.age || 'N/A';
-    document.getElementById('summary-patient-gender').textContent = hr.gender || 'N/A';
-    document.getElementById('summary-patient-phone').textContent = hr.patient_phone || 'N/A';
-    document.getElementById('summary-patient-email').textContent = hr.patient_email || 'N/A';
+    // Populate summary modal - check if elements exist before setting
+    const setTextIfExists = (id, text) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text || 'N/A';
+    };
     
-    // Show problem/diagnosis
-    document.getElementById('summary-diagnosis').textContent = hr.diagnosis || 'N/A';
-    document.getElementById('summary-given-date').textContent = formatDate(hr.created_at);
-    document.getElementById('summary-followup-date').textContent = formatDate(hr.follow_up_date) || 'Not set';
+    setTextIfExists('summary-patient-name', hr.patient_name);
+    setTextIfExists('summary-patient-id', hr.patient_id);
+    
+    // Age/Gender combined
+    const ageGenderEl = document.getElementById('summary-patient-age-gender');
+    if (ageGenderEl) {
+      ageGenderEl.textContent = `${hr.age || 'N/A'} / ${hr.gender || 'N/A'}`;
+    }
+    
+    setTextIfExists('summary-patient-phone', hr.patient_phone);
+    setTextIfExists('summary-patient-country', hr.country);
+    
+    // Weight/Height combined
+    const weightHeightEl = document.getElementById('summary-patient-weight-height');
+    if (weightHeightEl) {
+      weightHeightEl.textContent = `${hr.weight || 'N/A'} kg / ${hr.height || 'N/A'} cm`;
+    }
+    
+    setTextIfExists('summary-patient-address', 'N/A'); // Address not in current data
+    setTextIfExists('summary-patient-health-issue', hr.present_health_issue);
+    
+    // Treatment details
+    setTextIfExists('summary-given-date', formatDate(hr.created_at));
+    setTextIfExists('summary-treatment-months', 'See individual medicines');
+    setTextIfExists('summary-followup-date', formatDate(hr.follow_up_date));
+    setTextIfExists('summary-course', hr.course);
+    setTextIfExists('summary-diagnosis', hr.diagnosis);
     
     // Show medicines
-    const medicinesHtml = (hr.medicines || []).map((med, index) => `
-      <div class="mb-4 p-4 border rounded-lg">
-        <h5 class="font-semibold text-blue-700 mb-2">
-          <span class="mr-2">${med.roman_id || ''}</span>
-          ${med.medicine_name}
-        </h5>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-          ${med.morning_before ? '<span class="badge">Morning (Before)</span>' : ''}
-          ${med.morning_after ? '<span class="badge">Morning (After)</span>' : ''}
-          ${med.afternoon_before ? '<span class="badge">Afternoon (Before)</span>' : ''}
-          ${med.afternoon_after ? '<span class="badge">Afternoon (After)</span>' : ''}
-          ${med.evening_before ? '<span class="badge">Evening (Before)</span>' : ''}
-          ${med.evening_after ? '<span class="badge">Evening (After)</span>' : ''}
-          ${med.night_before ? '<span class="badge">Night (Before)</span>' : ''}
-          ${med.night_after ? '<span class="badge">Night (After)</span>' : ''}
-        </div>
-        <div class="mt-2 text-sm">
-          <strong>Course:</strong> ${med.treatment_months || 0} months | 
-          <strong>Given Date:</strong> ${formatDate(med.given_date)} |
-          <strong>Status:</strong> ${med.is_active ? '<span class="text-green-600">Active</span>' : '<span class="text-gray-500">Inactive</span>'}
-        </div>
-      </div>
-    `).join('') || '<p class="text-gray-500">No medicines prescribed</p>';
-    
-    document.getElementById('summary-medicines-list').innerHTML = medicinesHtml;
+    const medicinesListEl = document.getElementById('summary-medicines-list');
+    if (medicinesListEl && hr.medicines && hr.medicines.length > 0) {
+      const medicinesHtml = hr.medicines.map((med, index) => {
+        // Build dosage schedule badges
+        const dosages = [];
+        if (med.morning_before) dosages.push('<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">Morning (Before)</span>');
+        if (med.morning_after) dosages.push('<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">Morning (After)</span>');
+        if (med.afternoon_before) dosages.push('<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Afternoon (Before)</span>');
+        if (med.afternoon_after) dosages.push('<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Afternoon (After)</span>');
+        if (med.evening_before) dosages.push('<span class="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">Evening (Before)</span>');
+        if (med.evening_after) dosages.push('<span class="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">Evening (After)</span>');
+        if (med.night_before) dosages.push('<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">Night (Before)</span>');
+        if (med.night_after) dosages.push('<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">Night (After)</span>');
+        
+        return `
+          <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+            <div class="flex justify-between items-start mb-2">
+              <h5 class="font-semibold text-blue-700">
+                ${med.roman_id ? `<span class="mr-2">${med.roman_id}.</span>` : ''}
+                ${med.medicine_name}
+              </h5>
+              <span class="px-2 py-1 rounded text-xs ${med.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'}">
+                ${med.is_active ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+            <div class="flex flex-wrap gap-1 mb-2">
+              ${dosages.join('') || '<span class="text-gray-500 text-sm">No dosage schedule specified</span>'}
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 mt-2">
+              <div><strong>Given Date:</strong> ${formatDate(med.given_date)}</div>
+              <div><strong>Duration:</strong> ${med.treatment_months || 0} months</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      medicinesListEl.innerHTML = medicinesHtml;
+    } else if (medicinesListEl) {
+      medicinesListEl.innerHTML = '<p class="text-gray-500 text-center py-4">No medicines prescribed</p>';
+    }
     
     // Calculate and show payment summary
     const currency = hr.currency || 'INR';
     const symbol = currency === 'USD' ? '$' : '₹';
     let totalAmount = 0;
     let totalAdvance = 0;
-    (hr.medicines || []).forEach(med => {
-      totalAmount += parseFloat(med.payment_amount || 0);
-      totalAdvance += parseFloat(med.advance_payment || 0);
-    });
+    
+    if (hr.medicines && hr.medicines.length > 0) {
+      hr.medicines.forEach(med => {
+        totalAmount += parseFloat(med.payment_amount || 0);
+        totalAdvance += parseFloat(med.advance_payment || 0);
+      });
+    }
+    
     const totalBalance = totalAmount - totalAdvance;
     
-    document.getElementById('summary-total-amount').textContent = `${symbol}${totalAmount.toFixed(2)}`;
-    document.getElementById('summary-advance-paid').textContent = `${symbol}${totalAdvance.toFixed(2)}`;
-    document.getElementById('summary-balance-due').textContent = `${symbol}${totalBalance.toFixed(2)}`;
-    document.getElementById('summary-followup-reminder').textContent = formatDate(hr.follow_up_date) || 'Not set';
+    setTextIfExists('summary-total-amount', `${symbol}${totalAmount.toFixed(2)}`);
+    setTextIfExists('summary-advance-paid', `${symbol}${totalAdvance.toFixed(2)}`);
+    setTextIfExists('summary-balance-due', `${symbol}${totalBalance.toFixed(2)}`);
+    setTextIfExists('summary-payment-notes', 'N/A');
+    setTextIfExists('summary-followup-reminder', formatDate(hr.follow_up_date) || 'Not set');
     
     // Show the modal
     document.getElementById('prescription-summary-modal').classList.remove('hidden');
