@@ -978,15 +978,14 @@ app.post('/api/prescriptions', async (c) => {
     if (body.follow_up_date) {
       await c.env.DB.prepare(`
         INSERT INTO reminders (
-          patient_id, type, scheduled_date, title, message, status
-        ) VALUES (?, ?, ?, ?, ?, ?)
+          patient_id, reminder_type, reminder_date, message, status
+        ) VALUES (?, ?, ?, ?, ?)
       `).bind(
         body.patient_id,
         'Follow-up',
         body.follow_up_date || null,
-        'Follow-up Consultation',
         'Time for your follow-up consultation',
-        'Pending'
+        'pending'
       ).run()
     }
     
