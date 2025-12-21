@@ -1494,45 +1494,53 @@ async function saveHerbsRoutes() {
     
     // Collect medicines with per-medicine dates, months, status, and payment
     const medicines = [];
-    document.querySelectorAll('.medicine-row').forEach((row, index) => {
-      const rowNum = row.dataset.row;
+    document.querySelectorAll('.medicine-row').forEach((courseRow, index) => {
+      const courseId = courseRow.dataset.row;
       
-      const medicineName = row.querySelector(`[name="medicine_name_${rowNum}"]`)?.value;
-      if (!medicineName) return; // Skip empty medicine rows
-      
-      const romanIdValue = row.querySelector(`[name="roman_id_${rowNum}"]`)?.value;
-      const givenDate = row.querySelector(`[name="given_date_${rowNum}"]`)?.value;
-      const treatmentMonths = parseInt(row.querySelector(`[name="treatment_months_${rowNum}"]`)?.value) || 1;
-      const isActive = row.querySelector(`[name="is_active_${rowNum}"]`)?.checked ? 1 : 0;
-      
-      const paymentAmount = parseFloat(row.querySelector(`[name="payment_amount_${rowNum}"]`)?.value) || 0;
-      const advancePayment = parseFloat(row.querySelector(`[name="advance_payment_${rowNum}"]`)?.value) || 0;
+      // Get course-level data
+      const givenDate = courseRow.querySelector(`[name="given_date_${courseId}"]`)?.value;
+      const treatmentMonths = parseInt(courseRow.querySelector(`[name="treatment_months_${courseId}"]`)?.value) || 1;
+      const isActive = courseRow.querySelector(`[name="is_active_${courseId}"]`)?.checked ? 1 : 0;
+      const paymentAmount = parseFloat(courseRow.querySelector(`[name="payment_amount_${courseId}"]`)?.value) || 0;
+      const advancePayment = parseFloat(courseRow.querySelector(`[name="advance_payment_${courseId}"]`)?.value) || 0;
       const balanceDue = paymentAmount - advancePayment;
-      const paymentNotes = row.querySelector(`[name="payment_notes_${rowNum}"]`)?.value || '';
+      const paymentNotes = courseRow.querySelector(`[name="payment_notes_${courseId}"]`)?.value || '';
       
-      if (!givenDate) {
-        alert(`Please provide Given Date for ${medicineName}`);
+      if (!givenDate && isActive) {
+        alert(`Please provide Given Date for Course ${index + 1}`);
         throw new Error('Missing required field: Given Date');
       }
       
-      medicines.push({
-        roman_id: romanIdValue || romanNumerals[index] || `#${index + 1}`,
-        medicine_name: medicineName,
-        given_date: givenDate,
-        treatment_months: treatmentMonths,
-        is_active: isActive,
-        payment_amount: paymentAmount,
-        advance_payment: advancePayment,
-        balance_due: balanceDue,
-        payment_notes: paymentNotes,
-        morning_before: row.querySelector(`[name="morning_before_${rowNum}"]`)?.checked ? 1 : 0,
-        morning_after: row.querySelector(`[name="morning_after_${rowNum}"]`)?.checked ? 1 : 0,
-        afternoon_before: row.querySelector(`[name="afternoon_before_${rowNum}"]`)?.checked ? 1 : 0,
-        afternoon_after: row.querySelector(`[name="afternoon_after_${rowNum}"]`)?.checked ? 1 : 0,
-        evening_before: row.querySelector(`[name="evening_before_${rowNum}"]`)?.checked ? 1 : 0,
-        evening_after: row.querySelector(`[name="evening_after_${rowNum}"]`)?.checked ? 1 : 0,
-        night_before: row.querySelector(`[name="night_before_${rowNum}"]`)?.checked ? 1 : 0,
-        night_after: row.querySelector(`[name="night_after_${rowNum}"]`)?.checked ? 1 : 0
+      // Collect all medicines in this course
+      courseRow.querySelectorAll('.medicine-item').forEach((medItem) => {
+        const medCourse = medItem.dataset.course;
+        const medId = medItem.dataset.medicine;
+        
+        const medicineName = medItem.querySelector(`[name="medicine_name_${medCourse}_${medId}"]`)?.value;
+        if (!medicineName) return; // Skip empty medicine items
+        
+        const romanIdValue = medItem.querySelector(`[name="roman_id_${medCourse}_${medId}"]`)?.value;
+        
+        medicines.push({
+          roman_id: romanIdValue || romanNumerals[medicines.length] || `#${medicines.length + 1}`,
+          medicine_name: medicineName,
+          given_date: givenDate,
+          treatment_months: treatmentMonths,
+          is_active: isActive,
+          payment_amount: paymentAmount,
+          advance_payment: advancePayment,
+          balance_due: balanceDue,
+          payment_notes: paymentNotes,
+          course_number: parseInt(courseId),
+          morning_before: medItem.querySelector(`[name="morning_before_${medCourse}_${medId}"]`)?.checked ? 1 : 0,
+          morning_after: medItem.querySelector(`[name="morning_after_${medCourse}_${medId}"]`)?.checked ? 1 : 0,
+          afternoon_before: medItem.querySelector(`[name="afternoon_before_${medCourse}_${medId}"]`)?.checked ? 1 : 0,
+          afternoon_after: medItem.querySelector(`[name="afternoon_after_${medCourse}_${medId}"]`)?.checked ? 1 : 0,
+          evening_before: medItem.querySelector(`[name="evening_before_${medCourse}_${medId}"]`)?.checked ? 1 : 0,
+          evening_after: medItem.querySelector(`[name="evening_after_${medCourse}_${medId}"]`)?.checked ? 1 : 0,
+          night_before: medItem.querySelector(`[name="night_before_${medCourse}_${medId}"]`)?.checked ? 1 : 0,
+          night_after: medItem.querySelector(`[name="night_after_${medCourse}_${medId}"]`)?.checked ? 1 : 0
+        });
       });
     });
     
