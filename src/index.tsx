@@ -2449,7 +2449,7 @@ app.get('/', (c) => {
             <div class="bg-white rounded-lg p-8 max-w-5xl w-full max-h-[90vh] overflow-y-auto">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-2xl font-bold text-ayurveda-700">
-                        <i class="fas fa-file-medical mr-2"></i>Prescription Summary
+                        <i class="fas fa-file-medical mr-2"></i>Treatment Summary
                     </h3>
                     <button onclick="closeSummaryModal()" class="text-gray-500 hover:text-gray-700">
                         <i class="fas fa-times text-2xl"></i>
@@ -2526,14 +2526,8 @@ app.get('/', (c) => {
 
                 <!-- Action Buttons -->
                 <div class="flex justify-end space-x-3 mt-6 no-print">
-                    <button onclick="printSummary()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-                        <i class="fas fa-print mr-2"></i>Print
-                    </button>
-                    <button onclick="confirmSaveHerbsRoutes()" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">
-                        <i class="fas fa-check mr-2"></i>Confirm & Save
-                    </button>
-                    <button onclick="closeSummaryModal()" class="px-6 py-2 border rounded-lg hover:bg-gray-100">
-                        <i class="fas fa-edit mr-2"></i>Edit
+                    <button onclick="closeSummaryModal()" class="px-6 py-2 bg-ayurveda-600 hover:bg-ayurveda-700 text-white rounded-lg">
+                        <i class="fas fa-times mr-2"></i>Close
                     </button>
                 </div>
             </div>

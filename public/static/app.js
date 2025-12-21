@@ -1623,8 +1623,7 @@ async function editHerbsRoutes(id) {
     const res = await axios.get(`${API_BASE}/prescriptions/${id}`);
     const hr = res.data.data;
     
-    // Show modal first
-    document.getElementById('prescription-modal').classList.remove('hidden');
+    console.log('Edit data:', hr); // Debug
     
     // Load patients list first
     await loadPatientsForHerbsRoutes();
@@ -1637,9 +1636,16 @@ async function editHerbsRoutes(id) {
     document.getElementById('prescription-followup').value = hr.follow_up_date || '';
     document.getElementById('prescription-problem').value = hr.diagnosis || '';
     
-    // Set patient and trigger patient info display
-    document.getElementById('prescription-patient').value = hr.patient_id;
-    await displayPatientInfo();
+    // Set patient - hr.patient_id is the FK (database ID)
+    const patientSelect = document.getElementById('prescription-patient');
+    patientSelect.value = hr.patient_id;
+    
+    // Manually trigger change event to display patient info
+    const event = new Event('change');
+    patientSelect.dispatchEvent(event);
+    
+    // Wait a bit for patient info to load
+    await new Promise(resolve => setTimeout(resolve, 300));
     
     // Clear existing medicines list
     document.getElementById('medicines-list').innerHTML = '';
