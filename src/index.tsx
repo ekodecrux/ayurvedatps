@@ -192,6 +192,317 @@ app.get('/api/patients', async (c) => {
   }
 })
 
+// Export patients (MUST come before :id route)
+// This endpoint is defined later in the file at line ~400
+// but logically should be here for route matching priority
+
+app.get('/api/patients/export', async (c) => {
+  try {
+    const format = c.req.query('format') || 'csv'
+    const country = c.req.query('country') || ''
+    
+    let query = 'SELECT * FROM patients WHERE 1=1'
+    const params: any[] = []
+    
+    if (country) {
+      query += ' AND country = ?'
+      params.push(country)
+    }
+    
+    query += ' ORDER BY created_at DESC'
+    
+    const { results } = await c.env.DB.prepare(query).bind(...params).all()
+    
+    if (results.length === 0) {
+      return c.text('No patients to export', 404)
+    }
+    
+    const date = new Date().toISOString().split('T')[0]
+    
+    if (format === 'csv') {
+      // CSV Export
+      const headers = [
+        'Patient ID', 'Name', 'Age', 'Gender', 'Country', 'Phone', 'Country Code',
+        'Email', 'Weight', 'Height', 'Address H.No', 'Street', 'Apartment', 'Area',
+        'District', 'State', 'Pin Code', 'Diseases/Medicines', 'Additional Phones',
+        'Referred By Name', 'Referred By Phone', 'Referred By Address', 'Medical History', 'Created At'
+      ].join(',')
+      
+      const rows = results.map((patient: any) => {
+        // Parse diseases JSON
+        let diseasesText = ''
+        if (patient.diseases) {
+          try {
+            const diseases = JSON.parse(patient.diseases)
+            diseasesText = diseases.map((d: any) => 
+              `${d.present_health_issue || ''} - ${d.present_medicine || ''} (${d.mg_value || ''}) - Attacked: ${d.attacked_by || ''}`
+            ).join('; ')
+          } catch (e) {
+            // Fallback to old fields
+            if (patient.present_health_issue) {
+              diseasesText = `${patient.present_health_issue || ''} - ${patient.present_medicine || ''} (${patient.mg_value || ''}) - Attacked: ${patient.attacked_by || ''}`
+            }
+          }
+        } else if (patient.present_health_issue) {
+          diseasesText = `${patient.present_health_issue || ''} - ${patient.present_medicine || ''} (${patient.mg_value || ''}) - Attacked: ${patient.attacked_by || ''}`
+        }
+        
+        // Parse additional phones JSON
+        let phonesText = ''
+        if (patient.additional_phones) {
+          try {
+            const phones = JSON.parse(patient.additional_phones)
+            phonesText = phones.map((p: any) => `${p.label}: ${p.number}`).join('; ')
+          } catch (e) {
+            phonesText = ''
+          }
+        }
+        
+        return [
+          patient.patient_id || '',
+          `"${(patient.name || '').replace(/"/g, '""')}"`,
+          patient.age || '',
+          patient.gender || '',
+          patient.country || '',
+          `${patient.country_code || ''} ${patient.phone || ''}`,
+          patient.country_code || '',
+          patient.email || '',
+          patient.weight || '',
+          patient.height || '',
+          patient.address_hno || '',
+          `"${(patient.address_street || '').replace(/"/g, '""')}"`,
+          `"${(patient.address_apartment || '').replace(/"/g, '""')}"`,
+          `"${(patient.address_area || '').replace(/"/g, '""')}"`,
+          patient.address_district || '',
+          patient.address_state || '',
+          patient.address_pincode || '',
+          `"${diseasesText.replace(/"/g, '""')}"`,
+          `"${phonesText.replace(/"/g, '""')}"`,
+          patient.referred_by_name || '',
+          patient.referred_by_phone || '',
+          `"${(patient.referred_by_address || '').replace(/"/g, '""')}"`,
+          `"${(patient.medical_history || '').replace(/"/g, '""')}"`,
+          patient.created_at || ''
+        ].join(',')
+      }).join('\n')
+      
+      const csv = `${headers}\n${rows}`
+      
+      return c.text(csv, 200, {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': `attachment; filename="patients_export_${date}.csv"`
+      })
+    } else if (format === 'excel') {
+      // Excel Export (using HTML table with Excel mime type)
+      const headers = ['Patient ID', 'Name', 'Age', 'Gender', 'Country', 'Phone', 'Country Code',
+        'Email', 'Weight', 'Height', 'Address H.No', 'Street', 'Apartment', 'Area',
+        'District', 'State', 'Pin Code', 'Diseases/Medicines', 'Additional Phones', 
+        'Referred By Name', 'Referred By Phone', 'Referred By Address', 'Medical History', 'Created At']
+      
+      const rows = results.map((patient: any) => {
+        // Parse diseases JSON
+        let diseasesText = ''
+        if (patient.diseases) {
+          try {
+            const diseases = JSON.parse(patient.diseases)
+            diseasesText = diseases.map((d: any) => 
+              `${d.present_health_issue || ''} - ${d.present_medicine || ''} (${d.mg_value || ''}) - ${d.attacked_by || ''}`
+            ).join('; ')
+          } catch (e) {
+            // Fallback to old fields
+            if (patient.present_health_issue) {
+              diseasesText = `${patient.present_health_issue || ''} - ${patient.present_medicine || ''} (${patient.mg_value || ''}) - ${patient.attacked_by || ''}`
+            }
+          }
+        } else if (patient.present_health_issue) {
+          diseasesText = `${patient.present_health_issue || ''} - ${patient.present_medicine || ''} (${patient.mg_value || ''}) - ${patient.attacked_by || ''}`
+        }
+        
+        // Parse additional phones JSON
+        let phonesText = ''
+        if (patient.additional_phones) {
+          try {
+            const phones = JSON.parse(patient.additional_phones)
+            phonesText = phones.map((p: any) => `${p.label}: ${p.number}`).join('; ')
+          } catch (e) {
+            phonesText = ''
+          }
+        }
+        
+        return `<tr>
+          <td>${patient.patient_id || ''}</td>
+          <td>${patient.name || ''}</td>
+          <td>${patient.age || ''}</td>
+          <td>${patient.gender || ''}</td>
+          <td>${patient.country || ''}</td>
+          <td>${patient.country_code || ''} ${patient.phone || ''}</td>
+          <td>${patient.country_code || ''}</td>
+          <td>${patient.email || ''}</td>
+          <td>${patient.weight || ''}</td>
+          <td>${patient.height || ''}</td>
+          <td>${patient.address_hno || ''}</td>
+          <td>${patient.address_street || ''}</td>
+          <td>${patient.address_apartment || ''}</td>
+          <td>${patient.address_area || ''}</td>
+          <td>${patient.address_district || ''}</td>
+          <td>${patient.address_state || ''}</td>
+          <td>${patient.address_pincode || ''}</td>
+          <td>${diseasesText}</td>
+          <td>${phonesText}</td>
+          <td>${patient.referred_by_name || ''}</td>
+          <td>${patient.referred_by_phone || ''}</td>
+          <td>${patient.referred_by_address || ''}</td>
+          <td>${patient.medical_history || ''}</td>
+          <td>${patient.created_at || ''}</td>
+        </tr>`
+      }).join('\n')
+      
+      const excel = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
+          <head>
+            <meta charset="UTF-8">
+            <style>table { border-collapse: collapse; } td, th { border: 1px solid #ddd; padding: 8px; white-space: nowrap; }</style>
+          </head>
+          <body>
+            <h2>TPS DHANVANTRI AYURVEDA - Patients Export</h2>
+            <p>Export Date: ${date} | Total Patients: ${results.length}</p>
+            <table>
+              <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </body>
+        </html>
+      `
+      
+      return c.html(excel, 200, {
+        'Content-Type': 'application/vnd.ms-excel',
+        'Content-Disposition': `attachment; filename="patients_export_${date}.xls"`
+      })
+    } else if (format === 'pdf') {
+      // PDF Export (using HTML that can be printed to PDF)
+      const rows = results.map((patient: any) => {
+        // Parse diseases JSON
+        let diseasesText = ''
+        if (patient.diseases) {
+          try {
+            const diseases = JSON.parse(patient.diseases)
+            diseasesText = diseases.map((d: any) => 
+              `<div style="margin-bottom: 5px;"><strong>${d.present_health_issue || 'N/A'}:</strong> ${d.present_medicine || 'N/A'} (${d.mg_value || ''}) - Attacked: ${d.attacked_by || 'N/A'}</div>`
+            ).join('')
+          } catch (e) {
+            if (patient.present_health_issue) {
+              diseasesText = `<div><strong>${patient.present_health_issue}:</strong> ${patient.present_medicine || 'N/A'} (${patient.mg_value || ''}) - Attacked: ${patient.attacked_by || 'N/A'}</div>`
+            }
+          }
+        } else if (patient.present_health_issue) {
+          diseasesText = `<div><strong>${patient.present_health_issue}:</strong> ${patient.present_medicine || 'N/A'} (${patient.mg_value || ''}) - Attacked: ${patient.attacked_by || 'N/A'}</div>`
+        }
+        
+        // Parse additional phones JSON
+        let phonesText = ''
+        if (patient.additional_phones) {
+          try {
+            const phones = JSON.parse(patient.additional_phones)
+            phonesText = phones.map((p: any) => `<div>${p.label}: ${p.number}</div>`).join('')
+          } catch (e) {
+            phonesText = '<div>N/A</div>'
+          }
+        } else {
+          phonesText = '<div>N/A</div>'
+        }
+        
+        const fullAddress = [
+          patient.address_hno,
+          patient.address_street,
+          patient.address_apartment,
+          patient.address_area,
+          patient.address_district,
+          patient.address_state,
+          patient.address_pincode
+        ].filter(Boolean).join(', ') || 'N/A'
+        
+        return `
+          <div class="patient-card">
+            <div class="patient-header">
+              <h3>${patient.patient_id || 'N/A'} - ${patient.name || 'N/A'}</h3>
+              <div class="patient-meta">${patient.age || 'N/A'} years | ${patient.gender || 'N/A'} | ${patient.country || 'N/A'}</div>
+            </div>
+            <div class="patient-details">
+              <div class="detail-row">
+                <strong>Phone:</strong> ${patient.country_code || ''} ${patient.phone || 'N/A'}
+              </div>
+              <div class="detail-row">
+                <strong>Email:</strong> ${patient.email || 'N/A'}
+              </div>
+              <div class="detail-row">
+                <strong>Weight/Height:</strong> ${patient.weight || 'N/A'} kg / ${patient.height || 'N/A'} ft
+              </div>
+              <div class="detail-row">
+                <strong>Address:</strong> ${fullAddress}
+              </div>
+              ${phonesText ? `<div class="detail-row"><strong>Additional Phones:</strong> ${phonesText}</div>` : ''}
+              ${diseasesText ? `<div class="detail-row"><strong>Diseases/Medicines:</strong> ${diseasesText}</div>` : ''}
+              ${patient.medical_history ? `<div class="detail-row"><strong>Medical History:</strong> ${patient.medical_history}</div>` : ''}
+              ${patient.referred_by_name ? `<div class="detail-row"><strong>Referred By:</strong> ${patient.referred_by_name} (${patient.referred_by_phone || 'N/A'}) - ${patient.referred_by_address || ''}</div>` : ''}
+              <div class="detail-row">
+                <strong>Added:</strong> ${patient.created_at || 'N/A'}
+              </div>
+            </div>
+          </div>
+        `
+      }).join('\n')
+      
+      const pdf = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>Patients Export - ${date}</title>
+            <style>
+              @media print {
+                body { margin: 0; padding: 15px; }
+                .no-print { display: none; }
+                .patient-card { page-break-inside: avoid; }
+              }
+              body { font-family: Arial, sans-serif; font-size: 12px; }
+              h1 { text-align: center; color: #2c5f2d; margin-bottom: 5px; }
+              .export-info { text-align: center; color: #666; margin-bottom: 20px; font-size: 11px; }
+              .print-btn { margin: 15px auto; display: block; padding: 10px 30px; background: #4CAF50; color: white; border: none; cursor: pointer; font-size: 14px; border-radius: 5px; }
+              .patient-card { border: 1px solid #ddd; margin-bottom: 15px; padding: 12px; border-radius: 5px; background: #f9f9f9; }
+              .patient-header { border-bottom: 2px solid #4CAF50; padding-bottom: 8px; margin-bottom: 10px; }
+              .patient-header h3 { margin: 0; color: #2c5f2d; font-size: 14px; }
+              .patient-meta { color: #666; font-size: 11px; margin-top: 3px; }
+              .patient-details { }
+              .detail-row { margin: 6px 0; line-height: 1.4; }
+              .detail-row strong { color: #2c5f2d; display: inline-block; min-width: 140px; }
+            </style>
+            <script>
+              window.onload = function() {
+                const printBtn = document.getElementById('printBtn');
+                if (printBtn) {
+                  printBtn.addEventListener('click', function() { window.print(); });
+                }
+              }
+            </script>
+          </head>
+          <body>
+            <h1>TPS DHANVANTRI AYURVEDA - Patients List</h1>
+            <div class="export-info">Export Date: ${date} | Total Patients: ${results.length}${country ? ` | Country: ${country}` : ''}</div>
+            <button id="printBtn" class="print-btn no-print">Print / Save as PDF</button>
+            ${rows}
+          </body>
+        </html>
+      `
+      
+      return c.html(pdf, 200)
+    } else {
+      return c.json({ success: false, error: 'Invalid format. Use csv, excel, or pdf' }, 400)
+    }
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
 // Get single patient
 app.get('/api/patients/:id', async (c) => {
   try {
@@ -397,204 +708,7 @@ app.delete('/api/patient-diseases/:id', async (c) => {
 
 // Export patients to CSV
 // Export patients in CSV, Excel, or PDF format
-app.get('/api/patients/export', async (c) => {
-  try {
-    const format = c.req.query('format') || 'csv'
-    const country = c.req.query('country') || ''
-    
-    let query = 'SELECT * FROM patients WHERE 1=1'
-    const params: any[] = []
-    
-    if (country) {
-      query += ' AND country = ?'
-      params.push(country)
-    }
-    
-    query += ' ORDER BY created_at DESC'
-    
-    const { results } = await c.env.DB.prepare(query).bind(...params).all()
-    
-    if (results.length === 0) {
-      return c.text('No patients to export', 404)
-    }
-    
-    const date = new Date().toISOString().split('T')[0]
-    
-    if (format === 'csv') {
-      // CSV Export
-      const headers = [
-        'Patient ID', 'Name', 'Age', 'Gender', 'Country', 'Phone', 'Country Code',
-        'Email', 'Weight', 'Height', 'Address H.No', 'Street', 'Apartment', 'Area',
-        'District', 'State', 'Pin Code', 'Present Health Issue', 'Present Medicine',
-        'MG Value', 'Attacked By', 'Referred By Name', 'Referred By Phone', 'Medical History', 'Created At'
-      ].join(',')
-      
-      const rows = results.map((patient: any) => {
-        return [
-          patient.patient_id || '',
-          `"${(patient.name || '').replace(/"/g, '""')}"`,
-          patient.age || '',
-          patient.gender || '',
-          patient.country || '',
-          patient.phone || '',
-          patient.country_code || '',
-          patient.email || '',
-          patient.weight || '',
-          patient.height || '',
-          patient.address_hno || '',
-          `"${(patient.address_street || '').replace(/"/g, '""')}"`,
-          `"${(patient.address_apartment || '').replace(/"/g, '""')}"`,
-          `"${(patient.address_area || '').replace(/"/g, '""')}"`,
-          patient.address_district || '',
-          patient.address_state || '',
-          patient.address_pincode || '',
-          `"${(patient.present_health_issue || '').replace(/"/g, '""')}"`,
-          `"${(patient.present_medicine || '').replace(/"/g, '""')}"`,
-          patient.mg_value || '',
-          patient.attacked_by || '',
-          patient.referred_by_name || '',
-          patient.referred_by_phone || '',
-          `"${(patient.medical_history || '').replace(/"/g, '""')}"`,
-          patient.created_at || ''
-        ].join(',')
-      }).join('\n')
-      
-      const csv = `${headers}\n${rows}`
-      
-      return c.text(csv, 200, {
-        'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="patients_export_${date}.csv"`
-      })
-    } else if (format === 'excel') {
-      // Excel Export (using HTML table with Excel mime type)
-      const headers = ['Patient ID', 'Name', 'Age', 'Gender', 'Country', 'Phone', 'Country Code',
-        'Email', 'Weight', 'Height', 'Address H.No', 'Street', 'Apartment', 'Area',
-        'District', 'State', 'Pin Code', 'Present Health Issue', 'Present Medicine',
-        'MG Value', 'Attacked By', 'Referred By Name', 'Referred By Phone', 'Medical History', 'Created At']
-      
-      const rows = results.map((patient: any) => {
-        return `<tr>
-          <td>${patient.patient_id || ''}</td>
-          <td>${patient.name || ''}</td>
-          <td>${patient.age || ''}</td>
-          <td>${patient.gender || ''}</td>
-          <td>${patient.country || ''}</td>
-          <td>${patient.phone || ''}</td>
-          <td>${patient.country_code || ''}</td>
-          <td>${patient.email || ''}</td>
-          <td>${patient.weight || ''}</td>
-          <td>${patient.height || ''}</td>
-          <td>${patient.address_hno || ''}</td>
-          <td>${patient.address_street || ''}</td>
-          <td>${patient.address_apartment || ''}</td>
-          <td>${patient.address_area || ''}</td>
-          <td>${patient.address_district || ''}</td>
-          <td>${patient.address_state || ''}</td>
-          <td>${patient.address_pincode || ''}</td>
-          <td>${patient.present_health_issue || ''}</td>
-          <td>${patient.present_medicine || ''}</td>
-          <td>${patient.mg_value || ''}</td>
-          <td>${patient.attacked_by || ''}</td>
-          <td>${patient.referred_by_name || ''}</td>
-          <td>${patient.referred_by_phone || ''}</td>
-          <td>${patient.medical_history || ''}</td>
-          <td>${patient.created_at || ''}</td>
-        </tr>`
-      }).join('\n')
-      
-      const excel = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
-          <head>
-            <meta charset="UTF-8">
-            <style>table { border-collapse: collapse; } td, th { border: 1px solid #ddd; padding: 8px; }</style>
-          </head>
-          <body>
-            <table>
-              <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
-              <tbody>${rows}</tbody>
-            </table>
-          </body>
-        </html>
-      `
-      
-      return c.html(excel, 200, {
-        'Content-Type': 'application/vnd.ms-excel',
-        'Content-Disposition': `attachment; filename="patients_export_${date}.xls"`
-      })
-    } else if (format === 'pdf') {
-      // PDF Export (using HTML that can be printed to PDF)
-      const rows = results.map((patient: any) => {
-        return `<tr>
-          <td>${patient.patient_id || ''}</td>
-          <td>${patient.name || ''}</td>
-          <td>${patient.age || ''}</td>
-          <td>${patient.gender || ''}</td>
-          <td>${patient.country || ''}</td>
-          <td>${patient.phone || ''}</td>
-          <td>${patient.email || ''}</td>
-          <td>${patient.present_health_issue || ''}</td>
-        </tr>`
-      }).join('\n')
-      
-      const pdf = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="UTF-8">
-            <title>Patients Export - ${date}</title>
-            <style>
-              @media print {
-                body { margin: 0; padding: 20px; }
-                .no-print { display: none; }
-              }
-              body { font-family: Arial, sans-serif; }
-              h1 { text-align: center; color: #333; }
-              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-              th { background: #4CAF50; color: white; padding: 10px; text-align: left; font-weight: bold; }
-              td { border: 1px solid #ddd; padding: 8px; }
-              tr:nth-child(even) { background-color: #f9f9f9; }
-              .print-btn { margin: 20px auto; display: block; padding: 10px 30px; background: #4CAF50; color: white; border: none; cursor: pointer; font-size: 16px; }
-            </style>
-            <script>
-              window.onload = function() {
-                const printBtn = document.getElementById('printBtn');
-                if (printBtn) {
-                  printBtn.addEventListener('click', function() { window.print(); });
-                }
-              }
-            </script>
-          </head>
-          <body>
-            <h1>TPS DHANVANTRI AYURVEDA - Patients List</h1>
-            <p style="text-align: center;">Export Date: ${date} | Total Patients: ${results.length}</p>
-            <button id="printBtn" class="print-btn no-print">Print / Save as PDF</button>
-            <table>
-              <thead>
-                <tr>
-                  <th>Patient ID</th>
-                  <th>Name</th>
-                  <th>Age</th>
-                  <th>Gender</th>
-                  <th>Country</th>
-                  <th>Phone</th>
-                  <th>Email</th>
-                  <th>Health Issue</th>
-                </tr>
-              </thead>
-              <tbody>${rows}</tbody>
-            </table>
-          </body>
-        </html>
-      `
-      
-      return c.html(pdf, 200)
-    } else {
-      return c.json({ success: false, error: 'Invalid format. Use csv, excel, or pdf' }, 400)
-    }
-  } catch (error: any) {
-    return c.json({ success: false, error: error.message }, 500)
-  }
-})
+
 
 // ==================== APPOINTMENTS API ====================
 
