@@ -1382,6 +1382,7 @@ function updatePaymentSummary() {
   
   let totalAmount = 0;
   let totalAdvance = 0;
+  let totalCollected = 0;
   let totalBalance = 0;
   let activeCount = 0;
   
@@ -1395,7 +1396,19 @@ function updatePaymentSummary() {
     // Get payment values
     const amount = parseFloat(row.querySelector(`[name="payment_amount_${rowNum}"]`).value) || 0;
     const advance = parseFloat(row.querySelector(`[name="advance_payment_${rowNum}"]`).value) || 0;
-    const balance = amount - advance;
+    
+    // Get all collections for this course
+    let courseCollected = 0;
+    const collectionsContainer = document.getElementById(`payment-collections-${rowNum}`);
+    if (collectionsContainer) {
+      collectionsContainer.querySelectorAll('[data-collection]').forEach((collectionDiv) => {
+        const collectionId = collectionDiv.dataset.collection;
+        const collectionAmount = parseFloat(collectionDiv.querySelector(`[name="collection_amount_${collectionId}"]`)?.value) || 0;
+        courseCollected += collectionAmount;
+      });
+    }
+    
+    const balance = amount - advance - courseCollected;
     
     // Update individual balance display with correct currency
     const balanceDisplay = row.querySelector(`.course-balance-display[data-row="${rowNum}"]`);
@@ -1409,6 +1422,7 @@ function updatePaymentSummary() {
     // Sum totals (all medicines, not just active)
     totalAmount += amount;
     totalAdvance += advance;
+    totalCollected += courseCollected;
     totalBalance += balance;
   });
   
