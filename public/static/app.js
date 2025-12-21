@@ -1012,10 +1012,10 @@ function showHerbsRoutesModal() {
   courseToMedicineMap = {};
   
   // Reset payment summary
-  document.getElementById('summary-total-amount').textContent = '₹0.00';
-  document.getElementById('summary-total-advance').textContent = '₹0.00';
-  document.getElementById('summary-total-balance').textContent = '₹0.00';
-  document.getElementById('summary-active-count').textContent = '0';
+  document.getElementById('overall-total-amount').textContent = '₹0.00';
+  document.getElementById('overall-advance-paid').textContent = '₹0.00';
+  document.getElementById('overall-balance-due').textContent = '₹0.00';
+  document.getElementById('overall-active-count').textContent = '0';
   
   // Reset follow-up date
   document.getElementById('prescription-followup').value = '';
