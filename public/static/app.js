@@ -990,11 +990,16 @@ function renderHerbsRoutes() {
     const totalAmount = hr.total_amount || 0;
     const dueAmount = hr.total_balance || 0;
     
+    // Truncate problem text to 15 characters
+    const problem = hr.diagnosis || 'N/A';
+    const truncatedProblem = problem.length > 15 ? problem.substring(0, 15) + '...' : problem;
+    
     return `
     <tr class="hover:bg-gray-50">
       <td class="px-6 py-4 border-b">${formatDate(hr.given_date || hr.created_at)}</td>
+      <td class="px-6 py-4 border-b font-medium text-blue-600">${hr.patient_id || 'N/A'}</td>
       <td class="px-6 py-4 border-b font-medium">${hr.patient_name}</td>
-      <td class="px-6 py-4 border-b">${hr.diagnosis || 'N/A'}</td>
+      <td class="px-6 py-4 border-b" title="${problem}">${truncatedProblem}</td>
       <td class="px-6 py-4 border-b text-center">${hr.course || 'N/A'}</td>
       <td class="px-6 py-4 border-b">
         <div class="text-sm">
@@ -1023,7 +1028,7 @@ function renderHerbsRoutes() {
         </button>
       </td>
     </tr>
-  `}).join('') || '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No records found</td></tr>';
+  `}).join('') || '<tr><td colspan="9" class="px-6 py-4 text-center text-gray-500">No records found</td></tr>';
   
   document.getElementById('prescriptions-table-body').innerHTML = html;
 }

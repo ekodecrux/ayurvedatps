@@ -1913,11 +1913,12 @@ app.get('/', (c) => {
                             <thead class="bg-gray-100">
                                 <tr>
                                     <th class="px-6 py-3 text-left">Given Date</th>
+                                    <th class="px-6 py-3 text-left">Patient ID</th>
                                     <th class="px-6 py-3 text-left">Patient</th>
                                     <th class="px-6 py-3 text-left">Problem</th>
                                     <th class="px-6 py-3 text-left">Entire Course</th>
                                     <th class="px-6 py-3 text-left">Amount (Total/Due)</th>
-                                    <th class="px-6 py-3 text-left">Active Course Months</th>
+                                    <th class="px-6 py-3 text-left">Completed Months</th>
                                     <th class="px-6 py-3 text-left">Next Follow-up</th>
                                     <th class="px-6 py-3 text-left">Actions</th>
                                 </tr>
