@@ -1505,11 +1505,7 @@ async function saveHerbsRoutes() {
       });
     });
     
-    if (medicines.length === 0) {
-      alert('Please add at least one medicine');
-      hideLoading();
-      return;
-    }
+    // Allow saving without medicines (they are optional)
     
     // Get follow-up date (auto-calculated from active medicines)
     const followUpDate = document.getElementById('prescription-followup').value;

@@ -2397,9 +2397,14 @@ app.get('/', (c) => {
                             </div>
                         </div>
                         
-                        <div class="flex justify-end space-x-3">
-                            <button type="button" onclick="closeHerbsRoutesModal()" class="px-6 py-2 border rounded-lg hover:bg-gray-100">Cancel</button>
-                            <button type="submit" class="px-6 py-2 bg-ayurveda-600 hover:bg-ayurveda-700 text-white rounded-lg">Save Record</button>
+                        <!-- Action Buttons -->
+                        <div class="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-300">
+                            <button type="button" onclick="closeHerbsRoutesModal()" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700">
+                                <i class="fas fa-times mr-2"></i>Cancel
+                            </button>
+                            <button type="submit" class="px-6 py-2 bg-ayurveda-600 hover:bg-ayurveda-700 text-white rounded-lg">
+                                <i class="fas fa-save mr-2"></i>Save Record
+                            </button>
                         </div>
                     </form>
                 </div>
