@@ -1078,7 +1078,28 @@ async function displayPatientInfo() {
     if (patient.address_pincode) addressParts.push(patient.address_pincode);
     document.getElementById('display-patient-address').textContent = addressParts.join(', ') || 'N/A';
     
-    document.getElementById('display-patient-health-issue').textContent = patient.present_health_issue || 'N/A';
+    // Parse and display diseases from JSON array
+    let diseasesText = 'N/A';
+    if (patient.diseases) {
+      try {
+        const diseases = JSON.parse(patient.diseases);
+        if (diseases.length > 0) {
+          diseasesText = diseases.map(d => 
+            `${d.present_health_issue || 'N/A'}: ${d.present_medicine || 'N/A'} (${d.mg_value || ''}) - Attacked: ${d.attacked_by || 'N/A'}`
+          ).join('; ');
+        }
+      } catch (e) {
+        // Fallback to old single disease field
+        if (patient.present_health_issue) {
+          diseasesText = `${patient.present_health_issue}: ${patient.present_medicine || 'N/A'} (${patient.mg_value || ''}) - Attacked: ${patient.attacked_by || 'N/A'}`;
+        }
+      }
+    } else if (patient.present_health_issue) {
+      // Fallback to old single disease field
+      diseasesText = `${patient.present_health_issue}: ${patient.present_medicine || 'N/A'} (${patient.mg_value || ''}) - Attacked: ${patient.attacked_by || 'N/A'}`;
+    }
+    
+    document.getElementById('display-patient-health-issue').textContent = diseasesText;
     document.getElementById('display-patient-medical-history').textContent = patient.medical_history || 'N/A';
     
     display.classList.remove('hidden');
