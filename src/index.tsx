@@ -926,69 +926,79 @@ app.post('/api/prescriptions', async (c) => {
   try {
     const body = await c.req.json()
     
-    // Insert herbs_routes record (simplified - per-medicine data moved to medicines_tracking)
+    // Calculate follow-up date from given_date + treatment_months
+    const followUpDate = new Date(body.given_date)
+    followUpDate.setMonth(followUpDate.getMonth() + body.treatment_months)
+    const followUpDateStr = followUpDate.toISOString().split('T')[0]
+    
+    // Insert herbs_routes record with global fields
     const result = await c.env.DB.prepare(`
       INSERT INTO herbs_routes (
-        patient_id, next_followup_date, diagnosis, notes, course
-      ) VALUES (?, ?, ?, ?, ?)
+        patient_id, given_date, treatment_months, next_followup_date,
+        diagnosis, notes, course, currency
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       body.patient_id,
-      body.follow_up_date || null,
+      body.given_date,
+      body.treatment_months,
+      followUpDateStr,
       body.diagnosis || null,
       body.notes || null,
-      body.course || null
+      body.course || null,
+      body.currency || 'INR'
     ).run()
     
     const herbsRouteId = result.meta.last_row_id
     
-    // Insert medicines with per-medicine fields
-    if (body.medicines && body.medicines.length > 0) {
-      for (const med of body.medicines) {
-        await c.env.DB.prepare(`
-          INSERT INTO medicines_tracking (
-            herbs_route_id, roman_id, medicine_name, given_date, treatment_months,
-            is_active, payment_amount, advance_payment, balance_due, payment_notes,
-            morning_before, morning_after, afternoon_before, afternoon_after,
-            evening_before, evening_after, night_before, night_after
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).bind(
-          herbsRouteId,
-          med.roman_id,
-          med.medicine_name,
-          med.given_date,
-          med.treatment_months,
-          med.is_active ? 1 : 0,
-          med.payment_amount || 0,
-          med.advance_payment || 0,
-          med.balance_due || 0,
-          med.payment_notes || null,
-          med.morning_before ? 1 : 0,
-          med.morning_after ? 1 : 0,
-          med.afternoon_before ? 1 : 0,
-          med.afternoon_after ? 1 : 0,
-          med.evening_before ? 1 : 0,
-          med.evening_after ? 1 : 0,
-          med.night_before ? 1 : 0,
-          med.night_after ? 1 : 0
-        ).run()
+    // Insert medicines grouped by course
+    if (body.courses && body.courses.length > 0) {
+      for (const course of body.courses) {
+        for (const med of course.medicines) {
+          await c.env.DB.prepare(`
+            INSERT INTO medicines_tracking (
+              herbs_route_id, course_number, roman_id, medicine_name,
+              given_date, treatment_months,
+              payment_amount, advance_payment, balance_due, payment_notes,
+              morning_before, morning_after, afternoon_before, afternoon_after,
+              evening_before, evening_after, night_before, night_after
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).bind(
+            herbsRouteId,
+            course.course_number,
+            med.roman_id || '',
+            med.medicine_name,
+            body.given_date, // Use global given date
+            body.treatment_months, // Use global treatment months
+            course.payment_amount || 0,
+            course.advance_payment || 0,
+            course.balance_due || 0,
+            course.payment_notes || null,
+            med.morning_before ? 1 : 0,
+            med.morning_after ? 1 : 0,
+            med.afternoon_before ? 1 : 0,
+            med.afternoon_after ? 1 : 0,
+            med.evening_before ? 1 : 0,
+            med.evening_after ? 1 : 0,
+            med.night_before ? 1 : 0,
+            med.night_after ? 1 : 0
+          ).run()
+        }
       }
     }
     
-    // Create follow-up reminder (only if follow_up_date exists)
-    if (body.follow_up_date) {
-      await c.env.DB.prepare(`
-        INSERT INTO reminders (
-          patient_id, type, scheduled_date, title, message, status
-        ) VALUES (?, ?, ?, ?, ?, ?)
-      `).bind(
-        body.patient_id,
-        'Follow-up',
-        body.follow_up_date || null,
-        'Follow-up Consultation',
-        'Time for your follow-up consultation',
-        'Pending'
-      ).run()
-    }
+    // Create follow-up reminder
+    await c.env.DB.prepare(`
+      INSERT INTO reminders (
+        patient_id, type, scheduled_date, title, message, status
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(
+      body.patient_id,
+      'Follow-up',
+      followUpDateStr,
+      'Follow-up Consultation',
+      'Time for your follow-up consultation',
+      'Pending'
+    ).run()
     
     return c.json({ success: true, data: { id: herbsRouteId } }, 201)
   } catch (error: any) {
@@ -2320,32 +2330,59 @@ app.get('/', (c) => {
                             </div>
                         </div>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Entire Course (1-16)</label>
-                                <select id="prescription-course" class="border rounded px-3 py-2 w-full">
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
-                                    <option value="6">6</option>
-                                    <option value="7">7</option>
-                                    <option value="8">8</option>
-                                    <option value="9">9</option>
-                                    <option value="10">10</option>
-                                    <option value="11">11</option>
-                                    <option value="12">12</option>
-                                    <option value="13">13</option>
-                                    <option value="14">14</option>
-                                    <option value="15">15</option>
-                                    <option value="16">16</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Next Follow-up Date</label>
-                                <input type="date" id="prescription-followup" class="border rounded px-3 py-2 w-full bg-gray-100" readonly>
-                                <p class="text-xs text-gray-500 mt-1">Auto-calculated from active medicines</p>
+                        <!-- Global Treatment Fields -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                            <h4 class="font-bold text-lg mb-4 text-blue-800"><i class="fas fa-calendar-alt mr-2"></i>Treatment Schedule</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Given Date *</label>
+                                    <input type="date" id="prescription-given-date" class="border rounded px-3 py-2 w-full" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Treatment Months *</label>
+                                    <select id="prescription-treatment-months" class="border rounded px-3 py-2 w-full" required>
+                                        <option value="1">1 Month</option>
+                                        <option value="2">2 Months</option>
+                                        <option value="3">3 Months</option>
+                                        <option value="4">4 Months</option>
+                                        <option value="5">5 Months</option>
+                                        <option value="6">6 Months</option>
+                                        <option value="7">7 Months</option>
+                                        <option value="8">8 Months</option>
+                                        <option value="9">9 Months</option>
+                                        <option value="10">10 Months</option>
+                                        <option value="11">11 Months</option>
+                                        <option value="12">12 Months</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Entire Course (1-16)</label>
+                                    <select id="prescription-course" class="border rounded px-3 py-2 w-full">
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                        <option value="5">5</option>
+                                        <option value="6">6</option>
+                                        <option value="7">7</option>
+                                        <option value="8">8</option>
+                                        <option value="9">9</option>
+                                        <option value="10">10</option>
+                                        <option value="11">11</option>
+                                        <option value="12">12</option>
+                                        <option value="13">13</option>
+                                        <option value="14">14</option>
+                                        <option value="15">15</option>
+                                        <option value="16">16</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Currency</label>
+                                    <select id="prescription-currency" class="border rounded px-3 py-2 w-full" onchange="updateCurrencyDisplay()">
+                                        <option value="INR" selected>₹ INR (Rupees)</option>
+                                        <option value="USD">$ USD (Dollars)</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                         
@@ -2355,19 +2392,23 @@ app.get('/', (c) => {
                         </div>
                         
                         <div class="mb-6">
-                            <div class="flex justify-between items-center mb-3">
-                                <h4 class="font-bold text-lg">Medicines</h4>
-                                <button type="button" onclick="addMedicineRow()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+                            <div class="flex justify-between items-center mb-4">
+                                <h4 class="font-bold text-lg text-ayurveda-700"><i class="fas fa-capsules mr-2"></i>Courses & Medicines</h4>
+                                <button type="button" onclick="addCourse()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg text-sm">
                                     <i class="fas fa-plus mr-2"></i>Add Course
                                 </button>
                             </div>
-                            <div id="medicines-list"></div>
+                            <div id="courses-container" class="space-y-4"></div>
                         </div>
                         
                         <div class="border-t pt-6 mb-6">
                             <h4 class="font-bold text-lg mb-4 text-ayurveda-700">Overall Payment Summary</h4>
                             <div class="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
-                                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+                                    <div class="text-center">
+                                        <p class="text-sm text-gray-600 mb-1">Currency</p>
+                                        <p class="text-2xl font-bold text-gray-700" id="overall-currency">₹ INR</p>
+                                    </div>
                                     <div class="text-center">
                                         <p class="text-sm text-gray-600 mb-1">Total Amount</p>
                                         <p class="text-3xl font-bold text-blue-600" id="overall-total-amount">₹0.00</p>
@@ -2381,8 +2422,8 @@ app.get('/', (c) => {
                                         <p class="text-3xl font-bold text-red-600" id="overall-balance-due">₹0.00</p>
                                     </div>
                                     <div class="text-center">
-                                        <p class="text-sm text-gray-600 mb-1">Active Medicines</p>
-                                        <p class="text-3xl font-bold text-purple-600" id="overall-active-count">0</p>
+                                        <p class="text-sm text-gray-600 mb-1">Total Medicines</p>
+                                        <p class="text-3xl font-bold text-purple-600" id="overall-medicine-count">0</p>
                                     </div>
                                 </div>
                             </div>

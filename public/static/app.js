@@ -1007,33 +1007,27 @@ function showHerbsRoutesModal() {
   document.getElementById('prescription-modal-title').textContent = 'New Herbs & Routes Record';
   document.getElementById('prescription-form').reset();
   document.getElementById('prescription-id').value = '';
-  document.getElementById('medicines-list').innerHTML = '';
-  medicineCounter = 0;
+  document.getElementById('courses-container').innerHTML = '';
+  courseCounter = 0;
+  medicineCounters = {};
+  
+  // Set today's date as default
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('prescription-given-date').value = today;
+  
+  // Reset currency to INR
+  document.getElementById('prescription-currency').value = 'INR';
   
   // Reset payment summary
   if (document.getElementById('overall-total-amount')) {
+    document.getElementById('overall-currency').textContent = '₹ INR';
     document.getElementById('overall-total-amount').textContent = '₹0.00';
     document.getElementById('overall-advance-paid').textContent = '₹0.00';
     document.getElementById('overall-balance-due').textContent = '₹0.00';
-    document.getElementById('overall-active-count').textContent = '0';
+    document.getElementById('overall-medicine-count').textContent = '0';
   }
   
-  // Reset follow-up date
-  if (document.getElementById('prescription-followup')) {
-    document.getElementById('prescription-followup').value = '';
-  }
-  
-  // Set today's date as default for the first medicine
-  const today = new Date().toISOString().split('T')[0];
-  
-  addMedicineRow();
-  
-  // Set today's date to first medicine's given date
-  setTimeout(() => {
-    const firstDateInput = document.querySelector('[name="given_date_1"]');
-    if (firstDateInput) firstDateInput.value = today;
-  }, 100);
-  
+  addCourse(); // Add first course automatically
   loadPatientsForHerbsRoutes();
   
   modal.classList.remove('hidden');
@@ -1143,40 +1137,169 @@ function calculateFollowUpDate() {
 }
 
 
-let medicineCounter = 0;
+let courseCounter = 0;
+let medicineCounters = {}; // Track medicine count per course
 
-function addMedicineRow() {
-  medicineCounter++;
-  const romanId = romanNumerals[medicineCounter - 1] || `#${medicineCounter}`;
+// Add a new course
+function addCourse() {
+  courseCounter++;
+  medicineCounters[courseCounter] = 0;
   
   const html = `
-    <div class="medicine-row border rounded-lg p-4 mb-4 bg-gradient-to-r from-white to-blue-50" data-row="${medicineCounter}">
-      <div class="flex justify-between items-center mb-3">
-        <div class="flex items-center space-x-4">
-          <h4 class="font-semibold text-lg text-ayurveda-700">Course ${medicineCounter}</h4>
-          <label class="flex items-center cursor-pointer">
-            <input type="checkbox" name="is_active_${medicineCounter}" class="mr-2 w-5 h-5 medicine-active-checkbox" checked onchange="updatePaymentSummary(); calculateSmartFollowUp();">
-            <span class="font-medium text-sm text-green-600">Active</span>
-          </label>
+    <div class="course-container border-2 border-ayurveda-300 rounded-lg p-5 mb-4 bg-white" data-course="${courseCounter}">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold text-ayurveda-700">
+          <i class="fas fa-layer-group mr-2"></i>Course ${courseCounter}
+        </h3>
+        <div class="flex gap-3">
+          <button type="button" onclick="addMedicine(${courseCounter})" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+            <i class="fas fa-plus mr-2"></i>Add Medicine
+          </button>
+          <button type="button" onclick="removeCourse(${courseCounter})" class="text-red-600 hover:text-red-800">
+            <i class="fas fa-trash"></i>
+          </button>
         </div>
-        <button type="button" onclick="removeMedicineRow(${medicineCounter})" class="text-red-600 hover:text-red-800">
+      </div>
+      
+      <div class="medicines-container-${courseCounter} space-y-3" data-course-id="${courseCounter}">
+        <!-- Medicines will be added here -->
+      </div>
+      
+      <!-- Course Payment Section -->
+      <div class="mt-4 pt-4 border-t border-gray-300">
+        <h5 class="font-medium text-sm mb-3 text-blue-700"><i class="fas fa-rupee-sign mr-2"></i>Course ${courseCounter} Payment</h5>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <label class="block text-xs font-medium mb-1">Amount</label>
+            <input type="number" step="0.01" name="course_amount_${courseCounter}" class="w-full border rounded px-3 py-2 text-sm course-payment-amount" placeholder="0.00" oninput="updatePaymentSummary()">
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1">Advance</label>
+            <input type="number" step="0.01" name="course_advance_${courseCounter}" class="w-full border rounded px-3 py-2 text-sm course-advance-payment" placeholder="0.00" oninput="updatePaymentSummary()">
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1">Balance</label>
+            <div class="border rounded px-3 py-2 bg-gray-100 text-sm font-bold text-red-600" id="course_balance_${courseCounter}">₹0.00</div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1">Payment Notes</label>
+            <input type="text" name="course_payment_notes_${courseCounter}" class="w-full border rounded px-3 py-2 text-sm" placeholder="Optional">
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('courses-container').insertAdjacentHTML('beforeend', html);
+  addMedicine(courseCounter); // Add first medicine automatically
+  updatePaymentSummary();
+}
+
+// Remove a course
+function removeCourse(courseId) {
+  const course = document.querySelector(`.course-container[data-course="${courseId}"]`);
+  if (course) {
+    course.remove();
+    delete medicineCounters[courseId];
+    updatePaymentSummary();
+  }
+}
+
+// Add a medicine within a course
+function addMedicine(courseId) {
+  if (!medicineCounters[courseId]) {
+    medicineCounters[courseId] = 0;
+  }
+  medicineCounters[courseId]++;
+  const medId = medicineCounters[courseId];
+  
+  const html = `
+    <div class="medicine-item border border-blue-200 rounded-lg p-3 bg-blue-50" data-course="${courseId}" data-medicine="${medId}">
+      <div class="flex justify-between items-center mb-3">
+        <h5 class="font-medium text-sm text-blue-800">Medicine ${medId}</h5>
+        <button type="button" onclick="removeMedicine(${courseId}, ${medId})" class="text-red-600 hover:text-red-800 text-sm">
           <i class="fas fa-times"></i>
         </button>
       </div>
       
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
         <div>
-          <label class="block text-sm font-medium mb-1">Medicine Name *</label>
-          <input type="text" name="medicine_name_${medicineCounter}" class="w-full border rounded px-3 py-2" required>
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium mb-1">Roman ID</label>
-          <select name="roman_id_${medicineCounter}" class="w-full border rounded px-3 py-2">
+          <label class="block text-xs font-medium mb-1">Roman ID</label>
+          <select name="roman_id_${courseId}_${medId}" class="w-full border rounded px-2 py-2 text-sm">
             <option value="">Select Roman ID</option>
             <option value="I">I</option>
             <option value="II">II</option>
             <option value="III">III</option>
+            <option value="IV">IV</option>
+            <option value="V">V</option>
+            <option value="VI">VI</option>
+            <option value="VII">VII</option>
+            <option value="VIII">VIII</option>
+            <option value="IX">IX</option>
+            <option value="X">X</option>
+            <option value="XI">XI</option>
+            <option value="XII">XII</option>
+          </select>
+        </div>
+        
+        <div class="md:col-span-2">
+          <label class="block text-xs font-medium mb-1">Medicine Name *</label>
+          <input type="text" name="medicine_name_${courseId}_${medId}" class="w-full border rounded px-2 py-2 text-sm" required>
+        </div>
+      </div>
+      
+      <div>
+        <label class="block text-xs font-medium mb-2">Dosage Schedule</label>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+          <label class="flex items-center">
+            <input type="checkbox" name="morning_before_${courseId}_${medId}" class="mr-1">
+            Morning (Before)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="morning_after_${courseId}_${medId}" class="mr-1">
+            Morning (After)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="afternoon_before_${courseId}_${medId}" class="mr-1">
+            Afternoon (Before)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="afternoon_after_${courseId}_${medId}" class="mr-1">
+            Afternoon (After)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="evening_before_${courseId}_${medId}" class="mr-1">
+            Evening (Before)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="evening_after_${courseId}_${medId}" class="mr-1">
+            Evening (After)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="night_before_${courseId}_${medId}" class="mr-1">
+            Night (Before)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="night_after_${courseId}_${medId}" class="mr-1">
+            Night (After)
+          </label>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.querySelector(`.medicines-container-${courseId}`).insertAdjacentHTML('beforeend', html);
+  updatePaymentSummary();
+}
+
+// Remove a medicine from a course
+function removeMedicine(courseId, medId) {
+  const medicine = document.querySelector(`.medicine-item[data-course="${courseId}"][data-medicine="${medId}"]`);
+  if (medicine) {
+    medicine.remove();
+    updatePaymentSummary();
+  }
+}
             <option value="IV">IV</option>
             <option value="V">V</option>
             <option value="VI">VI</option>
@@ -1280,44 +1403,52 @@ function addMedicineRow() {
   calculateSmartFollowUp();
 }
 
-function removeMedicineRow(rowId) {
-  const row = document.querySelector(`.medicine-row[data-row="${rowId}"]`);
-  if (row) {
-    row.remove();
-    updatePaymentSummary();
-    calculateSmartFollowUp();
-  }
+// Update currency display across all payment fields
+function updateCurrencyDisplay() {
+  const currency = document.getElementById('prescription-currency').value;
+  const symbol = currency === 'USD' ? '$' : '₹';
+  const currencyText = currency === 'USD' ? '$ USD' : '₹ INR';
+  
+  // Update overall currency display
+  const currencyDisplay = document.getElementById('overall-currency');
+  if (currencyDisplay) currencyDisplay.textContent = currencyText;
+  
+  // Update all balance displays with new symbol
+  updatePaymentSummary();
 }
 
-// Update overall payment summary from individual medicine payments
+// Update overall payment summary from course payments
 function updatePaymentSummary() {
+  const currency = document.getElementById('prescription-currency')?.value || 'INR';
+  const symbol = currency === 'USD' ? '$' : '₹';
+  
   let totalAmount = 0;
   let totalAdvance = 0;
   let totalBalance = 0;
-  let activeCount = 0;
+  let medicineCount = 0;
   
-  document.querySelectorAll('.medicine-row').forEach((row) => {
-    const rowNum = row.dataset.row;
+  // Count total medicines
+  medicineCount = document.querySelectorAll('.medicine-item').length;
+  
+  // Calculate totals from each course
+  document.querySelectorAll('.course-container').forEach((course) => {
+    const courseNum = course.dataset.course;
     
-    // Check if medicine is active
-    const isActive = row.querySelector(`[name="is_active_${rowNum}"]`).checked;
-    if (isActive) activeCount++;
-    
-    // Get payment values
-    const amount = parseFloat(row.querySelector(`[name="payment_amount_${rowNum}"]`).value) || 0;
-    const advance = parseFloat(row.querySelector(`[name="advance_payment_${rowNum}"]`).value) || 0;
+    // Get payment values for this course
+    const amount = parseFloat(document.querySelector(`[name="course_amount_${courseNum}"]`)?.value) || 0;
+    const advance = parseFloat(document.querySelector(`[name="course_advance_${courseNum}"]`)?.value) || 0;
     const balance = amount - advance;
     
-    // Update individual balance display
-    const balanceDisplay = row.querySelector(`[name="balance_due_${rowNum}"]`);
+    // Update individual course balance display
+    const balanceDisplay = document.getElementById(`course_balance_${courseNum}`);
     if (balanceDisplay) {
-      balanceDisplay.textContent = `₹${balance.toFixed(2)}`;
+      balanceDisplay.textContent = `${symbol}${balance.toFixed(2)}`;
       balanceDisplay.className = balance > 0 ? 
         'border rounded px-3 py-2 bg-gray-100 text-sm font-bold text-red-600' : 
         'border rounded px-3 py-2 bg-gray-100 text-sm font-bold text-green-600';
     }
     
-    // Sum totals (all medicines, not just active)
+    // Sum totals
     totalAmount += amount;
     totalAdvance += advance;
     totalBalance += balance;
@@ -1327,39 +1458,18 @@ function updatePaymentSummary() {
   const overallTotal = document.getElementById('overall-total-amount');
   const overallAdvance = document.getElementById('overall-advance-paid');
   const overallBalance = document.getElementById('overall-balance-due');
-  const overallActive = document.getElementById('overall-active-count');
+  const overallMedicineCount = document.getElementById('overall-medicine-count');
   
-  if (overallTotal) overallTotal.textContent = `₹${totalAmount.toFixed(2)}`;
-  if (overallAdvance) overallAdvance.textContent = `₹${totalAdvance.toFixed(2)}`;
+  if (overallTotal) overallTotal.textContent = `${symbol}${totalAmount.toFixed(2)}`;
+  if (overallAdvance) overallAdvance.textContent = `${symbol}${totalAdvance.toFixed(2)}`;
   if (overallBalance) {
-    overallBalance.textContent = `₹${totalBalance.toFixed(2)}`;
+    overallBalance.textContent = `${symbol}${totalBalance.toFixed(2)}`;
     overallBalance.className = totalBalance > 0 ?
       'text-3xl font-bold text-red-600' :
       'text-3xl font-bold text-green-600';
   }
-  if (overallActive) overallActive.textContent = activeCount;
+  if (overallMedicineCount) overallMedicineCount.textContent = medicineCount;
 }
-
-// Smart follow-up calculation: Find the latest end date from ACTIVE medicines only
-function calculateSmartFollowUp() {
-  let latestEndDate = null;
-  let hasActiveMedicines = false;
-  
-  document.querySelectorAll('.medicine-row').forEach((row) => {
-    const rowNum = row.dataset.row;
-    
-    // Check if medicine is active
-    const isActive = row.querySelector(`[name="is_active_${rowNum}"]`)?.checked;
-    if (!isActive) return; // Skip inactive medicines
-    
-    hasActiveMedicines = true;
-    
-    // Get given date and treatment months
-    const givenDateInput = row.querySelector(`[name="given_date_${rowNum}"]`);
-    const monthsInput = row.querySelector(`[name="treatment_months_${rowNum}"]`);
-    
-    if (givenDateInput && givenDateInput.value && monthsInput && monthsInput.value) {
-      const givenDate = new Date(givenDateInput.value);
       const months = parseInt(monthsInput.value) || 0;
       
       // Calculate end date for this medicine
@@ -1395,95 +1505,118 @@ async function saveHerbsRoutes() {
       return;
     }
     
-    // Collect medicines with per-medicine dates, months, status, and payment
-    const medicines = [];
-    document.querySelectorAll('.medicine-row').forEach((row, index) => {
-      const rowNum = row.dataset.row;
-      
-      const medicineName = row.querySelector(`[name="medicine_name_${rowNum}"]`)?.value;
-      if (!medicineName) return; // Skip empty medicine rows
-      
-      const romanIdValue = row.querySelector(`[name="roman_id_${rowNum}"]`)?.value;
-      const givenDate = row.querySelector(`[name="given_date_${rowNum}"]`)?.value;
-      const treatmentMonths = parseInt(row.querySelector(`[name="treatment_months_${rowNum}"]`)?.value) || 1;
-      const isActive = row.querySelector(`[name="is_active_${rowNum}"]`)?.checked ? 1 : 0;
-      
-      const paymentAmount = parseFloat(row.querySelector(`[name="payment_amount_${rowNum}"]`)?.value) || 0;
-      const advancePayment = parseFloat(row.querySelector(`[name="advance_payment_${rowNum}"]`)?.value) || 0;
-      const balanceDue = paymentAmount - advancePayment;
-      const paymentNotes = row.querySelector(`[name="payment_notes_${rowNum}"]`)?.value || '';
-      
-      if (!givenDate) {
-        alert(`Please provide Given Date for ${medicineName}`);
-        throw new Error('Missing required field: Given Date');
-      }
-      
-      medicines.push({
-        roman_id: romanIdValue || romanNumerals[index] || `#${index + 1}`,
-        medicine_name: medicineName,
-        given_date: givenDate,
-        treatment_months: treatmentMonths,
-        is_active: isActive,
-        payment_amount: paymentAmount,
-        advance_payment: advancePayment,
-        balance_due: balanceDue,
-        payment_notes: paymentNotes,
-        morning_before: row.querySelector(`[name="morning_before_${rowNum}"]`)?.checked ? 1 : 0,
-        morning_after: row.querySelector(`[name="morning_after_${rowNum}"]`)?.checked ? 1 : 0,
-        afternoon_before: row.querySelector(`[name="afternoon_before_${rowNum}"]`)?.checked ? 1 : 0,
-        afternoon_after: row.querySelector(`[name="afternoon_after_${rowNum}"]`)?.checked ? 1 : 0,
-        evening_before: row.querySelector(`[name="evening_before_${rowNum}"]`)?.checked ? 1 : 0,
-        evening_after: row.querySelector(`[name="evening_after_${rowNum}"]`)?.checked ? 1 : 0,
-        night_before: row.querySelector(`[name="night_before_${rowNum}"]`)?.checked ? 1 : 0,
-        night_after: row.querySelector(`[name="night_after_${rowNum}"]`)?.checked ? 1 : 0
-      });
-    });
+    // Get global treatment info
+    const givenDate = document.getElementById('prescription-given-date').value;
+    const treatmentMonths = parseInt(document.getElementById('prescription-treatment-months').value) || 1;
+    const currency = document.getElementById('prescription-currency').value;
     
-    if (medicines.length === 0) {
-      alert('Please add at least one medicine');
+    if (!givenDate) {
+      alert('Please provide Given Date');
       hideLoading();
       return;
     }
     
-    // Get follow-up date (auto-calculated from active medicines)
-    const followUpDate = document.getElementById('prescription-followup').value;
+    // Collect all courses with their medicines and payments
+    const courses = [];
+    document.querySelectorAll('.course-container').forEach((courseElem) => {
+      const courseNum = courseElem.dataset.course;
+      
+      // Get course payment details
+      const courseAmount = parseFloat(document.querySelector(`[name="course_amount_${courseNum}"]`)?.value) || 0;
+      const courseAdvance = parseFloat(document.querySelector(`[name="course_advance_${courseNum}"]`)?.value) || 0;
+      const courseBalance = courseAmount - courseAdvance;
+      const coursePaymentNotes = document.querySelector(`[name="course_payment_notes_${courseNum}"]`)?.value || '';
+      
+      // Collect medicines in this course
+      const medicines = [];
+      courseElem.querySelectorAll('.medicine-item').forEach((medElem) => {
+        const medId = medElem.dataset.medicine;
+        
+        const medicineName = document.querySelector(`[name="medicine_name_${courseNum}_${medId}"]`)?.value;
+        if (!medicineName) return; // Skip empty medicines
+        
+        const romanId = document.querySelector(`[name="roman_id_${courseNum}_${medId}"]`)?.value || '';
+        
+        medicines.push({
+          roman_id: romanId,
+          medicine_name: medicineName,
+          morning_before: document.querySelector(`[name="morning_before_${courseNum}_${medId}"]`)?.checked ? 1 : 0,
+          morning_after: document.querySelector(`[name="morning_after_${courseNum}_${medId}"]`)?.checked ? 1 : 0,
+          afternoon_before: document.querySelector(`[name="afternoon_before_${courseNum}_${medId}"]`)?.checked ? 1 : 0,
+          afternoon_after: document.querySelector(`[name="afternoon_after_${courseNum}_${medId}"]`)?.checked ? 1 : 0,
+          evening_before: document.querySelector(`[name="evening_before_${courseNum}_${medId}"]`)?.checked ? 1 : 0,
+          evening_after: document.querySelector(`[name="evening_after_${courseNum}_${medId}"]`)?.checked ? 1 : 0,
+          night_before: document.querySelector(`[name="night_before_${courseNum}_${medId}"]`)?.checked ? 1 : 0,
+          night_after: document.querySelector(`[name="night_after_${courseNum}_${medId}"]`)?.checked ? 1 : 0
+        });
+      });
+      
+      if (medicines.length > 0) {
+        courses.push({
+          course_number: courseNum,
+          payment_amount: courseAmount,
+          advance_payment: courseAdvance,
+          balance_due: courseBalance,
+          payment_notes: coursePaymentNotes,
+          medicines: medicines
+        });
+      }
+    });
+    
+    if (courses.length === 0) {
+      alert('Please add at least one course with medicines');
+      hideLoading();
+      return;
+    }
+    
+    // Calculate follow-up date from given date + treatment months
+    const followUpDate = new Date(givenDate);
+    followUpDate.setMonth(followUpDate.getMonth() + treatmentMonths);
+    const followUpDateStr = followUpDate.toISOString().split('T')[0];
     
     const data = {
       patient_id: patientId,
-      follow_up_date: followUpDate || null,
+      given_date: givenDate,
+      treatment_months: treatmentMonths,
+      follow_up_date: followUpDateStr,
       diagnosis: document.getElementById('prescription-problem').value || 'Not specified',
       notes: '',
       course: parseInt(document.getElementById('prescription-course').value) || null,
-      medicines: medicines
+      currency: currency,
+      courses: courses
     };
     
     // Save the Herbs & Routes record
     const result = await axios.post(`${API_BASE}/prescriptions`, data);
     
-    // Auto-create reminder for follow-up date (only if we have active medicines)
-    if (followUpDate) {
-      try {
-        const activeMedicines = medicines.filter(m => m.is_active);
-        const reminderData = {
-          patient_id: patientId,
-          reminder_date: followUpDate,
-          reminder_type: 'Follow-up',
-          notes: `Follow-up for Herbs & Routes treatment (${activeMedicines.length} active medicine${activeMedicines.length > 1 ? 's' : ''})`
-        };
-        await axios.post(`${API_BASE}/reminders`, reminderData);
-        console.log('Reminder created automatically for follow-up date');
-      } catch (reminderError) {
-        console.error('Error creating reminder:', reminderError);
-        // Don't fail the whole operation if reminder creation fails
-      }
+    // Auto-create reminder for follow-up date
+    try {
+      const totalMedicines = courses.reduce((sum, course) => sum + course.medicines.length, 0);
+      const reminderData = {
+        patient_id: patientId,
+        reminder_date: followUpDateStr,
+        reminder_type: 'Follow-up',
+        notes: `Follow-up for Herbs & Routes treatment (${courses.length} course${courses.length > 1 ? 's' : ''}, ${totalMedicines} medicine${totalMedicines > 1 ? 's' : ''})`
+      };
+      await axios.post(`${API_BASE}/reminders`, reminderData);
+      console.log('Reminder created automatically for follow-up date');
+    } catch (reminderError) {
+      console.error('Error creating reminder:', reminderError);
+      // Don't fail the whole operation if reminder creation fails
     }
     
-    alert(`Herbs & Routes record created successfully!${followUpDate ? `\nFollow-up date: ${formatDate(followUpDate)}\nReminder has been set automatically.` : ''}`);
+    alert(`Herbs & Routes record created successfully!\nFollow-up date: ${formatDate(followUpDateStr)}\nReminder has been set automatically.`);
     
     closeHerbsRoutesModal();
     loadHerbsRoutes();
     loadReminders(); // Refresh reminders to show the new one
   } catch (error) {
+    console.error('Save herbs & routes error:', error);
+    alert('Error saving herbs & routes record: ' + (error.response?.data?.error || error.message));
+  } finally {
+    hideLoading();
+  }
+}
     console.error('Save herbs & routes error:', error);
     alert('Error saving herbs & routes record: ' + (error.response?.data?.error || error.message));
   } finally {
