@@ -2695,6 +2695,9 @@ app.get('/', (c) => {
 
                 <!-- Action Buttons -->
                 <div class="flex justify-end space-x-3 mt-6 no-print">
+                    <button onclick="window.print()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                        <i class="fas fa-print mr-2"></i>Print
+                    </button>
                     <button onclick="closeSummaryModal()" class="px-6 py-2 bg-ayurveda-600 hover:bg-ayurveda-700 text-white rounded-lg">
                         <i class="fas fa-times mr-2"></i>Close
                     </button>
