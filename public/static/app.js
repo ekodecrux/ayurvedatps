@@ -1508,11 +1508,11 @@ function addPaymentCollection(courseId, existingData = null) {
       <div class="grid grid-cols-12 gap-2 items-center">
         <div class="col-span-3">
           <label class="block text-xs mb-1">Date *</label>
-          <input type="date" name="collection_date_${collectionId}" class="w-full border rounded px-2 py-1 text-xs" value="${existingData?.collection_date || ''}" required>
+          <input type="date" name="collection_date_${collectionId}" class="w-full border rounded px-2 py-1 text-xs" value="${existingData?.collection_date || ''}">
         </div>
         <div class="col-span-3">
           <label class="block text-xs mb-1">Amount *</label>
-          <input type="number" step="0.01" name="collection_amount_${collectionId}" class="w-full border rounded px-2 py-1 text-xs" placeholder="0.00" value="${existingData?.amount || ''}" required>
+          <input type="number" step="0.01" name="collection_amount_${collectionId}" class="w-full border rounded px-2 py-1 text-xs" placeholder="0.00" value="${existingData?.amount || ''}">
         </div>
         <div class="col-span-2">
           <label class="block text-xs mb-1">Method</label>
@@ -1937,20 +1937,25 @@ async function editHerbsRoutes(id) {
       
       // Load payment collections for each course
       if (hr.payment_collections && hr.payment_collections.length > 0) {
+        // Group collections by course_id from the collection data
+        const collectionsByCourse = {};
         hr.payment_collections.forEach(collection => {
-          // Find the course in the DOM
-          const courseRow = document.querySelector(`.medicine-row[data-row]`);
-          if (courseRow) {
-            const matchingCourseId = Array.from(document.querySelectorAll('.medicine-row')).find(row => {
-              const rowId = row.dataset.row;
-              // Match course by course_id stored in collection
-              return parseInt(rowId) === parseInt(collection.course_id);
-            })?.dataset.row;
-            
-            if (matchingCourseId) {
-              // Add payment collection with existing data
-              addPaymentCollection(matchingCourseId, collection);
-            }
+          const key = collection.course_id;
+          if (!collectionsByCourse[key]) {
+            collectionsByCourse[key] = [];
+          }
+          collectionsByCourse[key].push(collection);
+        });
+        
+        // Now match with actual course rows in DOM
+        document.querySelectorAll('.medicine-row').forEach(courseRow => {
+          const courseId = courseRow.dataset.row;
+          const collections = collectionsByCourse[courseId];
+          
+          if (collections && collections.length > 0) {
+            collections.forEach(collection => {
+              addPaymentCollection(courseId, collection);
+            });
           }
         });
       }
