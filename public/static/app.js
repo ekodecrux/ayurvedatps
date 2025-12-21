@@ -1878,7 +1878,22 @@ async function viewHerbsRoutes(id) {
     ].filter(p => p); // Remove null/undefined/empty
     const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : 'N/A';
     setTextIfExists('summary-patient-address', fullAddress);
-    setTextIfExists('summary-patient-health-issue', hr.present_health_issue);
+    
+    // Display health issues from diseases JSON array
+    let healthIssueText = 'N/A';
+    if (hr.diseases && Array.isArray(hr.diseases) && hr.diseases.length > 0) {
+      healthIssueText = hr.diseases.map(d => {
+        const parts = [];
+        if (d.present_health_issue) parts.push(d.present_health_issue);
+        if (d.present_medicine) parts.push(`(${d.present_medicine})`);
+        if (d.mg_value) parts.push(`${d.mg_value}mg`);
+        if (d.attacked_by) parts.push(`- ${d.attacked_by}`);
+        return parts.join(' ');
+      }).join('; ');
+    } else if (hr.present_health_issue) {
+      healthIssueText = hr.present_health_issue;
+    }
+    setTextIfExists('summary-patient-health-issue', healthIssueText);
     
     // Treatment details
     setTextIfExists('summary-given-date', formatDate(hr.created_at));

@@ -933,7 +933,7 @@ app.get('/api/prescriptions/:id', async (c) => {
              p.name as patient_name, p.phone as patient_phone, p.email as patient_email, 
              p.patient_id as patient_identifier, p.id as patient_db_id,
              p.age, p.gender, p.country, p.weight, p.height,
-             p.present_health_issue, p.present_medicine, p.mg_value,
+             p.present_health_issue, p.present_medicine, p.mg_value, p.diseases,
              p.address_hno, p.address_street, p.address_apartment, p.address_area,
              p.address_district, p.address_state, p.address_pincode
       FROM herbs_routes h
@@ -943,6 +943,15 @@ app.get('/api/prescriptions/:id', async (c) => {
     
     if (!herbsRoute) {
       return c.json({ success: false, error: 'Herbs & Routes not found' }, 404)
+    }
+    
+    // Parse diseases JSON if present
+    if (herbsRoute.diseases) {
+      try {
+        herbsRoute.diseases = JSON.parse(herbsRoute.diseases as string)
+      } catch (e) {
+        herbsRoute.diseases = []
+      }
     }
     
     // Get medicines for this herbs & routes
