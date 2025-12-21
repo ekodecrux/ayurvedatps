@@ -1025,6 +1025,7 @@ function showHerbsRoutesModal() {
   document.getElementById('prescription-followup').value = '';
   
   addMedicineRow();
+  updateAllCurrencyDisplays(); // Update currency displays
   loadPatientsForHerbsRoutes();
   
   modal.classList.remove('hidden');
@@ -1196,15 +1197,15 @@ function addMedicineRow() {
         <h5 class="font-medium text-sm text-blue-700 mb-3"><i class="fas fa-money-bill-wave mr-2"></i>Payment Details for this Course</h5>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label class="block text-xs font-medium mb-1">Amount</label>
+            <label class="block text-xs font-medium mb-1 course-amount-label">Amount</label>
             <input type="number" step="0.01" name="payment_amount_${medicineCounter}" class="w-full border rounded px-3 py-2 text-sm medicine-payment-amount" placeholder="0.00" oninput="updatePaymentSummary()">
           </div>
           <div>
-            <label class="block text-xs font-medium mb-1">Advance</label>
+            <label class="block text-xs font-medium mb-1 course-advance-label">Advance</label>
             <input type="number" step="0.01" name="advance_payment_${medicineCounter}" class="w-full border rounded px-3 py-2 text-sm medicine-advance-payment" placeholder="0.00" oninput="updatePaymentSummary()">
           </div>
           <div>
-            <label class="block text-xs font-medium mb-1">Balance</label>
+            <label class="block text-xs font-medium mb-1 course-balance-label">Balance</label>
             <div class="border rounded px-3 py-2 bg-gray-100 text-sm font-bold text-red-600 course-balance-display" data-row="${medicineCounter}">₹0.00</div>
           </div>
           <div>
@@ -1384,6 +1385,24 @@ function updatePaymentSummary() {
 
 // Update all currency displays when global currency changes
 function updateAllCurrencyDisplays() {
+  // Get global currency
+  const currencySelect = document.getElementById('prescription-currency');
+  const currency = currencySelect ? currencySelect.value : 'INR';
+  const symbol = currency === 'USD' ? '$' : '₹';
+  const currencyName = currency === 'USD' ? 'USD' : 'INR';
+  
+  // Update all payment field labels
+  document.querySelectorAll('.course-amount-label').forEach(label => {
+    label.textContent = `Amount (${symbol})`;
+  });
+  document.querySelectorAll('.course-advance-label').forEach(label => {
+    label.textContent = `Advance (${symbol})`;
+  });
+  document.querySelectorAll('.course-balance-label').forEach(label => {
+    label.textContent = `Balance (${symbol})`;
+  });
+  
+  // Update all payment displays
   updatePaymentSummary();
 }
 
