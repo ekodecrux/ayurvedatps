@@ -1562,8 +1562,17 @@ async function saveHerbsRoutes() {
       medicines: medicines
     };
     
-    // Save the Herbs & Routes record
-    const result = await axios.post(`${API_BASE}/prescriptions`, data);
+    // Check if this is an update (edit mode) or create (new record)
+    const prescriptionId = document.getElementById('prescription-id').value;
+    let result;
+    
+    if (prescriptionId) {
+      // UPDATE existing record
+      result = await axios.put(`${API_BASE}/prescriptions/${prescriptionId}`, data);
+    } else {
+      // CREATE new record
+      result = await axios.post(`${API_BASE}/prescriptions`, data);
+    }
     
     // Auto-create reminder for follow-up date (only if we have active medicines)
     if (followUpDate) {
@@ -1902,44 +1911,90 @@ async function viewHerbsRoutes(id) {
     setTextIfExists('summary-course', hr.course);
     setTextIfExists('summary-diagnosis', hr.diagnosis);
     
-    // Show medicines
+    // Show medicines grouped by course with payment details
     const medicinesListEl = document.getElementById('summary-medicines-list');
     if (medicinesListEl && hr.medicines && hr.medicines.length > 0) {
-      const medicinesHtml = hr.medicines.map((med, index) => {
-        // Build dosage schedule badges
-        const dosages = [];
-        if (med.morning_before) dosages.push('<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">Morning (Before)</span>');
-        if (med.morning_after) dosages.push('<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">Morning (After)</span>');
-        if (med.afternoon_before) dosages.push('<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Afternoon (Before)</span>');
-        if (med.afternoon_after) dosages.push('<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Afternoon (After)</span>');
-        if (med.evening_before) dosages.push('<span class="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">Evening (Before)</span>');
-        if (med.evening_after) dosages.push('<span class="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">Evening (After)</span>');
-        if (med.night_before) dosages.push('<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">Night (Before)</span>');
-        if (med.night_after) dosages.push('<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">Night (After)</span>');
+      // Group medicines by course
+      const courseGroups = {};
+      hr.medicines.forEach(med => {
+        const courseNum = med.course_number || 1;
+        if (!courseGroups[courseNum]) {
+          courseGroups[courseNum] = [];
+        }
+        courseGroups[courseNum].push(med);
+      });
+      
+      const coursesHtml = Object.keys(courseGroups).sort((a, b) => a - b).map(courseNum => {
+        const meds = courseGroups[courseNum];
+        const firstMed = meds[0];
+        
+        // Calculate course totals
+        const courseAmount = parseFloat(firstMed.payment_amount || 0);
+        const courseAdvance = parseFloat(firstMed.advance_payment || 0);
+        const courseBalance = courseAmount - courseAdvance;
+        const symbol = hr.currency === 'USD' ? '$' : '₹';
+        
+        const medicinesHtml = meds.map((med, index) => {
+          // Build dosage schedule badges
+          const dosages = [];
+          if (med.morning_before) dosages.push('<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">Morning (Before)</span>');
+          if (med.morning_after) dosages.push('<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">Morning (After)</span>');
+          if (med.afternoon_before) dosages.push('<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Afternoon (Before)</span>');
+          if (med.afternoon_after) dosages.push('<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Afternoon (After)</span>');
+          if (med.evening_before) dosages.push('<span class="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">Evening (Before)</span>');
+          if (med.evening_after) dosages.push('<span class="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">Evening (After)</span>');
+          if (med.night_before) dosages.push('<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">Night (Before)</span>');
+          if (med.night_after) dosages.push('<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">Night (After)</span>');
+          
+          return `
+            <div class="p-3 border border-blue-200 rounded-lg bg-blue-50 mb-2">
+              <div class="flex justify-between items-start mb-2">
+                <h6 class="font-semibold text-blue-700 text-sm">
+                  ${med.roman_id ? `<span class="mr-2">${med.roman_id}.</span>` : ''}
+                  ${med.medicine_name}
+                </h6>
+                <span class="px-2 py-1 rounded text-xs ${med.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'}">
+                  ${med.is_active ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+              <div class="flex flex-wrap gap-1 mb-2">
+                ${dosages.join('') || '<span class="text-gray-500 text-xs">No dosage schedule specified</span>'}
+              </div>
+            </div>
+          `;
+        }).join('');
         
         return `
-          <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
-            <div class="flex justify-between items-start mb-2">
-              <h5 class="font-semibold text-blue-700">
-                ${med.roman_id ? `<span class="mr-2">${med.roman_id}.</span>` : ''}
-                ${med.medicine_name}
+          <div class="mb-4 p-4 border-2 border-ayurveda-300 rounded-lg bg-gradient-to-r from-white to-green-50">
+            <div class="flex justify-between items-center mb-3 pb-2 border-b border-ayurveda-300">
+              <h5 class="font-bold text-lg text-ayurveda-700">
+                <i class="fas fa-leaf mr-2"></i>Course ${courseNum}
               </h5>
-              <span class="px-2 py-1 rounded text-xs ${med.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'}">
-                ${med.is_active ? 'Active' : 'Inactive'}
-              </span>
+              <div class="text-sm text-gray-600">
+                <strong>Duration:</strong> ${firstMed.treatment_months || 0} months | 
+                <strong>Given Date:</strong> ${formatDate(firstMed.given_date)}
+              </div>
             </div>
-            <div class="flex flex-wrap gap-1 mb-2">
-              ${dosages.join('') || '<span class="text-gray-500 text-sm">No dosage schedule specified</span>'}
-            </div>
-            <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 mt-2">
-              <div><strong>Given Date:</strong> ${formatDate(med.given_date)}</div>
-              <div><strong>Duration:</strong> ${med.treatment_months || 0} months</div>
+            
+            ${medicinesHtml}
+            
+            <div class="mt-3 pt-3 border-t border-gray-300 bg-white rounded p-3">
+              <h6 class="font-semibold text-sm text-green-700 mb-2">
+                <i class="fas fa-money-bill-wave mr-1"></i>Payment Details - Course ${courseNum}
+              </h6>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                <div><span class="font-medium">Amount:</span> <span class="font-bold text-blue-600">${symbol}${courseAmount.toFixed(2)}</span></div>
+                <div><span class="font-medium">Advance:</span> <span class="font-bold text-green-600">${symbol}${courseAdvance.toFixed(2)}</span></div>
+                <div><span class="font-medium">Balance:</span> <span class="font-bold ${courseBalance > 0 ? 'text-red-600' : 'text-green-600'}">${symbol}${courseBalance.toFixed(2)}</span></div>
+                <div class="col-span-2 md:col-span-1"><span class="font-medium">Status:</span> <span class="${courseBalance > 0 ? 'text-red-600' : 'text-green-600'}">${courseBalance > 0 ? 'Due' : 'Paid'}</span></div>
+              </div>
+              ${firstMed.payment_notes ? `<div class="mt-2 text-xs text-gray-600"><strong>Notes:</strong> ${firstMed.payment_notes}</div>` : ''}
             </div>
           </div>
         `;
       }).join('');
       
-      medicinesListEl.innerHTML = medicinesHtml;
+      medicinesListEl.innerHTML = coursesHtml;
     } else if (medicinesListEl) {
       medicinesListEl.innerHTML = '<p class="text-gray-500 text-center py-4">No medicines prescribed</p>';
     }
@@ -1963,7 +2018,7 @@ async function viewHerbsRoutes(id) {
     setTextIfExists('summary-advance-paid', `${symbol}${totalAdvance.toFixed(2)}`);
     setTextIfExists('summary-balance-due', `${symbol}${totalBalance.toFixed(2)}`);
     setTextIfExists('summary-payment-notes', 'N/A');
-    setTextIfExists('summary-followup-reminder', formatDate(hr.follow_up_date) || 'Not set');
+    setTextIfExists('summary-followup-reminder', formatDate(hr.next_followup_date) || 'Not set');
     
     // Show the modal
     document.getElementById('prescription-summary-modal').classList.remove('hidden');

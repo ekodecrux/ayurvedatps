@@ -1054,7 +1054,7 @@ app.put('/api/prescriptions/:id', async (c) => {
     // Update herbs_routes record (simplified - per-medicine data moved to medicines_tracking)
     await c.env.DB.prepare(`
       UPDATE herbs_routes SET 
-        patient_id = ?, next_followup_date = ?, diagnosis = ?, notes = ?, course = ?,
+        patient_id = ?, next_followup_date = ?, diagnosis = ?, notes = ?, course = ?, currency = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(
@@ -1063,6 +1063,7 @@ app.put('/api/prescriptions/:id', async (c) => {
       body.diagnosis || null,
       body.notes || null,
       body.course || null,
+      body.currency || 'INR',
       id
     ).run()
     
