@@ -1795,7 +1795,7 @@ async function editHerbsRoutes(id) {
       
       // Create a course for each group
       Object.keys(courseGroups).forEach(courseKey => {
-        const meds = courseGroups[courseNum];
+        const meds = courseGroups[courseKey];
         const firstMed = meds[0];
         
         // Add course row
