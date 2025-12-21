@@ -959,19 +959,17 @@ app.get('/api/prescriptions/:id', async (c) => {
       'SELECT * FROM medicines_tracking WHERE herbs_route_id = ? ORDER BY roman_id'
     ).bind(id).all()
     
-    // Get payment collections for each medicine
-    for (const medicine of medicines as any[]) {
-      const { results: payments } = await c.env.DB.prepare(
-        'SELECT * FROM payment_collections WHERE medicine_id = ? ORDER BY collection_date DESC'
-      ).bind(medicine.id).all()
-      medicine.payment_collections = payments
-    }
+    // Get payment collections for this prescription (herbs_route)
+    const { results: paymentCollections } = await c.env.DB.prepare(
+      'SELECT * FROM payment_collections WHERE herbs_route_id = ? ORDER BY collection_date DESC'
+    ).bind(id).all()
     
     return c.json({ 
       success: true, 
       data: { 
         ...herbsRoute, 
-        medicines 
+        medicines,
+        payment_collections: paymentCollections
       } 
     })
   } catch (error: any) {
@@ -1028,6 +1026,24 @@ app.post('/api/prescriptions', async (c) => {
           med.evening_after ? 1 : 0,
           med.night_before ? 1 : 0,
           med.night_after ? 1 : 0
+        ).run()
+      }
+    }
+    
+    // Save payment collections
+    if (body.payment_collections && body.payment_collections.length > 0) {
+      for (const collection of body.payment_collections) {
+        await c.env.DB.prepare(`
+          INSERT INTO payment_collections (
+            herbs_route_id, course_id, collection_date, amount, payment_method, notes
+          ) VALUES (?, ?, ?, ?, ?, ?)
+        `).bind(
+          herbsRouteId,
+          collection.course_id,
+          collection.collection_date,
+          collection.amount,
+          collection.payment_method || 'Cash',
+          collection.notes || null
         ).run()
       }
     }
@@ -1109,6 +1125,29 @@ app.put('/api/prescriptions/:id', async (c) => {
           med.evening_after ? 1 : 0,
           med.night_before ? 1 : 0,
           med.night_after ? 1 : 0
+        ).run()
+      }
+    }
+    
+    // Delete existing payment collections
+    await c.env.DB.prepare(
+      'DELETE FROM payment_collections WHERE herbs_route_id = ?'
+    ).bind(id).run()
+    
+    // Insert updated payment collections
+    if (body.payment_collections && body.payment_collections.length > 0) {
+      for (const collection of body.payment_collections) {
+        await c.env.DB.prepare(`
+          INSERT INTO payment_collections (
+            herbs_route_id, course_id, collection_date, amount, payment_method, notes
+          ) VALUES (?, ?, ?, ?, ?, ?)
+        `).bind(
+          id,
+          collection.course_id,
+          collection.collection_date,
+          collection.amount,
+          collection.payment_method || 'Cash',
+          collection.notes || null
         ).run()
       }
     }

@@ -1610,6 +1610,35 @@ async function saveHerbsRoutes() {
       });
     });
     
+    // Collect payment collections for all courses
+    const paymentCollections = [];
+    document.querySelectorAll('.medicine-row').forEach((courseRow) => {
+      const courseId = courseRow.dataset.row;
+      const collectionContainer = document.getElementById(`payment-collections-${courseId}`);
+      
+      if (collectionContainer) {
+        collectionContainer.querySelectorAll('[data-collection]').forEach((collectionDiv) => {
+          const collectionId = collectionDiv.dataset.collection;
+          const collectionDate = collectionDiv.querySelector(`[name="collection_date_${collectionId}"]`)?.value;
+          const collectionAmount = parseFloat(collectionDiv.querySelector(`[name="collection_amount_${collectionId}"]`)?.value) || 0;
+          const collectionMethod = collectionDiv.querySelector(`[name="collection_method_${collectionId}"]`)?.value || 'Cash';
+          const collectionNotes = collectionDiv.querySelector(`[name="collection_notes_${collectionId}"]`)?.value || '';
+          const existingCollectionId = collectionDiv.querySelector(`[name="collection_id_${collectionId}"]`)?.value;
+          
+          if (collectionDate && collectionAmount > 0) {
+            paymentCollections.push({
+              id: existingCollectionId || null,
+              course_id: parseInt(courseId),
+              collection_date: collectionDate,
+              amount: collectionAmount,
+              payment_method: collectionMethod,
+              notes: collectionNotes
+            });
+          }
+        });
+      }
+    });
+    
     // Allow saving without medicines (they are optional)
     
     // Get follow-up date (auto-calculated from active medicines)
@@ -1625,7 +1654,8 @@ async function saveHerbsRoutes() {
       notes: '',
       course: parseInt(document.getElementById('prescription-course').value) || null,
       currency: currency,
-      medicines: medicines
+      medicines: medicines,
+      payment_collections: paymentCollections
     };
     
     // Check if this is an update (edit mode) or create (new record)
@@ -1904,6 +1934,26 @@ async function editHerbsRoutes(id) {
           document.getElementById(`medicines-container-${courseId}`).insertAdjacentHTML('beforeend', medHtml);
         });
       });
+      
+      // Load payment collections for each course
+      if (hr.payment_collections && hr.payment_collections.length > 0) {
+        hr.payment_collections.forEach(collection => {
+          // Find the course in the DOM
+          const courseRow = document.querySelector(`.medicine-row[data-row]`);
+          if (courseRow) {
+            const matchingCourseId = Array.from(document.querySelectorAll('.medicine-row')).find(row => {
+              const rowId = row.dataset.row;
+              // Match course by course_id stored in collection
+              return parseInt(rowId) === parseInt(collection.course_id);
+            })?.dataset.row;
+            
+            if (matchingCourseId) {
+              // Add payment collection with existing data
+              addPaymentCollection(matchingCourseId, collection);
+            }
+          }
+        });
+      }
     } else {
       // No medicines, add one empty course
       addMedicineRow();
@@ -2071,6 +2121,38 @@ async function viewHerbsRoutes(id) {
                 <div class="col-span-2 md:col-span-1"><span class="font-medium">Status:</span> <span class="${courseBalance > 0 ? 'text-red-600' : 'text-green-600'}">${courseBalance > 0 ? 'Due' : 'Paid'}</span></div>
               </div>
               ${firstMed.payment_notes ? `<div class="mt-2 text-xs text-gray-600"><strong>Notes:</strong> ${firstMed.payment_notes}</div>` : ''}
+              
+              <!-- Payment Collections for this Course -->
+              ${(() => {
+                if (hr.payment_collections && hr.payment_collections.length > 0) {
+                  const courseCollections = hr.payment_collections.filter(c => parseInt(c.course_id) === parseInt(courseId));
+                  if (courseCollections.length > 0) {
+                    const collectionsHtml = courseCollections.map(collection => `
+                      <div class="flex items-center gap-2 text-xs p-2 bg-green-50 border border-green-200 rounded">
+                        <i class="fas fa-check-circle text-green-600"></i>
+                        <span class="font-medium">${formatDate(collection.collection_date)}</span>
+                        <span class="font-bold text-green-700">${symbol}${parseFloat(collection.amount).toFixed(2)}</span>
+                        <span class="text-gray-600">(${collection.payment_method})</span>
+                        ${collection.notes ? `<span class="text-gray-500">- ${collection.notes}</span>` : ''}
+                      </div>
+                    `).join('');
+                    
+                    const totalCollected = courseCollections.reduce((sum, c) => sum + parseFloat(c.amount || 0), 0);
+                    
+                    return `
+                      <div class="mt-3 pt-2 border-t border-green-200">
+                        <h6 class="font-semibold text-xs text-green-700 mb-2">
+                          <i class="fas fa-receipt mr-1"></i>Payment Collections (Total Collected: ${symbol}${totalCollected.toFixed(2)})
+                        </h6>
+                        <div class="space-y-1">
+                          ${collectionsHtml}
+                        </div>
+                      </div>
+                    `;
+                  }
+                }
+                return '';
+              })()}
             </div>
           </div>
         `;
@@ -2086,6 +2168,7 @@ async function viewHerbsRoutes(id) {
     const symbol = currency === 'USD' ? '$' : '₹';
     let totalAmount = 0;
     let totalAdvance = 0;
+    let totalCollected = 0;
     
     if (hr.medicines && hr.medicines.length > 0) {
       hr.medicines.forEach(med => {
@@ -2094,11 +2177,27 @@ async function viewHerbsRoutes(id) {
       });
     }
     
-    const totalBalance = totalAmount - totalAdvance;
+    // Add collected amounts from payment collections
+    if (hr.payment_collections && hr.payment_collections.length > 0) {
+      hr.payment_collections.forEach(collection => {
+        totalCollected += parseFloat(collection.amount || 0);
+      });
+    }
+    
+    const totalBalance = totalAmount - totalAdvance - totalCollected;
     
     setTextIfExists('summary-total-amount', `${symbol}${totalAmount.toFixed(2)}`);
     setTextIfExists('summary-advance-paid', `${symbol}${totalAdvance.toFixed(2)}`);
     setTextIfExists('summary-balance-due', `${symbol}${totalBalance.toFixed(2)}`);
+    
+    // Show collected amount
+    const collectionsInfoEl = document.getElementById('summary-collections-info');
+    if (collectionsInfoEl) {
+      collectionsInfoEl.innerHTML = totalCollected > 0 
+        ? `<div class="text-green-600 font-bold">Total Collected: ${symbol}${totalCollected.toFixed(2)}</div>` 
+        : '';
+    }
+    
     setTextIfExists('summary-payment-notes', 'N/A');
     setTextIfExists('summary-followup-reminder', formatDate(hr.next_followup_date) || 'Not set');
     
