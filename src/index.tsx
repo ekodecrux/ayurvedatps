@@ -2335,7 +2335,14 @@ app.get('/', (c) => {
                                     <option value="1">1 Month</option>
                                     <option value="2">2 Months</option>
                                     <option value="3">3 Months</option>
+                                    <option value="4">4 Months</option>
+                                    <option value="5">5 Months</option>
                                     <option value="6">6 Months</option>
+                                    <option value="7">7 Months</option>
+                                    <option value="8">8 Months</option>
+                                    <option value="9">9 Months</option>
+                                    <option value="10">10 Months</option>
+                                    <option value="11">11 Months</option>
                                     <option value="12">12 Months</option>
                                 </select>
                             </div>
@@ -2344,7 +2351,7 @@ app.get('/', (c) => {
                                 <input type="date" id="prescription-followup" class="border rounded px-3 py-2 w-full bg-gray-100" readonly>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1">Course (1-16)</label>
+                                <label class="block text-sm font-medium mb-1">Entire Course (1-16)</label>
                                 <select id="prescription-course" class="border rounded px-3 py-2 w-full">
                                     <option value="1">1</option>
                                     <option value="2">2</option>
@@ -2375,7 +2382,7 @@ app.get('/', (c) => {
                             <div class="flex justify-between items-center mb-3">
                                 <h4 class="font-bold text-lg">Medicines</h4>
                                 <button type="button" onclick="addMedicineRow()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
-                                    <i class="fas fa-plus mr-2"></i>Add Medicine
+                                    <i class="fas fa-plus mr-2"></i>Add Course
                                 </button>
                             </div>
                             <div id="medicines-list"></div>

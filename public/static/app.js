@@ -1137,54 +1137,73 @@ function addMedicineRow() {
   const html = `
     <div class="medicine-row border rounded-lg p-4 mb-4 bg-gray-50" data-row="${medicineCounter}">
       <div class="flex justify-between items-center mb-3">
-        <h4 class="font-semibold text-lg">M.M.(${romanId})</h4>
+        <h4 class="font-semibold text-lg">Course ${medicineCounter}</h4>
         <button type="button" onclick="removeMedicineRow(${medicineCounter})" class="text-red-600 hover:text-red-800">
           <i class="fas fa-times"></i>
         </button>
       </div>
       
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div>
-          <label class="block text-sm font-medium mb-1">Medicine Name</label>
+          <label class="block text-sm font-medium mb-1">Medicine Name *</label>
           <input type="text" name="medicine_name_${medicineCounter}" class="w-full border rounded px-3 py-2" required>
         </div>
         
         <div>
-          <label class="block text-sm font-medium mb-1">Dosage Schedule</label>
-          <div class="grid grid-cols-2 gap-2 text-sm">
-            <label class="flex items-center">
-              <input type="checkbox" name="morning_before_${medicineCounter}" class="mr-2">
-              Morning (Before)
-            </label>
-            <label class="flex items-center">
-              <input type="checkbox" name="morning_after_${medicineCounter}" class="mr-2">
-              Morning (After)
-            </label>
-            <label class="flex items-center">
-              <input type="checkbox" name="afternoon_before_${medicineCounter}" class="mr-2">
-              Afternoon (Before)
-            </label>
-            <label class="flex items-center">
-              <input type="checkbox" name="afternoon_after_${medicineCounter}" class="mr-2">
-              Afternoon (After)
-            </label>
-            <label class="flex items-center">
-              <input type="checkbox" name="evening_before_${medicineCounter}" class="mr-2">
-              Evening (Before)
-            </label>
-            <label class="flex items-center">
-              <input type="checkbox" name="evening_after_${medicineCounter}" class="mr-2">
-              Evening (After)
-            </label>
-            <label class="flex items-center">
-              <input type="checkbox" name="night_before_${medicineCounter}" class="mr-2">
-              Night (Before)
-            </label>
-            <label class="flex items-center">
-              <input type="checkbox" name="night_after_${medicineCounter}" class="mr-2">
-              Night (After)
-            </label>
-          </div>
+          <label class="block text-sm font-medium mb-1">Roman ID</label>
+          <select name="roman_id_${medicineCounter}" class="w-full border rounded px-3 py-2">
+            <option value="">Select Roman ID</option>
+            <option value="I">I</option>
+            <option value="II">II</option>
+            <option value="III">III</option>
+            <option value="IV">IV</option>
+            <option value="V">V</option>
+            <option value="VI">VI</option>
+            <option value="VII">VII</option>
+            <option value="VIII">VIII</option>
+            <option value="IX">IX</option>
+            <option value="X">X</option>
+            <option value="XI">XI</option>
+            <option value="XII">XII</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="mb-3">
+        <label class="block text-sm font-medium mb-2">Dosage Schedule</label>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+          <label class="flex items-center">
+            <input type="checkbox" name="morning_before_${medicineCounter}" class="mr-2">
+            Morning (Before)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="morning_after_${medicineCounter}" class="mr-2">
+            Morning (After)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="afternoon_before_${medicineCounter}" class="mr-2">
+            Afternoon (Before)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="afternoon_after_${medicineCounter}" class="mr-2">
+            Afternoon (After)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="evening_before_${medicineCounter}" class="mr-2">
+            Evening (Before)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="evening_after_${medicineCounter}" class="mr-2">
+            Evening (After)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="night_before_${medicineCounter}" class="mr-2">
+            Night (Before)
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="night_after_${medicineCounter}" class="mr-2">
+            Night (After)
+          </label>
         </div>
       </div>
     </div>
