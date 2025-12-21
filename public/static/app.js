@@ -1300,108 +1300,6 @@ function removeMedicine(courseId, medId) {
     updatePaymentSummary();
   }
 }
-            <option value="IV">IV</option>
-            <option value="V">V</option>
-            <option value="VI">VI</option>
-            <option value="VII">VII</option>
-            <option value="VIII">VIII</option>
-            <option value="IX">IX</option>
-            <option value="X">X</option>
-            <option value="XI">XI</option>
-            <option value="XII">XII</option>
-          </select>
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium mb-1">Given Date *</label>
-          <input type="date" name="given_date_${medicineCounter}" class="w-full border rounded px-3 py-2 medicine-given-date" required onchange="calculateSmartFollowUp()">
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium mb-1">Treatment Months *</label>
-          <select name="treatment_months_${medicineCounter}" class="w-full border rounded px-3 py-2 medicine-treatment-months" required onchange="calculateSmartFollowUp()">
-            <option value="1">1 Month</option>
-            <option value="2">2 Months</option>
-            <option value="3">3 Months</option>
-            <option value="4">4 Months</option>
-            <option value="5">5 Months</option>
-            <option value="6">6 Months</option>
-            <option value="7">7 Months</option>
-            <option value="8">8 Months</option>
-            <option value="9">9 Months</option>
-            <option value="10">10 Months</option>
-            <option value="11">11 Months</option>
-            <option value="12">12 Months</option>
-          </select>
-        </div>
-      </div>
-      
-      <div class="mb-4">
-        <label class="block text-sm font-medium mb-2">Dosage Schedule</label>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-          <label class="flex items-center">
-            <input type="checkbox" name="morning_before_${medicineCounter}" class="mr-2">
-            Morning (Before)
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="morning_after_${medicineCounter}" class="mr-2">
-            Morning (After)
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="afternoon_before_${medicineCounter}" class="mr-2">
-            Afternoon (Before)
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="afternoon_after_${medicineCounter}" class="mr-2">
-            Afternoon (After)
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="evening_before_${medicineCounter}" class="mr-2">
-            Evening (Before)
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="evening_after_${medicineCounter}" class="mr-2">
-            Evening (After)
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="night_before_${medicineCounter}" class="mr-2">
-            Night (Before)
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="night_after_${medicineCounter}" class="mr-2">
-            Night (After)
-          </label>
-        </div>
-      </div>
-      
-      <div class="border-t border-gray-300 pt-4">
-        <h5 class="font-medium text-sm mb-3 text-blue-700"><i class="fas fa-rupee-sign mr-2"></i>Payment Details for this Course</h5>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label class="block text-xs font-medium mb-1">Amount (₹)</label>
-            <input type="number" step="0.01" name="payment_amount_${medicineCounter}" class="w-full border rounded px-3 py-2 text-sm medicine-payment-amount" placeholder="0.00" oninput="updatePaymentSummary()">
-          </div>
-          <div>
-            <label class="block text-xs font-medium mb-1">Advance (₹)</label>
-            <input type="number" step="0.01" name="advance_payment_${medicineCounter}" class="w-full border rounded px-3 py-2 text-sm medicine-advance-payment" placeholder="0.00" oninput="updatePaymentSummary()">
-          </div>
-          <div>
-            <label class="block text-xs font-medium mb-1">Balance (₹)</label>
-            <div class="border rounded px-3 py-2 bg-gray-100 text-sm font-bold text-red-600" name="balance_due_${medicineCounter}">₹0.00</div>
-          </div>
-          <div>
-            <label class="block text-xs font-medium mb-1">Payment Notes</label>
-            <input type="text" name="payment_notes_${medicineCounter}" class="w-full border rounded px-3 py-2 text-sm" placeholder="Optional">
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  document.getElementById('medicines-list').insertAdjacentHTML('beforeend', html);
-  updatePaymentSummary();
-  calculateSmartFollowUp();
-}
 
 // Update currency display across all payment fields
 function updateCurrencyDisplay() {
@@ -1469,29 +1367,6 @@ function updatePaymentSummary() {
       'text-3xl font-bold text-green-600';
   }
   if (overallMedicineCount) overallMedicineCount.textContent = medicineCount;
-}
-      const months = parseInt(monthsInput.value) || 0;
-      
-      // Calculate end date for this medicine
-      const endDate = new Date(givenDate);
-      endDate.setMonth(endDate.getMonth() + months);
-      
-      // Track the latest end date
-      if (!latestEndDate || endDate > latestEndDate) {
-        latestEndDate = endDate;
-      }
-    }
-  });
-  
-  // Update follow-up date field
-  const followUpInput = document.getElementById('prescription-followup');
-  if (followUpInput) {
-    if (hasActiveMedicines && latestEndDate) {
-      followUpInput.value = latestEndDate.toISOString().split('T')[0];
-    } else {
-      followUpInput.value = '';
-    }
-  }
 }
 
 async function saveHerbsRoutes() {
@@ -1611,12 +1486,6 @@ async function saveHerbsRoutes() {
     loadHerbsRoutes();
     loadReminders(); // Refresh reminders to show the new one
   } catch (error) {
-    console.error('Save herbs & routes error:', error);
-    alert('Error saving herbs & routes record: ' + (error.response?.data?.error || error.message));
-  } finally {
-    hideLoading();
-  }
-}
     console.error('Save herbs & routes error:', error);
     alert('Error saving herbs & routes record: ' + (error.response?.data?.error || error.message));
   } finally {
