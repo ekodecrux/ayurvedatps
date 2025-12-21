@@ -982,22 +982,48 @@ async function loadHerbsRoutes() {
 }
 
 function renderHerbsRoutes() {
-  const html = currentHerbsRoutes.map(hr => `
+  const html = currentHerbsRoutes.map(hr => {
+    // Get currency symbol
+    const symbol = hr.currency === 'USD' ? '$' : '₹';
+    
+    // Format amounts
+    const totalAmount = hr.total_amount || 0;
+    const dueAmount = hr.total_balance || 0;
+    
+    return `
     <tr class="hover:bg-gray-50">
       <td class="px-6 py-4 border-b">${formatDate(hr.given_date || hr.created_at)}</td>
       <td class="px-6 py-4 border-b font-medium">${hr.patient_name}</td>
       <td class="px-6 py-4 border-b">${hr.diagnosis || 'N/A'}</td>
-      <td class="px-6 py-4 border-b">${hr.course || 'N/A'}</td>
-      <td class="px-6 py-4 border-b">₹${hr.payment_amount || 0}</td>
-      <td class="px-6 py-4 border-b">${hr.treatment_months || 0} months</td>
-      <td class="px-6 py-4 border-b">${formatDate(hr.follow_up_date || hr.next_followup_date)}</td>
+      <td class="px-6 py-4 border-b text-center">${hr.course || 'N/A'}</td>
       <td class="px-6 py-4 border-b">
-        <button onclick="viewHerbsRoutes(${hr.id})" class="text-blue-600 hover:text-blue-800 mr-2"><i class="fas fa-eye"></i></button>
-        <button onclick="printHerbsRoutes(${hr.id})" class="text-purple-600 hover:text-purple-800 mr-2"><i class="fas fa-print"></i></button>
-        <button onclick="deleteHerbsRoutes(${hr.id})" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+        <div class="text-sm">
+          <div class="font-semibold text-blue-600">${symbol}${totalAmount.toFixed(2)}</div>
+          <div class="text-xs text-red-600">Due: ${symbol}${dueAmount.toFixed(2)}</div>
+        </div>
+      </td>
+      <td class="px-6 py-4 border-b text-center">
+        <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+          ${hr.active_course_months || 0} months
+        </span>
+      </td>
+      <td class="px-6 py-4 border-b">${formatDate(hr.follow_up_date || hr.next_followup_date)}</td>
+      <td class="px-6 py-4 border-b whitespace-nowrap">
+        <button onclick="viewHerbsRoutes(${hr.id})" class="text-blue-600 hover:text-blue-800 mr-2" title="View">
+          <i class="fas fa-eye"></i>
+        </button>
+        <button onclick="editHerbsRoutes(${hr.id})" class="text-green-600 hover:text-green-800 mr-2" title="Edit">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button onclick="printHerbsRoutes(${hr.id})" class="text-purple-600 hover:text-purple-800 mr-2" title="Print">
+          <i class="fas fa-print"></i>
+        </button>
+        <button onclick="deleteHerbsRoutes(${hr.id})" class="text-red-600 hover:text-red-800" title="Delete">
+          <i class="fas fa-trash"></i>
+        </button>
       </td>
     </tr>
-  `).join('') || '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No records found</td></tr>';
+  `}).join('') || '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No records found</td></tr>';
   
   document.getElementById('prescriptions-table-body').innerHTML = html;
 }
@@ -1581,6 +1607,205 @@ async function deleteHerbsRoutes(id) {
   } catch (error) {
     console.error('Delete error:', error);
     alert('Error deleting record');
+  } finally {
+    hideLoading();
+  }
+}
+
+async function editHerbsRoutes(id) {
+  try {
+    showLoading();
+    const res = await axios.get(`${API_BASE}/prescriptions/${id}`);
+    const hr = res.data.data;
+    
+    // Populate the modal with existing data
+    document.getElementById('prescription-modal-title').textContent = 'Edit Herbs & Routes Record';
+    document.getElementById('prescription-id').value = id;
+    document.getElementById('prescription-patient').value = hr.patient_id;
+    document.getElementById('prescription-currency').value = hr.currency || 'INR';
+    document.getElementById('prescription-course').value = hr.course || 1;
+    document.getElementById('prescription-followup').value = hr.follow_up_date || '';
+    document.getElementById('prescription-problem').value = hr.diagnosis || '';
+    
+    // Load patient info
+    await displayPatientInfo();
+    
+    // Clear existing medicines list
+    document.getElementById('medicines-list').innerHTML = '';
+    medicineCounter = 0;
+    courseToMedicineMap = {};
+    
+    // Add medicines from database
+    if (hr.medicines && hr.medicines.length > 0) {
+      // Group medicines by course
+      const courseGroups = {};
+      hr.medicines.forEach(med => {
+        if (!courseGroups[med.course_number]) {
+          courseGroups[med.course_number] = [];
+        }
+        courseGroups[med.course_number].push(med);
+      });
+      
+      // Create a course for each group
+      Object.keys(courseGroups).sort().forEach(courseNum => {
+        const meds = courseGroups[courseNum];
+        const firstMed = meds[0];
+        
+        // Add course row
+        medicineCounter++;
+        const courseId = medicineCounter;
+        
+        // Create course HTML
+        const courseHtml = `
+          <div class="medicine-row border rounded-lg p-4 mb-4 bg-gradient-to-r from-white to-blue-50" data-row="${courseId}">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center space-x-4">
+                <h4 class="font-semibold text-lg text-ayurveda-700">Course ${courseId}</h4>
+                <label class="flex items-center cursor-pointer">
+                  <input type="checkbox" name="is_active_${courseId}" class="mr-2 w-5 h-5 medicine-active-checkbox" ${firstMed.is_active ? 'checked' : ''} onchange="updatePaymentSummary(); calculateSmartFollowUp();">
+                  <span class="font-medium text-sm text-green-600">Active</span>
+                </label>
+              </div>
+              <button type="button" onclick="removeMedicineRow(${courseId})" class="text-red-600 hover:text-red-800">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-300">
+              <div>
+                <label class="block text-sm font-medium mb-1">Given Date *</label>
+                <input type="date" name="given_date_${courseId}" class="w-full border rounded px-3 py-2 medicine-given-date" required value="${firstMed.given_date || ''}" onchange="calculateSmartFollowUp()">
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Treatment Months *</label>
+                <select name="treatment_months_${courseId}" class="w-full border rounded px-3 py-2 medicine-treatment-months" required onchange="calculateSmartFollowUp()">
+                  ${[1,2,3,4,5,6,7,8,9,10,11,12].map(m => `<option value="${m}" ${firstMed.treatment_months == m ? 'selected' : ''}>${m} Month${m > 1 ? 's' : ''}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <button type="button" onclick="addMedicineToRow(${courseId})" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+                <i class="fas fa-plus mr-2"></i>Add Medicine
+              </button>
+            </div>
+            
+            <div id="medicines-container-${courseId}" class="space-y-3 mb-4"></div>
+            
+            <div class="border-t border-gray-300 pt-4">
+              <h5 class="font-medium text-sm text-blue-700 mb-3"><i class="fas fa-money-bill-wave mr-2"></i>Payment Details for this Course</h5>
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label class="block text-xs font-medium mb-1 course-amount-label">Amount</label>
+                  <input type="number" step="0.01" name="payment_amount_${courseId}" class="w-full border rounded px-3 py-2 text-sm medicine-payment-amount" placeholder="0.00" value="${firstMed.payment_amount || ''}" oninput="updatePaymentSummary()">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium mb-1 course-advance-label">Advance</label>
+                  <input type="number" step="0.01" name="advance_payment_${courseId}" class="w-full border rounded px-3 py-2 text-sm medicine-advance-payment" placeholder="0.00" value="${firstMed.advance_payment || ''}" oninput="updatePaymentSummary()">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium mb-1 course-balance-label">Balance</label>
+                  <div class="border rounded px-3 py-2 bg-gray-100 text-sm font-bold text-red-600 course-balance-display" data-row="${courseId}">₹0.00</div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium mb-1">Payment Notes</label>
+                  <input type="text" name="payment_notes_${courseId}" class="w-full border rounded px-3 py-2 text-sm" placeholder="Optional" value="${firstMed.payment_notes || ''}">
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        document.getElementById('medicines-list').insertAdjacentHTML('beforeend', courseHtml);
+        courseToMedicineMap[courseId] = 0;
+        
+        // Add medicines to this course
+        meds.forEach(med => {
+          courseToMedicineMap[courseId]++;
+          const medId = courseToMedicineMap[courseId];
+          
+          const medHtml = `
+            <div class="medicine-item border border-blue-200 rounded-lg p-3 bg-blue-50" data-course="${courseId}" data-medicine="${medId}">
+              <div class="flex justify-between items-center mb-3">
+                <h5 class="font-medium text-sm text-blue-800">Medicine ${medId}</h5>
+                <button type="button" onclick="removeMedicineFromRow(${courseId}, ${medId})" class="text-red-600 hover:text-red-800 text-sm">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label class="block text-xs font-medium mb-1">Roman ID</label>
+                  <select name="roman_id_${courseId}_${medId}" class="w-full border rounded px-2 py-2 text-sm">
+                    <option value="">Select Roman ID</option>
+                    ${['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'].map(r => `<option value="${r}" ${med.roman_id == r ? 'selected' : ''}>${r}</option>`).join('')}
+                  </select>
+                </div>
+                
+                <div>
+                  <label class="block text-xs font-medium mb-1">Medicine Name *</label>
+                  <input type="text" name="medicine_name_${courseId}_${medId}" class="w-full border rounded px-2 py-2 text-sm" required value="${med.medicine_name || ''}">
+                </div>
+              </div>
+              
+              <div>
+                <label class="block text-xs font-medium mb-2">Dosage Schedule</label>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                  <label class="flex items-center">
+                    <input type="checkbox" name="morning_before_${courseId}_${medId}" class="mr-1" ${med.morning_before ? 'checked' : ''}>
+                    Morning (Before)
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" name="morning_after_${courseId}_${medId}" class="mr-1" ${med.morning_after ? 'checked' : ''}>
+                    Morning (After)
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" name="afternoon_before_${courseId}_${medId}" class="mr-1" ${med.afternoon_before ? 'checked' : ''}>
+                    Afternoon (Before)
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" name="afternoon_after_${courseId}_${medId}" class="mr-1" ${med.afternoon_after ? 'checked' : ''}>
+                    Afternoon (After)
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" name="evening_before_${courseId}_${medId}" class="mr-1" ${med.evening_before ? 'checked' : ''}>
+                    Evening (Before)
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" name="evening_after_${courseId}_${medId}" class="mr-1" ${med.evening_after ? 'checked' : ''}>
+                    Evening (After)
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" name="night_before_${courseId}_${medId}" class="mr-1" ${med.night_before ? 'checked' : ''}>
+                    Night (Before)
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" name="night_after_${courseId}_${medId}" class="mr-1" ${med.night_after ? 'checked' : ''}>
+                    Night (After)
+                  </label>
+                </div>
+              </div>
+            </div>
+          `;
+          
+          document.getElementById(`medicines-container-${courseId}`).insertAdjacentHTML('beforeend', medHtml);
+        });
+      });
+    } else {
+      // No medicines, add one empty course
+      addMedicineRow();
+    }
+    
+    // Update currency displays and payment summary
+    updateAllCurrencyDisplays();
+    updatePaymentSummary();
+    calculateSmartFollowUp();
+    
+    // Show modal
+    document.getElementById('prescription-modal').classList.remove('hidden');
+  } catch (error) {
+    console.error('Edit error:', error);
+    alert('Error loading record for editing');
   } finally {
     hideLoading();
   }

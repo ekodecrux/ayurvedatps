@@ -866,7 +866,41 @@ app.get('/api/prescriptions', async (c) => {
     query += ' ORDER BY h.created_at DESC'
     
     const { results } = await c.env.DB.prepare(query).bind(...params).all()
-    return c.json({ success: true, data: results })
+    
+    // For each herbs_routes record, calculate summary from medicines
+    const enhancedResults = await Promise.all(results.map(async (hr: any) => {
+      // Get medicines for this record
+      const { results: medicines } = await c.env.DB.prepare(
+        'SELECT * FROM medicines_tracking WHERE herbs_route_id = ?'
+      ).bind(hr.id).all()
+      
+      // Calculate totals
+      let totalAmount = 0
+      let totalAdvance = 0
+      let totalBalance = 0
+      let activeCourseMonths = 0
+      
+      medicines.forEach((med: any) => {
+        totalAmount += parseFloat(med.payment_amount || 0)
+        totalAdvance += parseFloat(med.advance_payment || 0)
+        totalBalance += parseFloat(med.balance_due || 0)
+        
+        // Sum treatment months from active courses
+        if (med.is_active) {
+          activeCourseMonths += parseInt(med.treatment_months || 0)
+        }
+      })
+      
+      return {
+        ...hr,
+        total_amount: totalAmount,
+        total_advance: totalAdvance,
+        total_balance: totalBalance,
+        active_course_months: activeCourseMonths
+      }
+    }))
+    
+    return c.json({ success: true, data: enhancedResults })
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
   }
@@ -1881,9 +1915,9 @@ app.get('/', (c) => {
                                     <th class="px-6 py-3 text-left">Given Date</th>
                                     <th class="px-6 py-3 text-left">Patient</th>
                                     <th class="px-6 py-3 text-left">Problem</th>
-                                    <th class="px-6 py-3 text-left">Course</th>
-                                    <th class="px-6 py-3 text-left">Amount</th>
-                                    <th class="px-6 py-3 text-left">Duration</th>
+                                    <th class="px-6 py-3 text-left">Entire Course</th>
+                                    <th class="px-6 py-3 text-left">Amount (Total/Due)</th>
+                                    <th class="px-6 py-3 text-left">Active Course Months</th>
                                     <th class="px-6 py-3 text-left">Next Follow-up</th>
                                     <th class="px-6 py-3 text-left">Actions</th>
                                 </tr>
