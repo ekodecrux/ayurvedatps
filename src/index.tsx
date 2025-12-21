@@ -1704,9 +1704,9 @@ app.get('/', (c) => {
               visibility: visible;
             }
             
-            /* Position print content at absolute top */
+            /* Position print content at top - use absolute for multi-page */
             .print-content {
-              position: fixed !important;
+              position: absolute !important;
               left: 0 !important;
               top: 0 !important;
               width: 100% !important;
@@ -1716,8 +1716,11 @@ app.get('/', (c) => {
             
             /* Remove all spacing from modal in print */
             #prescription-summary-modal {
+              position: static !important;
               padding: 0 !important;
               margin: 0 !important;
+              height: auto !important;
+              overflow: visible !important;
             }
             
             #prescription-summary-modal > div {
@@ -1725,11 +1728,11 @@ app.get('/', (c) => {
               margin: 0 !important;
               max-height: none !important;
               overflow: visible !important;
+              height: auto !important;
             }
             
             /* Remove spacing from first elements */
-            .print-content > div:first-child,
-            .print-content > div:first-child > * {
+            .print-content > div:first-child {
               margin-top: 0 !important;
               padding-top: 0 !important;
             }
@@ -1739,9 +1742,19 @@ app.get('/', (c) => {
               display: none !important;
             }
             
+            /* Allow page breaks */
+            .print-content {
+              page-break-inside: auto;
+            }
+            
+            /* Avoid breaks inside course sections */
+            .medicine-row, .border-2 {
+              page-break-inside: avoid;
+            }
+            
             /* Page settings */
             @page {
-              margin: 0.5cm;
+              margin: 0.8cm;
               size: A4;
             }
             
@@ -1749,6 +1762,11 @@ app.get('/', (c) => {
             body {
               margin: 0 !important;
               padding: 0 !important;
+            }
+            
+            html, body {
+              height: auto !important;
+              overflow: visible !important;
             }
           }
         </style>
