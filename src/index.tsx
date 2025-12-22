@@ -2279,8 +2279,29 @@ app.get('/', (c) => {
                                 <input type="email" id="profile-email" class="border rounded px-3 py-2 w-full bg-gray-100" readonly>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1">Profile Picture URL (Optional)</label>
-                                <input type="text" id="profile-picture" class="border rounded px-3 py-2 w-full" placeholder="https://example.com/avatar.jpg">
+                                <label class="block text-sm font-medium mb-2">Profile Picture</label>
+                                <div class="flex items-start gap-4">
+                                    <!-- Current/Preview Image -->
+                                    <div class="flex-shrink-0">
+                                        <div id="profile-picture-preview" class="w-24 h-24 rounded-full border-2 border-gray-300 overflow-hidden bg-gray-100 flex items-center justify-center">
+                                            <i class="fas fa-user text-4xl text-gray-400"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Upload Controls -->
+                                    <div class="flex-1 space-y-2">
+                                        <input type="file" id="profile-picture-upload" accept="image/*" class="hidden" onchange="handleProfilePictureUpload(event)">
+                                        <button type="button" onclick="document.getElementById('profile-picture-upload').click()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm">
+                                            <i class="fas fa-upload mr-2"></i>Upload Photo
+                                        </button>
+                                        <button type="button" onclick="removeProfilePicture()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm ml-2">
+                                            <i class="fas fa-trash mr-2"></i>Remove
+                                        </button>
+                                        <p class="text-xs text-gray-500 mt-1">Recommended: Square image, at least 200x200px</p>
+                                        <p class="text-xs text-gray-500">Supported: JPG, PNG, GIF (Max 2MB)</p>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="profile-picture" value="">
                             </div>
                             <button onclick="updateProfile()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
                                 <i class="fas fa-save mr-2"></i>Update Profile

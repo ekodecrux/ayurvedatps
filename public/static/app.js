@@ -2601,6 +2601,14 @@ async function loadSettings() {
       document.getElementById('profile-name').value = currentUser.name || '';
       document.getElementById('profile-email').value = currentUser.email || '';
       document.getElementById('profile-picture').value = currentUser.profile_picture || '';
+      
+      // Update profile picture preview
+      const previewDiv = document.getElementById('profile-picture-preview');
+      if (currentUser.profile_picture) {
+        previewDiv.innerHTML = `<img src="${currentUser.profile_picture}" alt="Profile" class="w-full h-full object-cover">`;
+      } else {
+        previewDiv.innerHTML = '<i class="fas fa-user text-4xl text-gray-400"></i>';
+      }
     }
     
     // Load clinic settings
@@ -2764,6 +2772,59 @@ async function changePassword() {
   } finally {
     hideLoading();
   }
+}
+
+function handleProfilePictureUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  // Validate file type
+  const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+  if (!validTypes.includes(file.type)) {
+    alert('Please upload a valid image file (JPG, PNG, or GIF)');
+    event.target.value = '';
+    return;
+  }
+  
+  // Validate file size (2MB max)
+  const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+  if (file.size > maxSize) {
+    alert('File size must be less than 2MB');
+    event.target.value = '';
+    return;
+  }
+  
+  // Read file and convert to base64
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const base64Image = e.target.result;
+    
+    // Update hidden input
+    document.getElementById('profile-picture').value = base64Image;
+    
+    // Update preview
+    const previewDiv = document.getElementById('profile-picture-preview');
+    previewDiv.innerHTML = `<img src="${base64Image}" alt="Profile Preview" class="w-full h-full object-cover">`;
+  };
+  
+  reader.onerror = function() {
+    alert('Error reading file. Please try again.');
+    event.target.value = '';
+  };
+  
+  reader.readAsDataURL(file);
+}
+
+function removeProfilePicture() {
+  // Clear the hidden input
+  document.getElementById('profile-picture').value = '';
+  
+  // Clear the file input
+  document.getElementById('profile-picture-upload').value = '';
+  
+  // Reset preview to default icon
+  const previewDiv = document.getElementById('profile-picture-preview');
+  previewDiv.innerHTML = '<i class="fas fa-user text-4xl text-gray-400"></i>';
 }
 
 // Initialize on page load
