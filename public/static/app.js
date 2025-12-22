@@ -306,6 +306,11 @@ function formatDateTime(dateString) {
   return date.toLocaleString('en-IN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
+function formatAmount(amount) {
+  const num = parseFloat(amount || 0);
+  return num.toFixed(2);
+}
+
 // ==================== DASHBOARD ====================
 async function loadDashboard() {
   try {
