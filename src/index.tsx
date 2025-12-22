@@ -1075,10 +1075,11 @@ app.post('/api/prescriptions', async (c) => {
     if (body.follow_up_date) {
       await c.env.DB.prepare(`
         INSERT INTO reminders (
-          patient_id, reminder_type, reminder_date, message, status
-        ) VALUES (?, ?, ?, ?, ?)
+          patient_id, prescription_id, reminder_type, reminder_date, message, status
+        ) VALUES (?, ?, ?, ?, ?, ?)
       `).bind(
         body.patient_id,
+        herbsRouteId,
         'Follow-up',
         body.follow_up_date || null,
         'Time for your follow-up consultation',
@@ -1173,6 +1174,33 @@ app.put('/api/prescriptions/:id', async (c) => {
           collection.notes || null
         ).run()
       }
+    }
+    
+    // Update or create follow-up reminder
+    if (body.follow_up_date) {
+      // Delete existing reminders for this prescription
+      await c.env.DB.prepare(
+        'DELETE FROM reminders WHERE prescription_id = ?'
+      ).bind(id).run()
+      
+      // Create new reminder
+      await c.env.DB.prepare(`
+        INSERT INTO reminders (
+          patient_id, prescription_id, reminder_type, reminder_date, message, status
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(
+        body.patient_id,
+        id,
+        'Follow-up',
+        body.follow_up_date,
+        'Time for your follow-up consultation',
+        'pending'
+      ).run()
+    } else {
+      // If no follow_up_date, delete any existing reminders
+      await c.env.DB.prepare(
+        'DELETE FROM reminders WHERE prescription_id = ?'
+      ).bind(id).run()
     }
     
     return c.json({ success: true })
