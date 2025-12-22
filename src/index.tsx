@@ -1596,9 +1596,11 @@ app.get('/api/stats', async (c) => {
       "SELECT COUNT(*) as count FROM appointments WHERE DATE(appointment_date) = DATE('now')"
     ).first()
     
-    // Get pending reminders
+    // Get pending reminders (only for existing herbs_routes records)
     const pendingReminders = await c.env.DB.prepare(
-      "SELECT COUNT(*) as count FROM reminders WHERE status = 'pending' AND reminder_date <= datetime('now', '+3 days')"
+      `SELECT COUNT(*) as count FROM reminders r 
+       INNER JOIN herbs_routes h ON r.prescription_id = h.id 
+       WHERE r.status = 'pending' AND r.reminder_date <= datetime('now', '+3 days')`
     ).first()
     
     return c.json({ 
