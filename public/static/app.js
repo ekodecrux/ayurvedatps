@@ -964,6 +964,186 @@ async function editAppointment(id) {
   }
 }
 
+// ==================== EXPORT FUNCTIONS ====================
+async function exportToExcel() {
+  try {
+    showLoading();
+    const search = document.getElementById('prescription-search')?.value || '';
+    const res = await axios.get(`${API_BASE}/prescriptions?search=${search}`);
+    const data = res.data.data || [];
+    
+    if (data.length === 0) {
+      alert('No records to export');
+      hideLoading();
+      return;
+    }
+    
+    // Prepare CSV data
+    const headers = ['Given Date', 'Patient ID', 'Patient Name', 'Problem', 'Entire Course (Months)', 'Total Amount', 'Advance Paid', 'Collected Amount', 'Balance Due', 'Completed Months', 'Next Follow-up'];
+    const rows = data.map(hr => {
+      const symbol = hr.currency === 'USD' ? '$' : '₹';
+      return [
+        formatDate(hr.given_date || hr.created_at),
+        hr.patient_id || '',
+        hr.patient_name || '',
+        hr.diagnosis || '',
+        hr.active_course_months || 0,
+        `${symbol}${formatAmount(hr.total_amount || 0)}`,
+        `${symbol}${formatAmount(hr.total_advance || 0)}`,
+        `${symbol}${formatAmount(hr.total_collected || 0)}`,
+        `${symbol}${formatAmount(hr.total_balance || 0)}`,
+        hr.active_course_months || 0,
+        hr.next_followup_date ? formatDate(hr.next_followup_date) : 'N/A'
+      ];
+    });
+    
+    // Create CSV content
+    let csv = headers.join(',') + '\n';
+    rows.forEach(row => {
+      csv += row.map(cell => `"${cell}"`).join(',') + '\n';
+    });
+    
+    // Download CSV file
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `herbs_routes_report_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    hideLoading();
+  } catch (error) {
+    console.error('Export to Excel error:', error);
+    alert('Error exporting to Excel: ' + (error.response?.data?.error || error.message));
+    hideLoading();
+  }
+}
+
+async function exportToPDF() {
+  try {
+    showLoading();
+    const search = document.getElementById('prescription-search')?.value || '';
+    const res = await axios.get(`${API_BASE}/prescriptions?search=${search}`);
+    const data = res.data.data || [];
+    
+    if (data.length === 0) {
+      alert('No records to export');
+      hideLoading();
+      return;
+    }
+    
+    // Create printable HTML
+    const printWindow = window.open('', '_blank');
+    let totalAmount = 0;
+    let totalAdvance = 0;
+    let totalCollected = 0;
+    let totalBalance = 0;
+    
+    const tableRows = data.map(hr => {
+      const symbol = hr.currency === 'USD' ? '$' : '₹';
+      totalAmount += parseFloat(hr.total_amount || 0);
+      totalAdvance += parseFloat(hr.total_advance || 0);
+      totalCollected += parseFloat(hr.total_collected || 0);
+      totalBalance += parseFloat(hr.total_balance || 0);
+      
+      return `
+        <tr>
+          <td>${formatDate(hr.given_date || hr.created_at)}</td>
+          <td>${hr.patient_id || ''}</td>
+          <td>${hr.patient_name || ''}</td>
+          <td>${hr.diagnosis || ''}</td>
+          <td>${hr.active_course_months || 0}</td>
+          <td>${symbol}${formatAmount(hr.total_amount || 0)}</td>
+          <td>${symbol}${formatAmount(hr.total_advance || 0)}</td>
+          <td>${symbol}${formatAmount(hr.total_collected || 0)}</td>
+          <td>${symbol}${formatAmount(hr.total_balance || 0)}</td>
+          <td>${hr.active_course_months || 0}</td>
+          <td>${hr.next_followup_date ? formatDate(hr.next_followup_date) : 'N/A'}</td>
+        </tr>
+      `;
+    }).join('');
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Herbs & Routes Report</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { text-align: center; color: #16a34a; }
+          .report-info { text-align: center; margin-bottom: 20px; color: #666; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #16a34a; color: white; }
+          tr:nth-child(even) { background-color: #f9f9f9; }
+          .summary { margin-top: 20px; padding: 15px; background-color: #f0f9ff; border: 2px solid #16a34a; }
+          .summary h3 { margin-top: 0; color: #16a34a; }
+          .summary-row { display: flex; justify-content: space-between; margin: 5px 0; }
+          @media print {
+            body { padding: 10px; }
+            button { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>🌿 TPS DHANVANTRI AYURVEDA - Herbs & Routes Report</h1>
+        <div class="report-info">
+          <p>Generated on: ${new Date().toLocaleString()}</p>
+          <p>Total Records: ${data.length}</p>
+        </div>
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Given Date</th>
+              <th>Patient ID</th>
+              <th>Patient Name</th>
+              <th>Problem</th>
+              <th>Course (Months)</th>
+              <th>Total Amount</th>
+              <th>Advance Paid</th>
+              <th>Collected</th>
+              <th>Balance Due</th>
+              <th>Completed</th>
+              <th>Next Follow-up</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+        
+        <div class="summary">
+          <h3>📊 Summary</h3>
+          <div class="summary-row"><strong>Total Amount:</strong> <span>₹${formatAmount(totalAmount)}</span></div>
+          <div class="summary-row"><strong>Total Advance:</strong> <span>₹${formatAmount(totalAdvance)}</span></div>
+          <div class="summary-row"><strong>Total Collected:</strong> <span>₹${formatAmount(totalCollected)}</span></div>
+          <div class="summary-row"><strong>Total Balance Due:</strong> <span style="color: ${totalBalance > 0 ? '#dc2626' : '#16a34a'}">₹${formatAmount(totalBalance)}</span></div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+          <button onclick="window.print()" style="background: #16a34a; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
+            Print / Save as PDF
+          </button>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    printWindow.document.write(html);
+    printWindow.document.close();
+    
+    hideLoading();
+  } catch (error) {
+    console.error('Export to PDF error:', error);
+    alert('Error exporting to PDF: ' + (error.response?.data?.error || error.message));
+    hideLoading();
+  }
+}
+
 // ==================== HERBS & ROUTES (PRESCRIPTIONS) ====================
 async function loadHerbsRoutes() {
   try {
