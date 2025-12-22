@@ -884,6 +884,7 @@ app.get('/api/prescriptions', async (c) => {
       let totalAdvance = 0
       let totalCollected = 0
       let activeCourseMonths = 0
+      let earliestGivenDate = null
       
       medicines.forEach((med: any) => {
         totalAmount += parseFloat(med.payment_amount || 0)
@@ -892,6 +893,11 @@ app.get('/api/prescriptions', async (c) => {
         // Sum treatment months from active courses
         if (med.is_active) {
           activeCourseMonths += parseInt(med.treatment_months || 0)
+        }
+        
+        // Track earliest given_date
+        if (med.given_date && (!earliestGivenDate || med.given_date < earliestGivenDate)) {
+          earliestGivenDate = med.given_date
         }
       })
       
@@ -903,6 +909,7 @@ app.get('/api/prescriptions', async (c) => {
       
       return {
         ...hr,
+        given_date: earliestGivenDate || hr.created_at,
         total_amount: totalAmount,
         total_advance: totalAdvance,
         total_collected: totalCollected,
