@@ -992,7 +992,7 @@ async function exportToExcel() {
         hr.patient_id || '',
         hr.patient_name || '',
         hr.diagnosis || '',
-        hr.total_course_months || 0,
+        hr.course || 0,
         currency,
         formatAmount(hr.total_amount || 0),
         formatAmount(hr.total_advance || 0),
@@ -1061,7 +1061,7 @@ async function exportToPDF() {
           <td>${hr.patient_id || ''}</td>
           <td>${hr.patient_name || ''}</td>
           <td>${hr.diagnosis || ''}</td>
-          <td>${hr.total_course_months || 0}</td>
+          <td>${hr.course || 0}</td>
           <td>${symbol}${formatAmount(hr.total_amount || 0)}</td>
           <td>${symbol}${formatAmount(hr.total_advance || 0)}</td>
           <td>${symbol}${formatAmount(hr.total_collected || 0)}</td>
@@ -1186,7 +1186,7 @@ function renderHerbsRoutes() {
       <td class="px-6 py-4 border-b font-medium text-blue-600">${hr.patient_id || 'N/A'}</td>
       <td class="px-6 py-4 border-b font-medium">${hr.patient_name}</td>
       <td class="px-6 py-4 border-b" title="${problem}">${truncatedProblem}</td>
-      <td class="px-6 py-4 border-b text-center">${hr.total_course_months || 0}</td>
+      <td class="px-6 py-4 border-b text-center">${hr.course || 0}</td>
       <td class="px-6 py-4 border-b">
         <div class="text-sm">
           <div class="font-semibold text-blue-600">${symbol}${totalAmount.toFixed(2)}</div>
