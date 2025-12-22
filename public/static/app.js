@@ -842,7 +842,7 @@ function renderAppointments() {
       <td class="px-6 py-4 border-b">${formatDateTime(apt.appointment_date)}</td>
       <td class="px-6 py-4 border-b font-medium">${apt.patient_name}</td>
       <td class="px-6 py-4 border-b">${apt.patient_phone}</td>
-      <td class="px-6 py-4 border-b">${apt.reason || 'N/A'}</td>
+      <td class="px-6 py-4 border-b">${apt.purpose || 'N/A'}</td>
       <td class="px-6 py-4 border-b">
         <span class="px-3 py-1 rounded-full text-sm ${apt.status === 'completed' ? 'bg-green-100 text-green-800' : apt.status === 'confirmed' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}">${apt.status}</span>
       </td>
@@ -856,7 +856,7 @@ function renderAppointments() {
   document.getElementById('appointments-table-body').innerHTML = html;
 }
 
-function showAppointmentModal(appointment = null) {
+async function showAppointmentModal(appointment = null) {
   try {
     const modal = document.getElementById('appointment-modal');
     const title = document.getElementById('appointment-modal-title');
@@ -867,6 +867,9 @@ function showAppointmentModal(appointment = null) {
     }
     
     title.textContent = appointment ? 'Edit Appointment' : 'Add New Appointment';
+    
+    // Load patients first, then set values
+    await loadPatientsForSelect();
     
     if (appointment) {
       document.getElementById('appointment-id').value = appointment.id;
@@ -880,7 +883,6 @@ function showAppointmentModal(appointment = null) {
       document.getElementById('appointment-status').value = 'scheduled';
     }
     
-    loadPatientsForSelect();
     modal.classList.remove('hidden');
   } catch (error) {
     console.error('Error showing appointment modal:', error);
