@@ -30,10 +30,10 @@ async function isAuthenticated(c: any): Promise<any> {
   }
   
   const session = await c.env.DB.prepare(`
-    SELECT s.*, u.id as user_id, u.email, u.name, u.role, u.profile_picture
+    SELECT s.*, u.id as user_id, u.email, u.name, u.profile_picture
     FROM sessions s
-    JOIN users u ON s.user_id = u.id
-    WHERE s.session_token = ? AND s.expires_at > datetime('now') AND u.is_active = 1
+    JOIN admin_users u ON s.user_id = u.id
+    WHERE s.session_token = ? AND s.expires_at > datetime('now')
   `).bind(sessionToken).first()
   
   return session
@@ -42,36 +42,26 @@ async function isAuthenticated(c: any): Promise<any> {
 // Login with Google (or email for now)
 app.post('/api/auth/login', async (c) => {
   try {
-    const { email, name, google_id, profile_picture } = await c.req.json()
+    const { email, password } = await c.req.json()
     
-    if (!email) {
-      return c.json({ success: false, error: 'Email is required' }, 400)
+    if (!email || !password) {
+      return c.json({ success: false, error: 'Email and password are required' }, 400)
     }
     
-    // Find or create user
-    let user = await c.env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email).first()
+    // Hash the provided password using Web Crypto API
+    const encoder = new TextEncoder()
+    const data = encoder.encode(password)
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    
+    // Find admin user
+    const user = await c.env.DB.prepare(
+      'SELECT * FROM admin_users WHERE email = ? AND password_hash = ?'
+    ).bind(email, passwordHash).first()
     
     if (!user) {
-      // Create new user
-      const result = await c.env.DB.prepare(`
-        INSERT INTO users (email, name, google_id, profile_picture)
-        VALUES (?, ?, ?, ?)
-      `).bind(email, name || email, google_id || null, profile_picture || null).run()
-      
-      user = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(result.meta.last_row_id).first()
-    } else {
-      // Update last login and profile info
-      await c.env.DB.prepare(`
-        UPDATE users 
-        SET last_login = datetime('now'), 
-            google_id = COALESCE(?, google_id),
-            profile_picture = COALESCE(?, profile_picture)
-        WHERE id = ?
-      `).bind(google_id || null, profile_picture || null, (user as any).id).run()
-    }
-    
-    if (!(user as any).is_active) {
-      return c.json({ success: false, error: 'Account is inactive' }, 403)
+      return c.json({ success: false, error: 'Invalid email or password' }, 401)
     }
     
     // Create session
@@ -79,6 +69,7 @@ app.post('/api/auth/login', async (c) => {
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7) // 7 days expiry
     
+    // Store session (use admin_users id)
     await c.env.DB.prepare(`
       INSERT INTO sessions (user_id, session_token, expires_at)
       VALUES (?, ?, ?)
@@ -93,7 +84,6 @@ app.post('/api/auth/login', async (c) => {
         id: (user as any).id,
         email: (user as any).email,
         name: (user as any).name,
-        role: (user as any).role,
         profile_picture: (user as any).profile_picture
       }
     })
@@ -137,6 +127,88 @@ app.get('/api/auth/me', async (c) => {
         role: user.role,
         profile_picture: user.profile_picture
       }
+    })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Update admin profile
+app.put('/api/admin/profile', async (c) => {
+  try {
+    const user = await isAuthenticated(c)
+    if (!user) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+
+    const { name, profile_picture } = await c.req.json()
+    
+    if (!name) {
+      return c.json({ success: false, error: 'Name is required' }, 400)
+    }
+
+    await c.env.DB.prepare(
+      'UPDATE admin_users SET name = ?, profile_picture = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(name, profile_picture || null, user.user_id).run()
+
+    return c.json({ 
+      success: true, 
+      message: 'Profile updated successfully',
+      user: { name, profile_picture }
+    })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Change admin password
+app.put('/api/admin/change-password', async (c) => {
+  try {
+    const user = await isAuthenticated(c)
+    if (!user) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+
+    const { currentPassword, newPassword } = await c.req.json()
+    
+    if (!currentPassword || !newPassword) {
+      return c.json({ success: false, error: 'Both current and new passwords are required' }, 400)
+    }
+
+    if (newPassword.length < 6) {
+      return c.json({ success: false, error: 'New password must be at least 6 characters' }, 400)
+    }
+
+    // Hash current password
+    const encoder = new TextEncoder()
+    const currentData = encoder.encode(currentPassword)
+    const currentHashBuffer = await crypto.subtle.digest('SHA-256', currentData)
+    const currentHashArray = Array.from(new Uint8Array(currentHashBuffer))
+    const currentPasswordHash = currentHashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+
+    // Verify current password
+    const adminUser = await c.env.DB.prepare(
+      'SELECT * FROM admin_users WHERE id = ? AND password_hash = ?'
+    ).bind(user.user_id, currentPasswordHash).first()
+
+    if (!adminUser) {
+      return c.json({ success: false, error: 'Current password is incorrect' }, 401)
+    }
+
+    // Hash new password
+    const newData = encoder.encode(newPassword)
+    const newHashBuffer = await crypto.subtle.digest('SHA-256', newData)
+    const newHashArray = Array.from(new Uint8Array(newHashBuffer))
+    const newPasswordHash = newHashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+
+    // Update password
+    await c.env.DB.prepare(
+      'UPDATE admin_users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(newPasswordHash, user.user_id).run()
+
+    return c.json({ 
+      success: true, 
+      message: 'Password changed successfully'
     })
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
@@ -1671,43 +1743,18 @@ app.get('/login', (c) => {
             <div id="login-form" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                    <input type="email" id="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="your.email@gmail.com" required>
+                    <input type="email" id="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="tpsdhanvantari@gmail.com" required>
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                    <input type="text" id="name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Your Name" required>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input type="password" id="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Enter your password" required>
                 </div>
 
-                <button onclick="loginWithEmail()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition duration-200 flex items-center justify-center">
+                <button onclick="loginWithPassword()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition duration-200 flex items-center justify-center">
                     <i class="fas fa-sign-in-alt mr-2"></i>
                     Sign In
                 </button>
-
-                <div class="relative my-6">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-300"></div>
-                    </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="px-4 bg-white text-gray-500">Or continue with</span>
-                    </div>
-                </div>
-
-                <!-- Google Sign-In Button -->
-                <div id="g_id_onload"
-                     data-client_id="YOUR_GOOGLE_CLIENT_ID"
-                     data-callback="handleGoogleLogin"
-                     data-auto_prompt="false">
-                </div>
-                <div class="g_id_signin" 
-                     data-type="standard"
-                     data-size="large"
-                     data-theme="outline"
-                     data-text="sign_in_with"
-                     data-shape="rectangular"
-                     data-logo_alignment="left"
-                     data-width="384">
-                </div>
             </div>
 
             <div id="error-message" class="hidden mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm"></div>
@@ -1723,12 +1770,12 @@ app.get('/login', (c) => {
         <script>
             const API_BASE = '/api';
 
-            async function loginWithEmail() {
-                const email = document.getElementById('email').value;
-                const name = document.getElementById('name').value;
+            async function loginWithPassword() {
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
 
-                if (!email || !name) {
-                    showError('Please enter both email and name');
+                if (!email || !password) {
+                    showError('Please enter both email and password');
                     return;
                 }
 
@@ -1740,7 +1787,7 @@ app.get('/login', (c) => {
                 try {
                     const res = await axios.post(\`\${API_BASE}/auth/login\`, {
                         email: email,
-                        name: name
+                        password: password
                     });
 
                     if (res.data.success) {
@@ -1749,13 +1796,22 @@ app.get('/login', (c) => {
                             window.location.href = '/';
                         }, 1000);
                     } else {
-                        showError(res.data.error || 'Login failed');
+                        showError(res.data.error || 'Invalid credentials');
                     }
                 } catch (error) {
                     console.error('Login error:', error);
-                    showError(error.response?.data?.error || 'Login failed. Please try again.');
+                    showError(error.response?.data?.error || 'Invalid email or password');
                 }
             }
+            
+            // Enter key support
+            document.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('password').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        loginWithPassword();
+                    }
+                });
+            });
 
             async function handleGoogleLogin(response) {
                 try {
@@ -2202,6 +2258,54 @@ app.get('/', (c) => {
                 <h2 class="text-2xl font-bold text-gray-800 mb-6">Settings</h2>
                 
                 <div class="space-y-6">
+                    <!-- Admin Profile Management -->
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <h3 class="text-xl font-bold mb-4 text-ayurveda-700">
+                            <i class="fas fa-user-shield mr-2"></i>Admin Profile
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Name</label>
+                                <input type="text" id="profile-name" class="border rounded px-3 py-2 w-full" placeholder="Your name">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Email (Cannot be changed)</label>
+                                <input type="email" id="profile-email" class="border rounded px-3 py-2 w-full bg-gray-100" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Profile Picture URL (Optional)</label>
+                                <input type="text" id="profile-picture" class="border rounded px-3 py-2 w-full" placeholder="https://example.com/avatar.jpg">
+                            </div>
+                            <button onclick="updateProfile()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+                                <i class="fas fa-save mr-2"></i>Update Profile
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Change Password -->
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <h3 class="text-xl font-bold mb-4 text-red-700">
+                            <i class="fas fa-key mr-2"></i>Change Password
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Current Password</label>
+                                <input type="password" id="current-password" class="border rounded px-3 py-2 w-full" placeholder="Enter current password">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">New Password</label>
+                                <input type="password" id="new-password" class="border rounded px-3 py-2 w-full" placeholder="Enter new password">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Confirm New Password</label>
+                                <input type="password" id="confirm-password" class="border rounded px-3 py-2 w-full" placeholder="Re-enter new password">
+                            </div>
+                            <button onclick="changePassword()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg">
+                                <i class="fas fa-lock mr-2"></i>Change Password
+                            </button>
+                        </div>
+                    </div>
+                    
                     <!-- Clinic Information -->
                     <div class="bg-white rounded-lg shadow-lg p-6">
                         <h3 class="text-xl font-bold mb-4 text-ayurveda-700">Clinic Information</h3>

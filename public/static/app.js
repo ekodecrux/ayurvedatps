@@ -2595,6 +2595,15 @@ async function deleteReminder(id) {
 async function loadSettings() {
   try {
     showLoading();
+    
+    // Load admin profile
+    if (currentUser) {
+      document.getElementById('profile-name').value = currentUser.name || '';
+      document.getElementById('profile-email').value = currentUser.email || '';
+      document.getElementById('profile-picture').value = currentUser.profile_picture || '';
+    }
+    
+    // Load clinic settings
     const res = await axios.get(`${API_BASE}/settings`);
     const settings = res.data.data || [];
     
@@ -2667,6 +2676,91 @@ async function saveSettings() {
   } catch (error) {
     console.error('Save settings error:', error);
     alert('Error saving settings: ' + (error.response?.data?.error || error.message));
+  } finally {
+    hideLoading();
+  }
+}
+
+async function updateProfile() {
+  try {
+    showLoading();
+    
+    const name = document.getElementById('profile-name')?.value.trim();
+    const profile_picture = document.getElementById('profile-picture')?.value.trim();
+    
+    if (!name) {
+      alert('Name is required');
+      hideLoading();
+      return;
+    }
+    
+    const res = await axios.put(`${API_BASE}/admin/profile`, {
+      name,
+      profile_picture
+    });
+    
+    if (res.data.success) {
+      // Update currentUser
+      currentUser.name = name;
+      if (profile_picture) {
+        currentUser.profile_picture = profile_picture;
+      }
+      updateUserUI();
+      alert('Profile updated successfully!');
+    } else {
+      alert('Error: ' + (res.data.error || 'Failed to update profile'));
+    }
+  } catch (error) {
+    console.error('Update profile error:', error);
+    alert('Error updating profile: ' + (error.response?.data?.error || error.message));
+  } finally {
+    hideLoading();
+  }
+}
+
+async function changePassword() {
+  try {
+    showLoading();
+    
+    const currentPassword = document.getElementById('current-password')?.value;
+    const newPassword = document.getElementById('new-password')?.value;
+    const confirmPassword = document.getElementById('confirm-password')?.value;
+    
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      alert('All password fields are required');
+      hideLoading();
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      alert('New password must be at least 6 characters');
+      hideLoading();
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      alert('New password and confirm password do not match');
+      hideLoading();
+      return;
+    }
+    
+    const res = await axios.put(`${API_BASE}/admin/change-password`, {
+      currentPassword,
+      newPassword
+    });
+    
+    if (res.data.success) {
+      // Clear password fields
+      document.getElementById('current-password').value = '';
+      document.getElementById('new-password').value = '';
+      document.getElementById('confirm-password').value = '';
+      alert('Password changed successfully!');
+    } else {
+      alert('Error: ' + (res.data.error || 'Failed to change password'));
+    }
+  } catch (error) {
+    console.error('Change password error:', error);
+    alert('Error changing password: ' + (error.response?.data?.error || error.message));
   } finally {
     hideLoading();
   }
