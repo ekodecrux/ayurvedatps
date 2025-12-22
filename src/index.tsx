@@ -1897,7 +1897,7 @@ app.get('/', (c) => {
             <div class="container mx-auto px-4 py-3">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3">
-                        <i class="fas fa-leaf text-2xl"></i>
+                        <img src="/static/ayurveda-logo.png" alt="TPS Dhanvantri Ayurveda" class="h-10 w-10 object-contain">
                         <span class="text-xl font-bold">TPS DHANVANTRI AYURVEDA</span>
                     </div>
                     <div class="flex items-center space-x-4">
