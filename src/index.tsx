@@ -1910,8 +1910,8 @@ app.get('/', (c) => {
                         <button onclick="showSection('appointments')" class="nav-btn hover:bg-ayurveda-800 px-3 py-2 rounded transition">
                             <i class="fas fa-calendar-alt mr-2"></i>Appointments
                         </button>
-                        <button onclick="showSection('prescriptions')" class="nav-btn hover:bg-ayurveda-800 px-3 py-2 rounded transition flex items-center">
-                            <img src="/static/ayurveda-logo.png" alt="" class="h-5 w-5 mr-2 inline-block">Herbs & Routes
+                        <button onclick="showSection('prescriptions')" class="nav-btn hover:bg-ayurveda-800 px-3 py-2 rounded transition">
+                            <i class="fas fa-leaf mr-2"></i>Herbs & Routes
                         </button>
                         <button onclick="showSection('reminders')" class="nav-btn hover:bg-ayurveda-800 px-3 py-2 rounded transition">
                             <i class="fas fa-bell mr-2"></i>Reminders
