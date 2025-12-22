@@ -2101,7 +2101,7 @@ app.get('/', (c) => {
                 
                 <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <input type="text" id="patient-search" placeholder="Search by name, phone, ID..." class="border rounded px-3 py-2" onkeyup="loadPatients()">
+                        <input type="text" id="patient-search" placeholder="Search by name, phone, ID..." class="border rounded px-3 py-2" onkeyup="loadPatients()" autocomplete="off">
                         <select id="patient-filter-country" class="border rounded px-3 py-2" onchange="loadPatients()">
                             <option value="">All Countries</option>
                             <!-- Options loaded dynamically from /api/patients/countries -->

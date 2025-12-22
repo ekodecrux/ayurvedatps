@@ -673,6 +673,8 @@ function showPatientModal(patient = null) {
 
 function closePatientModal() {
   document.getElementById('patient-modal').classList.add('hidden');
+  // Reload patients list to refresh the view
+  loadPatients();
 }
 
 async function savePatient() {
