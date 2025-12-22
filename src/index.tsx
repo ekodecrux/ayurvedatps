@@ -1457,6 +1457,7 @@ app.get('/api/reminders', async (c) => {
       SELECT r.*, p.name as patient_name, p.phone as patient_phone, p.patient_id
       FROM reminders r
       LEFT JOIN patients p ON r.patient_id = p.id
+      INNER JOIN herbs_routes h ON r.prescription_id = h.id
       WHERE 1=1
     `
     const params: any[] = []
@@ -1493,6 +1494,7 @@ app.get('/api/reminders/pending', async (c) => {
       SELECT r.*, p.name as patient_name, p.phone as patient_phone, p.email as patient_email
       FROM reminders r
       LEFT JOIN patients p ON r.patient_id = p.id
+      INNER JOIN herbs_routes h ON r.prescription_id = h.id
       WHERE r.status = 'pending' AND r.reminder_date <= datetime('now', '+3 days')
       ORDER BY r.reminder_date ASC
     `).all()
