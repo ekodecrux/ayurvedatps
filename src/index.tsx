@@ -2101,7 +2101,7 @@ app.get('/', (c) => {
                 
                 <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <input type="text" id="patient-search" placeholder="Search by name, phone, ID..." class="border rounded px-3 py-2" onkeyup="loadPatients()" autocomplete="off">
+                        <input type="text" id="patient-search" name="patient-search-filter" placeholder="Search by name, phone, ID..." class="border rounded px-3 py-2" onkeyup="loadPatients()" autocomplete="off">
                         <select id="patient-filter-country" class="border rounded px-3 py-2" onchange="loadPatients()">
                             <option value="">All Countries</option>
                             <!-- Options loaded dynamically from /api/patients/countries -->
@@ -2520,7 +2520,7 @@ app.get('/', (c) => {
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">Email</label>
-                                <input type="email" id="patient-email" class="border rounded px-3 py-2 w-full">
+                                <input type="email" id="patient-email" name="patient-email-field" class="border rounded px-3 py-2 w-full" autocomplete="email">
                             </div>
                         </div>
                         

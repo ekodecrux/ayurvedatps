@@ -673,6 +673,13 @@ function showPatientModal(patient = null) {
 
 function closePatientModal() {
   document.getElementById('patient-modal').classList.add('hidden');
+  
+  // Clear the search field to prevent any autocomplete contamination
+  const searchField = document.getElementById('patient-search');
+  if (searchField && searchField.value === currentUser?.email) {
+    searchField.value = '';
+  }
+  
   // Reload patients list to refresh the view
   loadPatients();
 }
