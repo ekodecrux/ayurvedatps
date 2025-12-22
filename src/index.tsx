@@ -2091,7 +2091,7 @@ app.get('/', (c) => {
                 
                 <div class="bg-white rounded-lg shadow-lg p-6">
                     <div class="mb-4">
-                        <input type="text" id="prescription-search" placeholder="Search by patient name or problem..." class="border rounded px-3 py-2 w-full" onkeyup="loadHerbsRoutes()">
+                        <input type="text" id="prescription-search" placeholder="Search by patient ID, name, or problem..." class="border rounded px-3 py-2 w-full" onkeyup="loadHerbsRoutes()">
                     </div>
                     
                     <div class="overflow-x-auto">
