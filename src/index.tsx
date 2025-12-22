@@ -2873,7 +2873,6 @@ app.get('/', (c) => {
                             <div><span class="font-semibold">Advance Paid:</span> <span id="summary-advance-paid"></span></div>
                             <div><span class="font-semibold">Balance Due:</span> <span class="text-lg font-bold text-red-600" id="summary-balance-due"></span></div>
                             <div id="summary-collections-info" class="col-span-2 md:col-span-4"></div>
-                            <div class="col-span-2 md:col-span-4"><span class="font-semibold">Notes:</span> <span id="summary-payment-notes"></span></div>
                         </div>
                     </div>
 

@@ -2419,7 +2419,6 @@ async function viewHerbsRoutes(id) {
         : '';
     }
     
-    setTextIfExists('summary-payment-notes', 'N/A');
     setTextIfExists('summary-followup-reminder', formatDate(hr.next_followup_date) || 'Not set');
     
     // Show the modal
