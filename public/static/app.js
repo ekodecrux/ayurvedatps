@@ -984,19 +984,20 @@ async function exportToExcel() {
     }
     
     // Prepare CSV data
-    const headers = ['Given Date', 'Patient ID', 'Patient Name', 'Problem', 'Entire Course (Months)', 'Total Amount', 'Advance Paid', 'Collected Amount', 'Balance Due', 'Completed Months', 'Next Follow-up'];
+    const headers = ['Given Date', 'Patient ID', 'Patient Name', 'Problem', 'Entire Course (Months)', 'Currency', 'Total Amount', 'Advance Paid', 'Collected Amount', 'Balance Due', 'Completed Months', 'Next Follow-up'];
     const rows = data.map(hr => {
-      const symbol = hr.currency === 'USD' ? '$' : '₹';
+      const currency = hr.currency === 'USD' ? 'USD' : 'INR';
       return [
         formatDate(hr.given_date || hr.created_at),
         hr.patient_id || '',
         hr.patient_name || '',
         hr.diagnosis || '',
         hr.active_course_months || 0,
-        `${symbol}${formatAmount(hr.total_amount || 0)}`,
-        `${symbol}${formatAmount(hr.total_advance || 0)}`,
-        `${symbol}${formatAmount(hr.total_collected || 0)}`,
-        `${symbol}${formatAmount(hr.total_balance || 0)}`,
+        currency,
+        formatAmount(hr.total_amount || 0),
+        formatAmount(hr.total_advance || 0),
+        formatAmount(hr.total_collected || 0),
+        formatAmount(hr.total_balance || 0),
         hr.active_course_months || 0,
         hr.next_followup_date ? formatDate(hr.next_followup_date) : 'N/A'
       ];
