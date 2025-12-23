@@ -965,21 +965,39 @@ app.get('/api/prescriptions', async (c) => {
       let totalCourseMonths = 0
       let earliestGivenDate = null
       
+      // Group medicines by course (given_date + treatment_months + payment details)
+      const courseGroups: any = {}
       medicines.forEach((med: any) => {
-        totalAmount += parseFloat(med.payment_amount || 0)
-        totalAdvance += parseFloat(med.advance_payment || 0)
+        const courseKey = `${med.given_date}_${med.treatment_months}_${med.payment_amount}_${med.advance_payment}_${med.is_active}`
+        if (!courseGroups[courseKey]) {
+          courseGroups[courseKey] = {
+            given_date: med.given_date,
+            treatment_months: parseInt(med.treatment_months || 0),
+            payment_amount: parseFloat(med.payment_amount || 0),
+            advance_payment: parseFloat(med.advance_payment || 0),
+            is_active: med.is_active,
+            medicines: []
+          }
+        }
+        courseGroups[courseKey].medicines.push(med)
+      })
+      
+      // Calculate totals from courses (not individual medicines)
+      Object.values(courseGroups).forEach((course: any) => {
+        totalAmount += course.payment_amount
+        totalAdvance += course.advance_payment
         
-        // Sum treatment months from all courses (entire course)
-        totalCourseMonths += parseInt(med.treatment_months || 0)
+        // Sum treatment months from all courses
+        totalCourseMonths += course.treatment_months
         
-        // Sum treatment months from active courses only (active/ongoing months)
-        if (med.is_active) {
-          activeCourseMonths += parseInt(med.treatment_months || 0)
+        // Sum treatment months from active courses only
+        if (course.is_active) {
+          activeCourseMonths += course.treatment_months
         }
         
         // Track earliest given_date
-        if (med.given_date && (!earliestGivenDate || med.given_date < earliestGivenDate)) {
-          earliestGivenDate = med.given_date
+        if (course.given_date && (!earliestGivenDate || course.given_date < earliestGivenDate)) {
+          earliestGivenDate = course.given_date
         }
       })
       
