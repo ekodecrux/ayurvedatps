@@ -1,4 +1,4 @@
-// TPS DHANVANTRI AYURVEDA - Complete Application
+// TPS DHANVANTARI AYURVEDA - Complete Application
 const API_BASE = '/api';
 let currentPatients = [];
 let currentAppointments = [];
@@ -1106,7 +1106,7 @@ async function exportToPDF() {
         </style>
       </head>
       <body>
-        <h1>🌿 TPS DHANVANTRI AYURVEDA - Herbs & Routes Report</h1>
+        <h1>🌿 TPS DHANVANTARI AYURVEDA - Herbs & Routes Report</h1>
         <div class="report-info">
           <p>Generated on: ${new Date().toLocaleString()}</p>
           <p>Total Records: ${data.length}</p>
@@ -2516,7 +2516,7 @@ async function sendReminderWhatsApp(id, phone, patientName, message) {
   try {
     showLoading();
     
-    const whatsappMessage = unescape(message) || `Dear ${unescape(patientName)}, this is a reminder from TPS DHANVANTRI AYURVEDA for your upcoming consultation.`;
+    const whatsappMessage = unescape(message) || `Dear ${unescape(patientName)}, this is a reminder from TPS DHANVANTARI AYURVEDA for your upcoming consultation.`;
     
     const response = await axios.post(`${API_BASE}/send-whatsapp`, {
       to: phone,
@@ -2546,7 +2546,7 @@ async function sendReminderSMS(id, phone, patientName, message) {
   try {
     showLoading();
     
-    const smsMessage = unescape(message) || `Dear ${unescape(patientName)}, this is a reminder from TPS DHANVANTRI AYURVEDA for your upcoming consultation.`;
+    const smsMessage = unescape(message) || `Dear ${unescape(patientName)}, this is a reminder from TPS DHANVANTARI AYURVEDA for your upcoming consultation.`;
     
     const response = await axios.post(`${API_BASE}/send-sms`, {
       to: phone,

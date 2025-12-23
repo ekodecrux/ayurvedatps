@@ -442,7 +442,7 @@ app.get('/api/patients/export', async (c) => {
             <style>table { border-collapse: collapse; } td, th { border: 1px solid #ddd; padding: 8px; white-space: nowrap; }</style>
           </head>
           <body>
-            <h2>TPS DHANVANTRI AYURVEDA - Patients Export</h2>
+            <h2>TPS DHANVANTARI AYURVEDA - Patients Export</h2>
             <p>Export Date: ${date} | Total Patients: ${results.length}</p>
             <table>
               <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
@@ -564,7 +564,7 @@ app.get('/api/patients/export', async (c) => {
             </script>
           </head>
           <body>
-            <h1>TPS DHANVANTRI AYURVEDA - Patients List</h1>
+            <h1>TPS DHANVANTARI AYURVEDA - Patients List</h1>
             <div class="export-info">Export Date: ${date} | Total Patients: ${results.length}${country ? ` | Country: ${country}` : ''}</div>
             <button id="printBtn" class="print-btn no-print">Print / Save as PDF</button>
             ${rows}
@@ -1731,7 +1731,7 @@ app.get('/login', (c) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Login - TPS DHANVANTRI AYURVEDA</title>
+        <title>Login - TPS DHANVANTARI AYURVEDA</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -1742,7 +1742,7 @@ app.get('/login', (c) => {
                 <div class="bg-gradient-to-r from-green-600 to-emerald-600 text-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-leaf text-4xl"></i>
                 </div>
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">TPS DHANVANTRI</h1>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">TPS DHANVANTARI</h1>
                 <p class="text-gray-600">Ayurveda Clinic Management</p>
             </div>
 
@@ -1879,7 +1879,7 @@ app.get('/', (c) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>TPS DHANVANTRI AYURVEDA - Management System</title>
+        <title>TPS DHANVANTARI AYURVEDA - Management System</title>
         <meta name="description" content="Professional Ayurveda clinic management system">
         <meta name="theme-color" content="#059669">
         <link rel="manifest" href="/static/manifest.json">
@@ -1992,7 +1992,7 @@ app.get('/', (c) => {
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3">
                         <img src="/static/ayurveda-logo.png" alt="TPS Dhanvantri Ayurveda" class="h-10 w-10 object-contain">
-                        <span class="text-xl font-bold">TPS DHANVANTRI AYURVEDA</span>
+                        <span class="text-xl font-bold">TPS DHANVANTARI AYURVEDA</span>
                     </div>
                     <div class="flex items-center space-x-4">
                         <button onclick="showSection('dashboard')" class="nav-btn hover:bg-ayurveda-800 px-3 py-2 rounded transition">
@@ -2339,7 +2339,7 @@ app.get('/', (c) => {
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium mb-1">Clinic Name</label>
-                                <input type="text" id="setting-clinic_name" class="border rounded px-3 py-2 w-full" value="TPS DHANVANTRI AYURVEDA">
+                                <input type="text" id="setting-clinic_name" class="border rounded px-3 py-2 w-full" value="TPS DHANVANTARI AYURVEDA">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">Phone</label>
@@ -2819,7 +2819,7 @@ app.get('/', (c) => {
                 <div id="summary-content" class="print-content">
                     <!-- Clinic Header -->
                     <div class="text-center mb-6 pb-4 border-b-2 border-ayurveda-600">
-                        <h1 class="text-3xl font-bold text-ayurveda-700">TPS DHANVANTRI AYURVEDA</h1>
+                        <h1 class="text-3xl font-bold text-ayurveda-700">TPS DHANVANTARI AYURVEDA</h1>
                         <p class="text-gray-600 mt-2">Ayurvedic Treatment & Wellness Center</p>
                         <p class="text-sm text-gray-500 mt-1" id="clinic-contact-info"></p>
                     </div>
