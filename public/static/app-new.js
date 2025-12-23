@@ -483,7 +483,7 @@ function addDiseaseField() {
     <div class="flex gap-2 mb-2" id="disease-field-${diseaseFieldCount}">
       <input type="text" id="disease-name-${diseaseFieldCount}" placeholder="Disease Name" 
         class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm">
-      <input type="text" id="disease-attacked-${diseaseFieldCount}" placeholder="Attacked By" 
+      <input type="text" id="disease-attacked-${diseaseFieldCount}" placeholder="Attacked Duration" 
         class="w-48 border border-gray-300 rounded px-3 py-2 text-sm">
       <button type="button" onclick="removeDiseaseField(${diseaseFieldCount})" 
         class="px-3 py-2 text-red-600 hover:text-red-800">

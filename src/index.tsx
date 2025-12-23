@@ -313,16 +313,16 @@ app.get('/api/patients/export', async (c) => {
           try {
             const diseases = JSON.parse(patient.diseases)
             diseasesText = diseases.map((d: any) => 
-              `${d.present_health_issue || ''} - ${d.present_medicine || ''} (${d.mg_value || ''}) - Attacked: ${d.attacked_by || ''}`
+              `${d.present_health_issue || ''} - ${d.present_medicine || ''} (${d.mg_value || ''}) - Duration: ${d.attacked_by || ''}`
             ).join('; ')
           } catch (e) {
             // Fallback to old fields
             if (patient.present_health_issue) {
-              diseasesText = `${patient.present_health_issue || ''} - ${patient.present_medicine || ''} (${patient.mg_value || ''}) - Attacked: ${patient.attacked_by || ''}`
+              diseasesText = `${patient.present_health_issue || ''} - ${patient.present_medicine || ''} (${patient.mg_value || ''}) - Duration: ${patient.attacked_by || ''}`
             }
           }
         } else if (patient.present_health_issue) {
-          diseasesText = `${patient.present_health_issue || ''} - ${patient.present_medicine || ''} (${patient.mg_value || ''}) - Attacked: ${patient.attacked_by || ''}`
+          diseasesText = `${patient.present_health_issue || ''} - ${patient.present_medicine || ''} (${patient.mg_value || ''}) - Duration: ${patient.attacked_by || ''}`
         }
         
         // Parse additional phones JSON
@@ -465,15 +465,15 @@ app.get('/api/patients/export', async (c) => {
           try {
             const diseases = JSON.parse(patient.diseases)
             diseasesText = diseases.map((d: any) => 
-              `<div style="margin-bottom: 5px;"><strong>${d.present_health_issue || 'N/A'}:</strong> ${d.present_medicine || 'N/A'} (${d.mg_value || ''}) - Attacked: ${d.attacked_by || 'N/A'}</div>`
+              `<div style="margin-bottom: 5px;"><strong>${d.present_health_issue || 'N/A'}:</strong> ${d.present_medicine || 'N/A'} (${d.mg_value || ''}) - Duration: ${d.attacked_by || 'N/A'}</div>`
             ).join('')
           } catch (e) {
             if (patient.present_health_issue) {
-              diseasesText = `<div><strong>${patient.present_health_issue}:</strong> ${patient.present_medicine || 'N/A'} (${patient.mg_value || ''}) - Attacked: ${patient.attacked_by || 'N/A'}</div>`
+              diseasesText = `<div><strong>${patient.present_health_issue}:</strong> ${patient.present_medicine || 'N/A'} (${patient.mg_value || ''}) - Duration: ${patient.attacked_by || 'N/A'}</div>`
             }
           }
         } else if (patient.present_health_issue) {
-          diseasesText = `<div><strong>${patient.present_health_issue}:</strong> ${patient.present_medicine || 'N/A'} (${patient.mg_value || ''}) - Attacked: ${patient.attacked_by || 'N/A'}</div>`
+          diseasesText = `<div><strong>${patient.present_health_issue}:</strong> ${patient.present_medicine || 'N/A'} (${patient.mg_value || ''}) - Duration: ${patient.attacked_by || 'N/A'}</div>`
         }
         
         // Parse additional phones JSON

@@ -541,8 +541,8 @@ function addDiseaseRow(healthIssue = '', medicine = '', mgValue = '', attackedBy
                  class="disease-mg border rounded px-3 py-2 w-full" />
         </div>
         <div>
-          <label class="block text-xs font-medium mb-1 text-gray-600">Attacked By</label>
-          <input type="text" placeholder="e.g., Viral, Bacterial" value="${attackedBy}"
+          <label class="block text-xs font-medium mb-1 text-gray-600">Attacked Duration</label>
+          <input type="text" placeholder="e.g., 2 weeks, 3 months" value="${attackedBy}"
                  class="disease-attacked-by border rounded px-3 py-2 w-full" />
         </div>
       </div>
@@ -1320,18 +1320,18 @@ async function displayPatientInfo() {
         const diseases = JSON.parse(patient.diseases);
         if (diseases.length > 0) {
           diseasesText = diseases.map(d => 
-            `${d.present_health_issue || 'N/A'}: ${d.present_medicine || 'N/A'} (${d.mg_value || ''}) - Attacked: ${d.attacked_by || 'N/A'}`
+            `${d.present_health_issue || 'N/A'}: ${d.present_medicine || 'N/A'} (${d.mg_value || ''}) - Duration: ${d.attacked_by || 'N/A'}`
           ).join('; ');
         }
       } catch (e) {
         // Fallback to old single disease field
         if (patient.present_health_issue) {
-          diseasesText = `${patient.present_health_issue}: ${patient.present_medicine || 'N/A'} (${patient.mg_value || ''}) - Attacked: ${patient.attacked_by || 'N/A'}`;
+          diseasesText = `${patient.present_health_issue}: ${patient.present_medicine || 'N/A'} (${patient.mg_value || ''}) - Duration: ${patient.attacked_by || 'N/A'}`;
         }
       }
     } else if (patient.present_health_issue) {
       // Fallback to old single disease field
-      diseasesText = `${patient.present_health_issue}: ${patient.present_medicine || 'N/A'} (${patient.mg_value || ''}) - Attacked: ${patient.attacked_by || 'N/A'}`;
+      diseasesText = `${patient.present_health_issue}: ${patient.present_medicine || 'N/A'} (${patient.mg_value || ''}) - Duration: ${patient.attacked_by || 'N/A'}`;
     }
     
     document.getElementById('display-patient-health-issue').textContent = diseasesText;
