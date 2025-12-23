@@ -1043,7 +1043,7 @@ app.get('/api/prescriptions/:id', async (c) => {
     `).bind(id).first()
     
     if (!herbsRoute) {
-      return c.json({ success: false, error: 'Herbs & Routes not found' }, 404)
+      return c.json({ success: false, error: 'Herbs & Roots not found' }, 404)
     }
     
     // Parse diseases JSON if present
@@ -2005,7 +2005,7 @@ app.get('/', (c) => {
                             <i class="fas fa-calendar-alt mr-2"></i>Appointments
                         </button>
                         <button onclick="showSection('prescriptions')" class="nav-btn hover:bg-ayurveda-800 px-3 py-2 rounded transition">
-                            <i class="fas fa-leaf mr-2"></i>Herbs & Routes
+                            <i class="fas fa-leaf mr-2"></i>Herbs & Roots
                         </button>
                         <button onclick="showSection('reminders')" class="nav-btn hover:bg-ayurveda-800 px-3 py-2 rounded transition">
                             <i class="fas fa-bell mr-2"></i>Reminders
@@ -2182,7 +2182,7 @@ app.get('/', (c) => {
             <!-- HERBS & ROUTES (PRESCRIPTIONS) SECTION -->
             <div id="prescriptions-section" class="section hidden">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-leaf mr-2 text-ayurveda-600"></i>Herbs & Routes</h2>
+                    <h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-leaf mr-2 text-ayurveda-600"></i>Herbs & Roots</h2>
                     <button onclick="showHerbsRoutesModal()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg">
                         <i class="fas fa-plus mr-2"></i>New Record
                     </button>
@@ -2655,7 +2655,7 @@ app.get('/', (c) => {
             <div id="prescription-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div class="bg-white rounded-lg p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto mx-4">
                     <div class="flex justify-between items-center mb-6">
-                        <h3 id="prescription-modal-title" class="text-2xl font-bold"><i class="fas fa-leaf mr-2 text-ayurveda-600"></i>New Herbs & Routes Record</h3>
+                        <h3 id="prescription-modal-title" class="text-2xl font-bold"><i class="fas fa-leaf mr-2 text-ayurveda-600"></i>New Herbs & Roots Record</h3>
                         <button onclick="closeHerbsRoutesModal()" class="text-gray-500 hover:text-gray-700">
                             <i class="fas fa-times text-2xl"></i>
                         </button>

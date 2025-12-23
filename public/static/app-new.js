@@ -668,7 +668,7 @@ async function viewPatientDetails(id) {
         ` : ''}
         
         <div>
-          <h4 class="font-bold text-lg mb-2">Recent Herbs & Routes (${prescriptions.length})</h4>
+          <h4 class="font-bold text-lg mb-2">Recent Herbs & Roots (${prescriptions.length})</h4>
           <div class="space-y-2">
             ${prescriptions.slice(0, 5).map(p => `
               <div class="border p-3 rounded">

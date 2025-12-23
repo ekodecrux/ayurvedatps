@@ -1087,7 +1087,7 @@ async function exportToPDF() {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Herbs & Routes Report</title>
+        <title>Herbs & Roots Report</title>
         <style>
           body { font-family: Arial, sans-serif; padding: 20px; }
           h1 { text-align: center; color: #16a34a; }
@@ -1106,7 +1106,7 @@ async function exportToPDF() {
         </style>
       </head>
       <body>
-        <h1>🌿 TPS DHANVANTARI AYURVEDA - Herbs & Routes Report</h1>
+        <h1>🌿 TPS DHANVANTARI AYURVEDA - Herbs & Roots Report</h1>
         <div class="report-info">
           <p>Generated on: ${new Date().toLocaleString()}</p>
           <p>Total Records: ${data.length}</p>
@@ -1232,7 +1232,7 @@ function renderHerbsRoutes() {
 
 function showHerbsRoutesModal() {
   const modal = document.getElementById('prescription-modal');
-  document.getElementById('prescription-modal-title').textContent = 'New Herbs & Routes Record';
+  document.getElementById('prescription-modal-title').textContent = 'New Herbs & Roots Record';
   document.getElementById('prescription-form').reset();
   document.getElementById('prescription-id').value = '';
   document.getElementById('medicines-list').innerHTML = '';
@@ -1889,7 +1889,7 @@ async function saveHerbsRoutes() {
           patient_id: patientId,
           reminder_date: followUpDate,
           reminder_type: 'Follow-up',
-          notes: `Follow-up for Herbs & Routes treatment (${activeMedicines.length} active medicine${activeMedicines.length > 1 ? 's' : ''})`
+          notes: `Follow-up for Herbs & Roots treatment (${activeMedicines.length} active medicine${activeMedicines.length > 1 ? 's' : ''})`
         };
         await axios.post(`${API_BASE}/reminders`, reminderData);
         console.log('Reminder created automatically for follow-up date');
@@ -1899,7 +1899,7 @@ async function saveHerbsRoutes() {
       }
     }
     
-    alert(`Herbs & Routes record created successfully!${followUpDate ? `\nFollow-up date: ${formatDate(followUpDate)}\nReminder has been set automatically.` : ''}`);
+    alert(`Herbs & Roots record created successfully!${followUpDate ? `\nFollow-up date: ${formatDate(followUpDate)}\nReminder has been set automatically.` : ''}`);
     
     closeHerbsRoutesModal();
     loadHerbsRoutes();
@@ -1954,7 +1954,7 @@ async function editHerbsRoutes(id) {
     await loadPatientsForHerbsRoutes();
     
     // Populate the modal with existing data
-    document.getElementById('prescription-modal-title').textContent = 'Edit Herbs & Routes Record';
+    document.getElementById('prescription-modal-title').textContent = 'Edit Herbs & Roots Record';
     document.getElementById('prescription-id').value = id;
     document.getElementById('prescription-currency').value = hr.currency || 'INR';
     document.getElementById('prescription-course').value = hr.course || 1;
