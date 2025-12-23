@@ -1701,7 +1701,7 @@ function addPaymentCollection(courseId, existingData = null) {
             <option value="Cash" ${existingData?.payment_method === 'Cash' ? 'selected' : ''}>Cash</option>
             <option value="Card" ${existingData?.payment_method === 'Card' ? 'selected' : ''}>Card</option>
             <option value="UPI" ${existingData?.payment_method === 'UPI' ? 'selected' : ''}>UPI</option>
-            <option value="Check" ${existingData?.payment_method === 'Check' ? 'selected' : ''}>Check</option>
+            <option value="Cheque" ${existingData?.payment_method === 'Cheque' ? 'selected' : ''}>Cheque</option>
           </select>
         </div>
         <div class="col-span-3">
