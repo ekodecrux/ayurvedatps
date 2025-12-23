@@ -1224,6 +1224,13 @@ function showHerbsRoutesModal() {
 
 function closeHerbsRoutesModal() {
   document.getElementById('prescription-modal').classList.add('hidden');
+  
+  // Clear search field if it contains admin email (autocomplete contamination)
+  const searchField = document.getElementById('prescription-search');
+  if (searchField && currentUser && searchField.value === currentUser.email) {
+    searchField.value = '';
+    loadHerbsRoutes(); // Reload to show all records
+  }
 }
 
 async function loadPatientsForHerbsRoutes() {
