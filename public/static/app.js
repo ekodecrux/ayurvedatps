@@ -1064,7 +1064,7 @@ async function exportToPDF() {
           <td>${hr.patient_phone || 'N/A'}</td>
           <td>${hr.age || 'N/A'}</td>
           <td>${hr.gender || 'N/A'}</td>
-          <td>${hr.total_course_months || 0} months</td>
+          <td>${hr.course || 0} months</td>
           <td>${hr.active_course_months || 0} months</td>
           <td>${hr.next_followup_date ? formatDate(hr.next_followup_date) : 'N/A'}</td>
         </tr>
@@ -1166,7 +1166,7 @@ function renderHerbsRoutes() {
       <td class="px-6 py-4 border-b">${hr.patient_phone || 'N/A'}</td>
       <td class="px-6 py-4 border-b text-center">${hr.age || 'N/A'}</td>
       <td class="px-6 py-4 border-b text-center">${hr.gender || 'N/A'}</td>
-      <td class="px-6 py-4 border-b text-center">${hr.total_course_months || 0} months</td>
+      <td class="px-6 py-4 border-b text-center">${hr.course || 0} months</td>
       <td class="px-6 py-4 border-b text-center">
         <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
           ${hr.active_course_months || 0} months
