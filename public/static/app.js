@@ -1054,30 +1054,17 @@ async function exportToPDF() {
     
     // Create printable HTML
     const printWindow = window.open('', '_blank');
-    let totalAmount = 0;
-    let totalAdvance = 0;
-    let totalCollected = 0;
-    let totalBalance = 0;
     
     const tableRows = data.map(hr => {
-      const symbol = hr.currency === 'USD' ? '$' : '₹';
-      totalAmount += parseFloat(hr.total_amount || 0);
-      totalAdvance += parseFloat(hr.total_advance || 0);
-      totalCollected += parseFloat(hr.total_collected || 0);
-      totalBalance += parseFloat(hr.total_balance || 0);
-      
       return `
         <tr>
           <td>${formatDate(hr.given_date || hr.created_at)}</td>
           <td>${hr.patient_id || ''}</td>
           <td>${hr.patient_name || ''}</td>
-          <td>${hr.diagnosis || ''}</td>
-          <td>${hr.course || 0}</td>
-          <td>${symbol}${formatAmount(hr.total_amount || 0)}</td>
-          <td>${symbol}${formatAmount(hr.total_advance || 0)}</td>
-          <td>${symbol}${formatAmount(hr.total_collected || 0)}</td>
-          <td>${symbol}${formatAmount(hr.total_balance || 0)}</td>
-          <td>${hr.active_course_months || 0}</td>
+          <td>${hr.age || 'N/A'}</td>
+          <td>${hr.gender || 'N/A'}</td>
+          <td>${hr.total_course_months || 0} months</td>
+          <td>${hr.active_course_months || 0} months</td>
           <td>${hr.next_followup_date ? formatDate(hr.next_followup_date) : 'N/A'}</td>
         </tr>
       `;
@@ -1116,15 +1103,12 @@ async function exportToPDF() {
           <thead>
             <tr>
               <th>Given Date</th>
-              <th>Patient ID</th>
+              <th>Patient Number</th>
               <th>Patient Name</th>
-              <th>Problem</th>
-              <th>Course (Months)</th>
-              <th>Total Amount</th>
-              <th>Advance Paid</th>
-              <th>Collected</th>
-              <th>Balance Due</th>
-              <th>Completed</th>
+              <th>Age</th>
+              <th>Gender</th>
+              <th>Entire Course</th>
+              <th>Completed Months</th>
               <th>Next Follow-up</th>
             </tr>
           </thead>
@@ -1132,14 +1116,6 @@ async function exportToPDF() {
             ${tableRows}
           </tbody>
         </table>
-        
-        <div class="summary">
-          <h3>📊 Summary</h3>
-          <div class="summary-row"><strong>Total Amount:</strong> <span>₹${formatAmount(totalAmount)}</span></div>
-          <div class="summary-row"><strong>Total Advance:</strong> <span>₹${formatAmount(totalAdvance)}</span></div>
-          <div class="summary-row"><strong>Total Collected:</strong> <span>₹${formatAmount(totalCollected)}</span></div>
-          <div class="summary-row"><strong>Total Balance Due:</strong> <span style="color: ${totalBalance > 0 ? '#dc2626' : '#16a34a'}">₹${formatAmount(totalBalance)}</span></div>
-        </div>
         
         <div style="text-align: center; margin-top: 20px;">
           <button onclick="window.print()" style="background: #16a34a; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
@@ -1180,30 +1156,14 @@ async function loadHerbsRoutes() {
 
 function renderHerbsRoutes() {
   const html = currentHerbsRoutes.map(hr => {
-    // Get currency symbol
-    const symbol = hr.currency === 'USD' ? '$' : '₹';
-    
-    // Format amounts
-    const totalAmount = hr.total_amount || 0;
-    const dueAmount = hr.total_balance || 0;
-    
-    // Truncate problem text to 15 characters
-    const problem = hr.diagnosis || 'N/A';
-    const truncatedProblem = problem.length > 15 ? problem.substring(0, 15) + '...' : problem;
-    
     return `
     <tr class="hover:bg-gray-50">
       <td class="px-6 py-4 border-b">${formatDate(hr.given_date || hr.created_at)}</td>
       <td class="px-6 py-4 border-b font-medium text-blue-600">${hr.patient_id || 'N/A'}</td>
       <td class="px-6 py-4 border-b font-medium">${hr.patient_name}</td>
-      <td class="px-6 py-4 border-b" title="${problem}">${truncatedProblem}</td>
-      <td class="px-6 py-4 border-b text-center">${hr.course || 0}</td>
-      <td class="px-6 py-4 border-b">
-        <div class="text-sm">
-          <div class="font-semibold text-blue-600">${symbol}${totalAmount.toFixed(2)}</div>
-          <div class="text-xs text-red-600">Due: ${symbol}${dueAmount.toFixed(2)}</div>
-        </div>
-      </td>
+      <td class="px-6 py-4 border-b text-center">${hr.age || 'N/A'}</td>
+      <td class="px-6 py-4 border-b text-center">${hr.gender || 'N/A'}</td>
+      <td class="px-6 py-4 border-b text-center">${hr.total_course_months || 0} months</td>
       <td class="px-6 py-4 border-b text-center">
         <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
           ${hr.active_course_months || 0} months
