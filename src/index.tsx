@@ -2206,6 +2206,7 @@ app.get('/', (c) => {
                                     <th class="px-6 py-3 text-left">Given Date</th>
                                     <th class="px-6 py-3 text-left">Patient Number</th>
                                     <th class="px-6 py-3 text-left">Patient</th>
+                                    <th class="px-6 py-3 text-left">Phone</th>
                                     <th class="px-6 py-3 text-left">Age</th>
                                     <th class="px-6 py-3 text-left">Gender</th>
                                     <th class="px-6 py-3 text-left">Entire Course</th>
@@ -2215,7 +2216,7 @@ app.get('/', (c) => {
                                 </tr>
                             </thead>
                             <tbody id="prescriptions-table-body">
-                                <tr><td colspan="9" class="text-center py-4">Loading...</td></tr>
+                                <tr><td colspan="10" class="text-center py-4">Loading...</td></tr>
                             </tbody>
                         </table>
                     </div>

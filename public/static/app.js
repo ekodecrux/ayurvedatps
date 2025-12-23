@@ -1061,6 +1061,7 @@ async function exportToPDF() {
           <td>${formatDate(hr.given_date || hr.created_at)}</td>
           <td>${hr.patient_id || ''}</td>
           <td>${hr.patient_name || ''}</td>
+          <td>${hr.patient_phone || 'N/A'}</td>
           <td>${hr.age || 'N/A'}</td>
           <td>${hr.gender || 'N/A'}</td>
           <td>${hr.total_course_months || 0} months</td>
@@ -1105,6 +1106,7 @@ async function exportToPDF() {
               <th>Given Date</th>
               <th>Patient Number</th>
               <th>Patient Name</th>
+              <th>Phone</th>
               <th>Age</th>
               <th>Gender</th>
               <th>Entire Course</th>
@@ -1161,6 +1163,7 @@ function renderHerbsRoutes() {
       <td class="px-6 py-4 border-b">${formatDate(hr.given_date || hr.created_at)}</td>
       <td class="px-6 py-4 border-b font-medium text-blue-600">${hr.patient_id || 'N/A'}</td>
       <td class="px-6 py-4 border-b font-medium">${hr.patient_name}</td>
+      <td class="px-6 py-4 border-b">${hr.patient_phone || 'N/A'}</td>
       <td class="px-6 py-4 border-b text-center">${hr.age || 'N/A'}</td>
       <td class="px-6 py-4 border-b text-center">${hr.gender || 'N/A'}</td>
       <td class="px-6 py-4 border-b text-center">${hr.total_course_months || 0} months</td>
@@ -1185,7 +1188,7 @@ function renderHerbsRoutes() {
         </button>
       </td>
     </tr>
-  `}).join('') || '<tr><td colspan="9" class="px-6 py-4 text-center text-gray-500">No records found</td></tr>';
+  `}).join('') || '<tr><td colspan="10" class="px-6 py-4 text-center text-gray-500">No records found</td></tr>';
   
   document.getElementById('prescriptions-table-body').innerHTML = html;
 }
