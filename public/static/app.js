@@ -531,8 +531,8 @@ function addDiseaseRow(healthIssue = '', medicine = '', mgValue = '', attackedBy
                  class="disease-health-issue border rounded px-3 py-2 w-full" />
         </div>
         <div>
-          <label class="block text-xs font-medium mb-1 text-gray-600">Present Medicine</label>
-          <input type="text" placeholder="Enter medicine" value="${medicine}"
+          <label class="block text-xs font-medium mb-1 text-gray-600">Present Medication</label>
+          <input type="text" placeholder="Enter medication" value="${medicine}"
                  class="disease-medicine border rounded px-3 py-2 w-full" />
         </div>
         <div>

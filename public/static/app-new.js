@@ -661,7 +661,7 @@ async function viewPatientDetails(id) {
             <h4 class="font-bold text-lg mb-2">Current Health Status</h4>
             <div class="space-y-2 text-sm">
               ${patient.present_health_issue ? `<div><strong>Present Issue:</strong> ${patient.present_health_issue}</div>` : ''}
-              ${patient.present_medicine ? `<div><strong>Current Medicine:</strong> ${patient.present_medicine}</div>` : ''}
+              ${patient.present_medicine ? `<div><strong>Current Medication:</strong> ${patient.present_medicine}</div>` : ''}
               ${patient.mg_value ? `<div><strong>MG Value:</strong> ${patient.mg_value}</div>` : ''}
             </div>
           </div>
