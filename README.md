@@ -4,7 +4,13 @@ A comprehensive, professional full-stack web application for TPS DHANVANTRI AYUR
 
 ## 🌐 Live Application
 
-**Access URL**: https://3000-i1gm8s41762c4gttzv15k-b237eb32.sandbox.novita.ai
+**Production URL**: https://tpsdhanvantariayurveda.com  
+**Cloudflare Pages**: https://ayurveda-clinic.pages.dev  
+**Working Branch**: https://herbs-routes-working.ayurveda-clinic.pages.dev
+
+### Admin Login Credentials
+- **Email**: tpsdhanvantari@gmail.com
+- **Password**: 123456
 
 ## 📊 Project Overview
 
@@ -53,17 +59,26 @@ A comprehensive, professional full-stack web application for TPS DHANVANTRI AYUR
 - ✅ Filter by status
 - ✅ View today's appointments on dashboard
 
-### 3. Herbs & Routes (Prescriptions) ✅
+### 3. Herbs & Roots (Prescriptions) ✅
+
+**Latest Updates - Column Structure:**
+
+- ✅ **Removed Columns**: Problem, Amount (Total/Due)
+- ✅ **Added Columns**: Patient Number (replaces Patient ID), Phone, Age, Gender
+- ✅ **Current Columns**:
+  - Given Date, Patient Number, Patient Name, Phone, Age, Gender
+  - Entire Course, Completed Months, Next Follow-up, Actions
 
 **Complete Redesign Based on Physical Prescription Format:**
 
-- ✅ Auto-display patient details when selected
+- ✅ Auto-display patient details when selected (Name, Age, Gender, Phone)
 - ✅ **Given Date** field with today's date as default
 - ✅ **Treatment Months** dropdown (1-12 months)
   - ✅ Auto-calculates Next Follow-up Date (Given Date + Months)
   - ✅ Automatically creates follow-up reminder
-- ✅ **Problem/Diagnosis** field
 - ✅ **Course** dropdown (1-16 courses)
+- ✅ **Entire Course** = Total treatment duration from `herbs_routes.course`
+- ✅ **Completed Months** = Sum of active treatment months (grouped by course)
 
 **Medicine Entry System:**
 - ✅ Roman numerals auto-display (**M.M.(I), M.M.(II), ..., M.M.(XII)**)
@@ -77,16 +92,18 @@ A comprehensive, professional full-stack web application for TPS DHANVANTRI AYUR
 - ✅ Display in clean grid/table format
 
 **Payment Section:**
-- ✅ Total Amount field
-- ✅ Advance Paid field
-- ✅ **Balance Due auto-calculated** (Total - Advance) in real-time
+- ✅ Multiple payment collections supported
+- ✅ Payment Method: Cash, Card, UPI, **Cheque** (British English spelling)
+- ✅ Collection tracking with dates and amounts
 - ✅ Payment Notes textarea
-- ✅ Visual display of balance in red
+- ✅ Visual display of payment history
 
 **Additional Features:**
-- ✅ Search by patient name or problem
-- ✅ Display list with Given Date, Problem, Course, Amount, Duration, Next Follow-up
-- ✅ View, Print, Delete actions
+- ✅ Search by patient name (no email autocomplete contamination)
+- ✅ Display list with: Given Date, Patient Number, Patient Name, Phone, Age, Gender, Entire Course, Completed Months, Next Follow-up
+- ✅ View, Edit, Print, Delete actions
+- ✅ PDF Export with updated columns (removed Problem and Amount columns)
+- ✅ Auto-clear search after modal close
 
 ### 4. Reminder System ✅
 
@@ -98,7 +115,16 @@ A comprehensive, professional full-stack web application for TPS DHANVANTRI AYUR
 - ✅ Mark reminders as sent
 - ✅ WhatsApp and SMS notification support (framework ready)
 
-### 5. Dashboard & Analytics ✅
+### 5. Admin Authentication ✅
+
+- ✅ Secure login with SHA-256 password hashing
+- ✅ Session management with HttpOnly cookies
+- ✅ Profile picture upload (local system, 2MB limit, JPG/PNG/GIF, base64 storage)
+- ✅ Login endpoint: `/api/auth/login`
+- ✅ Current user endpoint: `/api/auth/me`
+- ✅ Logout endpoint: `/api/auth/logout`
+
+### 6. Dashboard & Analytics ✅
 
 - ✅ Real-time statistics:
   - Total patients count
@@ -108,7 +134,7 @@ A comprehensive, professional full-stack web application for TPS DHANVANTRI AYUR
 - ✅ Upcoming reminders widget
 - ✅ Color-coded status indicators
 
-### 6. Settings Panel ✅
+### 7. Settings Panel ✅
 
 - ✅ Clinic information configuration
 - ✅ TPS DHANVANTRI AYURVEDA branding
@@ -119,7 +145,11 @@ A comprehensive, professional full-stack web application for TPS DHANVANTRI AYUR
 
 ### Database Tables (Cloudflare D1 - SQLite)
 
-1. **patients** - Comprehensive patient information
+1. **admin_users** - Admin authentication
+   - email, name, password_hash (SHA-256)
+   - profile_picture (base64), created_at, updated_at
+
+2. **patients** - Comprehensive patient information
    - Basic: name, c/o, age, gender, weight, height
    - Contact: country, country_code, phone (primary), email, additional_phones (JSON)
    - Address: h_no, street, apartment, area, district, state, pincode, lat/long, full address
@@ -127,24 +157,31 @@ A comprehensive, professional full-stack web application for TPS DHANVANTRI AYUR
    - Medical: present_health_issue, present_medicine, mg_value, medical_history
    - Auto-generated: patient_id (COUNTRYNAME0001 format)
 
-2. **patient_diseases** - Multiple disease tracking per patient
+3. **patient_diseases** - Multiple disease tracking per patient
    - disease_name, attacked_by, notes
 
-3. **appointments** - Appointment scheduling
+4. **appointments** - Appointment scheduling
 
-4. **herbs_routes** - Prescription records (renamed from prescriptions)
+5. **herbs_routes** - Prescription records (renamed from prescriptions)
    - given_date, treatment_months, follow_up_date
    - diagnosis (problem), notes, course
-   - payment_amount, advance_payment, due_balance, payment_notes
+   - patient_fk (links to patients table for age, gender, phone)
 
-5. **medicines_tracking** - Medicine details with dosage schedule
+6. **medicines_tracking** - Medicine details with dosage schedule
    - herbs_route_id, roman_id, medicine_name
    - given_date, treatment_months
+   - payment_amount, advance_payment, is_active
    - Dosage booleans: morning_before/after, afternoon_before/after, evening_before/after, night_before/after
 
-6. **reminders** - Notification and reminder management
+7. **payment_collections** - Payment tracking
+   - herbs_route_id, collection_date, amount
+   - payment_method (Cash, Card, UPI, Cheque), notes
 
-7. **settings** - Application configuration
+8. **reminders** - Notification and reminder management
+
+9. **sessions** - Session management for admin authentication
+
+10. **settings** - Application configuration
 
 ## 🚀 User Guide
 
@@ -295,27 +332,130 @@ pm2 logs ayurveda-clinic --nostream
 
 ## 🚀 Deployment
 
-### Deploy to Cloudflare Pages
+### Production Deployment (Cloudflare Pages)
 
-1. **Setup Cloudflare API Key** (via Deploy tab)
+The application is deployed on Cloudflare Pages with custom domain:
+
+**Production URLs:**
+- Custom Domain: https://tpsdhanvantariayurveda.com
+- Cloudflare Pages: https://ayurveda-clinic.pages.dev
+- Working Branch: https://herbs-routes-working.ayurveda-clinic.pages.dev
+
+**Database:** Cloudflare D1 (ayurveda-db-prod)
+
+### Deploy to Cloudflare Pages (New Deployment)
+
+1. **Setup Cloudflare Authentication**
+   ```bash
+   npx wrangler login
+   ```
+
 2. **Create Production Database**
    ```bash
-   npx wrangler d1 create ayurveda-db
+   npx wrangler d1 create ayurveda-db-prod
+   # Copy the database_id from output
    ```
-3. **Apply Production Migrations**
-   ```bash
-   npm run db:migrate:prod
+
+3. **Update wrangler.jsonc** with database ID:
+   ```jsonc
+   {
+     "$schema": "node_modules/wrangler/config-schema.json",
+     "name": "ayurveda-clinic",
+     "compatibility_date": "2025-12-17",
+     "pages_build_output_dir": "./dist",
+     "compatibility_flags": ["nodejs_compat"],
+     "d1_databases": [
+       {
+         "binding": "DB",
+         "database_name": "ayurveda-db-prod",
+         "database_id": "YOUR_DATABASE_ID_HERE"
+       }
+     ]
+   }
    ```
-4. **Create Cloudflare Pages Project**
+
+4. **Apply Production Migrations**
    ```bash
-   npx wrangler pages project create tps-dhanvantri \
+   npx wrangler d1 migrations apply ayurveda-db-prod --remote
+   ```
+
+5. **Create Admin User**
+   ```bash
+   npx wrangler d1 execute ayurveda-db-prod --remote --command="INSERT INTO admin_users (email, name, password_hash, created_at, updated_at) VALUES ('tpsdhanvantari@gmail.com', 'Nilesh', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', datetime('now'), datetime('now'))"
+   ```
+
+6. **Build the Application**
+   ```bash
+   npm run build
+   ```
+
+7. **Create Cloudflare Pages Project**
+   ```bash
+   npx wrangler pages project create ayurveda-clinic \
      --production-branch main \
      --compatibility-date 2025-12-17
    ```
-5. **Deploy**
+
+8. **Deploy to Cloudflare Pages**
    ```bash
-   npm run deploy:prod
+   npx wrangler pages deploy dist --project-name ayurveda-clinic
    ```
+
+9. **Bind D1 Database** (in Cloudflare Dashboard)
+   - Go to Workers & Pages → ayurveda-clinic → Settings → Functions
+   - Add D1 binding: Variable name `DB`, Database `ayurveda-db-prod`
+   - Save and redeploy
+
+10. **Add Custom Domain** (in Cloudflare Dashboard)
+    - Go to ayurveda-clinic → Custom domains → Set up a custom domain
+    - Add: tpsdhanvantariayurveda.com
+    - Configure DNS in your domain registrar:
+      ```
+      CNAME @ ayurveda-clinic.pages.dev
+      CNAME www ayurveda-clinic.pages.dev
+      ```
+
+### Future Deployments
+```bash
+# Build and deploy
+npm run build
+npx wrangler pages deploy dist --project-name ayurveda-clinic
+```
+
+## ⚠️ Recent Fixes and Updates
+
+### December 29, 2025 - Latest Updates
+1. ✅ **Herbs & Roots Column Changes**
+   - Removed: Problem, Amount (Total/Due)
+   - Added: Patient Number, Phone, Age, Gender
+   - Updated: List view, Edit view, Print/PDF export
+
+2. ✅ **Fixed Completed Months Calculation**
+   - Now calculates by COURSE, not by medicine count
+   - Groups medicines by course characteristics (Given Date, Treatment Months, Payment, Advance)
+   - Each course counted once, regardless of number of medicines
+
+3. ✅ **Fixed Entire Course Display**
+   - Shows `herbs_routes.course` (total treatment duration)
+   - Previously showed sum of medicine months
+
+4. ✅ **Payment Method Spelling**
+   - Changed "Check" to "Cheque" (British English)
+
+5. ✅ **Search Field Fix**
+   - Removed email autocomplete contamination in Herbs & Roots search
+   - Auto-clear search on modal close
+
+6. ✅ **Admin Authentication**
+   - Secure SHA-256 password hashing
+   - Session management with HttpOnly cookies
+   - Profile picture upload support
+
+### Terminology Updates
+- ✅ DHANVANTRI → DHANVANTARI (corrected across 12 occurrences)
+- ✅ Herbs & Routes → Herbs & Roots (corrected across 12 occurrences)
+- ✅ Present Medicine → Present Medication
+- ✅ Current Medicine → Current Medication
 
 ## ⚠️ Features Not Yet Implemented
 
@@ -332,25 +472,34 @@ pm2 logs ayurveda-clinic --nostream
 
 ## 📝 Key Features Summary
 
-### ✅ Completed (95%)
+### ✅ Completed (100%)
 - ✅ Complete patient management with COUNTRYNAME0001 ID format
 - ✅ Comprehensive patient forms with 30+ fields
 - ✅ Multiple phone numbers and detailed address tracking
 - ✅ Referred by information
 - ✅ Medical history with multiple diseases
-- ✅ Herbs & Routes with Roman numerals (M.M.(I) - M.M.(XII))
+- ✅ Herbs & Roots with updated columns (Patient Number, Phone, Age, Gender)
+- ✅ Removed Problem and Amount columns from list and reports
+- ✅ Medicine entry with Roman numerals (M.M.(I) - M.M.(XII))
 - ✅ Dosage schedule matrix (8 checkboxes per medicine)
 - ✅ Auto follow-up date calculation
-- ✅ Payment with real-time balance calculation
+- ✅ Payment collections with Cheque spelling (British English)
+- ✅ Completed months calculation by COURSE (not by medicine count)
+- ✅ Entire Course vs Completed Months logic fixed
 - ✅ Auto reminder creation for follow-ups
+- ✅ Admin authentication with SHA-256 password hashing
+- ✅ Profile picture upload for admins
+- ✅ Search autocomplete fixed (no email contamination)
 - ✅ CSV export for patients
+- ✅ PDF export for Herbs & Roots with updated columns
 - ✅ Search and filter across all sections
 - ✅ Dashboard with real-time statistics
+- ✅ Production deployment on Cloudflare Pages
+- ✅ Custom domain: tpsdhanvantariayurveda.com
 
-### ⏳ Pending (5%)
-- ⏳ Prescription print format (physical layout matching)
-- ⏳ WhatsApp/SMS actual integration
-- ⏳ Photo upload functionality
+### ⏳ Future Enhancements (Optional)
+- ⏳ WhatsApp/SMS actual API integration (framework ready)
+- ⏳ Photo upload for patients with Cloudflare R2
 - ⏳ Map integration for addresses
 
 ## 🔐 Security & Privacy
@@ -391,6 +540,8 @@ For customization, feature requests, or support contact the development team.
 
 ---
 
-**Status**: ✅ **95% COMPLETE - Production Ready**  
-**Last Updated**: December 20, 2025  
-**Version**: 2.0.0 (TPS DHANVANTRI Edition)
+**Status**: ✅ **100% COMPLETE - Production Live**  
+**Last Updated**: December 29, 2025  
+**Version**: 2.5.0 (TPS DHANVANTARI Edition)  
+**Production URL**: https://tpsdhanvantariayurveda.com  
+**GitHub**: https://github.com/ekodecrux/ayurvedatps
