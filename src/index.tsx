@@ -1927,6 +1927,94 @@ app.get('/', (c) => {
           }
         </script>
         <style>
+          /* ==================== CRITICAL MOBILE STYLES ==================== */
+          @media (max-width: 768px) {
+            /* Prevent horizontal overflow */
+            html, body {
+              overflow-x: hidden !important;
+              max-width: 100vw !important;
+              position: relative !important;
+            }
+            
+            /* Force containers to fit */
+            * {
+              max-width: 100vw !important;
+            }
+            
+            /* Make tables scrollable */
+            .overflow-x-auto {
+              overflow-x: auto !important;
+              -webkit-overflow-scrolling: touch !important;
+              display: block !important;
+              width: 100% !important;
+            }
+            
+            /* Compact navigation */
+            .nav-btn span {
+              display: none !important;
+            }
+            
+            .nav-btn {
+              padding: 0.5rem !important;
+              font-size: 0.75rem !important;
+            }
+            
+            /* Smaller text */
+            h1 { font-size: 1.25rem !important; }
+            h2 { font-size: 1.125rem !important; }
+            
+            /* Table responsiveness */
+            table {
+              font-size: 0.75rem !important;
+              display: block !important;
+              overflow-x: auto !important;
+              white-space: nowrap !important;
+            }
+            
+            table thead,
+            table tbody,
+            table tr {
+              display: table !important;
+              width: 100% !important;
+            }
+            
+            table th,
+            table td {
+              padding: 0.5rem !important;
+              font-size: 0.75rem !important;
+            }
+            
+            /* Stack grids */
+            .grid {
+              grid-template-columns: 1fr !important;
+            }
+            
+            /* Full width inputs */
+            input, select, textarea {
+              font-size: 1rem !important;
+              width: 100% !important;
+            }
+            
+            /* Reduce padding */
+            .p-8 { padding: 1rem !important; }
+            .p-6 { padding: 0.75rem !important; }
+            .px-8 { padding-left: 1rem !important; padding-right: 1rem !important; }
+            
+            /* Modal adjustments */
+            .fixed.inset-0 > div {
+              max-width: 95vw !important;
+              margin: 0.5rem !important;
+            }
+            
+            /* Container */
+            .container,
+            .max-w-7xl,
+            .max-w-6xl {
+              padding-left: 1rem !important;
+              padding-right: 1rem !important;
+            }
+          }
+          
           @media print {
             /* Hide everything except print content */
             body * {
