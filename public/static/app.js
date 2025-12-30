@@ -977,7 +977,8 @@ async function loadAppointments() {
 }
 
 function renderAppointments() {
-  const html = currentAppointments.map(apt => `
+  // Desktop table view
+  const tableHtml = currentAppointments.map(apt => `
     <tr class="hover:bg-gray-50">
       <td class="px-6 py-4 border-b">${formatDateTime(apt.appointment_date)}</td>
       <td class="px-6 py-4 border-b font-medium">${apt.patient_name}</td>
@@ -993,7 +994,40 @@ function renderAppointments() {
     </tr>
   `).join('') || '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No appointments found</td></tr>';
   
-  document.getElementById('appointments-table-body').innerHTML = html;
+  document.getElementById('appointments-table-body').innerHTML = tableHtml;
+  
+  // Mobile card view
+  const cardsHtml = currentAppointments.map(apt => `
+    <div class="mobile-card">
+      <div class="mobile-card-header">
+        <div>
+          <h3 class="mobile-card-title">${apt.patient_name}</h3>
+          <p class="mobile-card-subtitle">${formatDateTime(apt.appointment_date)}</p>
+        </div>
+        <span class="px-3 py-1 rounded-full text-xs ${apt.status === 'completed' ? 'bg-green-100 text-green-800' : apt.status === 'confirmed' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}">${apt.status}</span>
+      </div>
+      <div class="mobile-card-body">
+        <div class="mobile-card-row">
+          <span class="mobile-card-label">Phone:</span>
+          <span class="mobile-card-value">${apt.patient_phone}</span>
+        </div>
+        <div class="mobile-card-row">
+          <span class="mobile-card-label">Reason:</span>
+          <span class="mobile-card-value">${apt.purpose || 'N/A'}</span>
+        </div>
+      </div>
+      <div class="mobile-card-actions">
+        <button onclick="editAppointment(${apt.id})" class="bg-green-500 text-white">
+          <i class="fas fa-edit mr-1"></i> Edit
+        </button>
+        <button onclick="deleteAppointment(${apt.id})" class="bg-red-500 text-white">
+          <i class="fas fa-trash mr-1"></i> Delete
+        </button>
+      </div>
+    </div>
+  `).join('') || '<p class="text-center text-gray-500 py-4">No appointments found</p>';
+  
+  document.getElementById('appointments-mobile-cards').innerHTML = cardsHtml;
 }
 
 async function showAppointmentModal(appointment = null) {
@@ -2623,7 +2657,8 @@ async function loadReminders() {
 }
 
 function renderReminders() {
-  const html = currentReminders.map(rem => `
+  // Desktop table view
+  const tableHtml = currentReminders.map(rem => `
     <tr class="hover:bg-gray-50">
       <td class="px-6 py-4 border-b">${formatDate(rem.scheduled_date || rem.reminder_date)}</td>
       <td class="px-6 py-4 border-b font-medium">${rem.patient_name}</td>
@@ -2654,7 +2689,48 @@ function renderReminders() {
     </tr>
   `).join('') || '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No reminders found</td></tr>';
   
-  document.getElementById('reminders-table-body').innerHTML = html;
+  document.getElementById('reminders-table-body').innerHTML = tableHtml;
+  
+  // Mobile card view
+  const cardsHtml = currentReminders.map(rem => `
+    <div class="mobile-card">
+      <div class="mobile-card-header">
+        <div>
+          <h3 class="mobile-card-title">${rem.patient_name}</h3>
+          <p class="mobile-card-subtitle">${formatDate(rem.scheduled_date || rem.reminder_date)} • ${rem.type || rem.reminder_type}</p>
+        </div>
+        <span class="px-3 py-1 rounded-full text-xs ${rem.status === 'Sent' || rem.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${rem.status}</span>
+      </div>
+      <div class="mobile-card-body">
+        <div class="mobile-card-row">
+          <span class="mobile-card-label">Phone:</span>
+          <span class="mobile-card-value">${rem.patient_phone}</span>
+        </div>
+        <div class="mobile-card-row">
+          <span class="mobile-card-label">Message:</span>
+          <span class="mobile-card-value">${rem.message || 'N/A'}</span>
+        </div>
+      </div>
+      <div class="mobile-card-actions">
+        ${rem.status === 'Sent' || rem.status === 'sent' ? '' : `
+          <button onclick="sendReminderWhatsApp(${rem.id}, '${rem.patient_phone}', '${escape(rem.patient_name)}', '${escape(rem.message)}')" class="bg-green-500 text-white">
+            <i class="fab fa-whatsapp mr-1"></i> WhatsApp
+          </button>
+          <button onclick="sendReminderSMS(${rem.id}, '${rem.patient_phone}', '${escape(rem.patient_name)}', '${escape(rem.message)}')" class="bg-blue-500 text-white">
+            <i class="fas fa-sms mr-1"></i> SMS
+          </button>
+        `}
+        <button onclick="markReminderSent(${rem.id})" class="bg-gray-500 text-white" ${rem.status === 'Sent' || rem.status === 'sent' ? 'disabled' : ''}>
+          <i class="fas fa-check mr-1"></i> Mark Sent
+        </button>
+        <button onclick="deleteReminder(${rem.id})" class="bg-red-500 text-white">
+          <i class="fas fa-trash mr-1"></i> Delete
+        </button>
+      </div>
+    </div>
+  `).join('') || '<p class="text-center text-gray-500 py-4">No reminders found</p>';
+  
+  document.getElementById('reminders-mobile-cards').innerHTML = cardsHtml;
 }
 
 // Send reminder via WhatsApp (using Business API)

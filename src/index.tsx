@@ -1980,6 +1980,15 @@ app.get('/', (c) => {
             .mobile-nav-text {
               display: inline !important;
             }
+            
+            /* Show desktop "Add" buttons, hide FAB */
+            .desktop-add-btn {
+              display: inline-flex !important;
+            }
+            
+            .fab {
+              display: none !important;
+            }
           }
           
           /* Mobile responsive design */
@@ -2287,6 +2296,37 @@ app.get('/', (c) => {
               font-size: 0.8rem !important;
               border-radius: 8px !important;
               min-height: 40px !important;
+            }
+            
+            /* ===== FLOATING ACTION BUTTON (FAB) ===== */
+            .fab {
+              position: fixed !important;
+              bottom: 24px !important;
+              right: 24px !important;
+              width: 56px !important;
+              height: 56px !important;
+              border-radius: 50% !important;
+              background: #059669 !important;
+              color: white !important;
+              box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4) !important;
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              font-size: 24px !important;
+              cursor: pointer !important;
+              transition: all 0.3s ease !important;
+              z-index: 40 !important;
+              border: none !important;
+            }
+            
+            .fab:active {
+              transform: scale(0.95) !important;
+              box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3) !important;
+            }
+            
+            /* Hide desktop "Add" buttons on mobile */
+            .desktop-add-btn {
+              display: none !important;
             }
             
             /* ===== MAIN CONTENT AREA ===== */
@@ -2863,10 +2903,15 @@ app.get('/', (c) => {
             <div id="patients-section" class="section hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gray-800">Patients</h2>
-                    <button onclick="showPatientModal()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg">
+                    <button onclick="showPatientModal()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg desktop-add-btn">
                         <i class="fas fa-plus mr-2"></i>Add Patient
                     </button>
                 </div>
+                
+                <!-- FAB for mobile -->
+                <button onclick="showPatientModal()" class="fab md:hidden" title="Add Patient">
+                    <i class="fas fa-plus"></i>
+                </button>
                 
                 <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -2917,10 +2962,15 @@ app.get('/', (c) => {
             <div id="appointments-section" class="section hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gray-800">Appointments</h2>
-                    <button onclick="showAppointmentModal()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg">
+                    <button onclick="showAppointmentModal()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg desktop-add-btn">
                         <i class="fas fa-plus mr-2"></i>Add Appointment
                     </button>
                 </div>
+                
+                <!-- FAB for mobile -->
+                <button onclick="showAppointmentModal()" class="fab md:hidden" title="Add Appointment">
+                    <i class="fas fa-plus"></i>
+                </button>
                 
                 <div class="bg-white rounded-lg shadow-lg p-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -2934,7 +2984,8 @@ app.get('/', (c) => {
                         </select>
                     </div>
                     
-                    <div class="overflow-x-auto">
+                    <!-- Desktop Table View -->
+                    <div class="overflow-x-auto desktop-table">
                         <table class="w-full">
                             <thead class="bg-gray-100">
                                 <tr>
@@ -2951,6 +3002,11 @@ app.get('/', (c) => {
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Mobile Card View -->
+                    <div id="appointments-mobile-cards" class="mobile-cards space-y-3">
+                        <p class="text-center text-gray-500 py-4">Loading...</p>
+                    </div>
                 </div>
             </div>
 
@@ -2958,10 +3014,15 @@ app.get('/', (c) => {
             <div id="prescriptions-section" class="section hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-leaf mr-2 text-ayurveda-600"></i>Herbs & Roots</h2>
-                    <button onclick="showHerbsRoutesModal()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg">
+                    <button onclick="showHerbsRoutesModal()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg desktop-add-btn">
                         <i class="fas fa-plus mr-2"></i>New Record
                     </button>
                 </div>
+                
+                <!-- FAB for mobile -->
+                <button onclick="showHerbsRoutesModal()" class="fab md:hidden" title="New Herbs & Roots Record">
+                    <i class="fas fa-plus"></i>
+                </button>
                 
                 <div class="bg-white rounded-lg shadow-lg p-6">
                     <div class="mb-4 flex gap-2 items-center">
@@ -3020,7 +3081,8 @@ app.get('/', (c) => {
                         </select>
                     </div>
                     
-                    <div class="overflow-x-auto">
+                    <!-- Desktop Table View -->
+                    <div class="overflow-x-auto desktop-table">
                         <table class="w-full">
                             <thead class="bg-gray-100">
                                 <tr>
@@ -3037,6 +3099,11 @@ app.get('/', (c) => {
                                 <tr><td colspan="7" class="text-center py-4">Loading...</td></tr>
                             </tbody>
                         </table>
+                    </div>
+                    
+                    <!-- Mobile Card View -->
+                    <div id="reminders-mobile-cards" class="mobile-cards space-y-3">
+                        <p class="text-center text-gray-500 py-4">Loading...</p>
                     </div>
                 </div>
             </div>
