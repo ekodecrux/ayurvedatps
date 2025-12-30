@@ -3761,13 +3761,364 @@ app.get('/', (c) => {
   `)
 })
 
-// PWA Mobile App Route
-app.get('/pwa', serveStatic({ path: './public/pwa.html' }))
+// PWA Mobile App Route - Serve inline HTML
+app.get('/pwa', (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#059669">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>TPS Dhanvantari Ayurveda</title>
+    <link rel="manifest" href="/pwa-manifest.json">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #F3F4F6; overflow-x: hidden; }
+        .login-screen { min-height: 100vh; background: linear-gradient(135deg, #E8F5F0 0%, #D1FAE5 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .login-logo { width: 80px; height: 80px; background: #059669; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3); }
+        .login-logo i { font-size: 40px; color: white; }
+        .login-title { font-size: 24px; font-weight: bold; color: #059669; margin-bottom: 8px; text-align: center; }
+        .login-subtitle { font-size: 14px; color: #6B7280; margin-bottom: 40px; text-align: center; }
+        .login-card { background: white; border-radius: 16px; padding: 30px 24px; width: 100%; max-width: 400px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); }
+        .input-group { margin-bottom: 20px; }
+        .input-label { display: block; font-size: 14px; font-weight: 500; color: #1F2937; margin-bottom: 8px; }
+        .input-wrapper { position: relative; }
+        .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9CA3AF; font-size: 16px; }
+        .input-field { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid #D1D5DB; border-radius: 8px; font-size: 14px; outline: none; transition: all 0.3s; }
+        .input-field:focus { border-color: #059669; box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1); }
+        .btn-primary { width: 100%; padding: 14px; background: #059669; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; margin-top: 10px; }
+        .btn-primary:active { transform: scale(0.98); }
+        .security-text { text-align: center; font-size: 12px; color: #9CA3AF; margin-top: 30px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .nav-header { background: #059669; padding: 12px 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+        .nav-top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .nav-email { font-size: 12px; color: white; opacity: 0.9; }
+        .nav-profile { width: 36px; height: 36px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #059669; font-size: 16px; }
+        .nav-icons { display: flex; align-items: center; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        .nav-icons::-webkit-scrollbar { display: none; }
+        .menu-btn { background: none; border: none; color: white; font-size: 20px; padding: 8px; cursor: pointer; margin-right: 8px; }
+        .nav-icon { background: none; border: none; color: white; padding: 10px 16px; border-radius: 8px; font-size: 20px; cursor: pointer; transition: background 0.3s; flex-shrink: 0; }
+        .nav-icon.active { background: rgba(255, 255, 255, 0.2); }
+        .dropdown-menu { position: fixed; top: 70px; left: 16px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); padding: 8px; z-index: 200; min-width: 200px; display: none; }
+        .dropdown-menu.show { display: block; }
+        .menu-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: none; background: none; width: 100%; text-align: left; border-radius: 8px; cursor: pointer; font-size: 14px; color: #1F2937; transition: background 0.2s; }
+        .menu-item:hover { background: #F3F4F6; }
+        .menu-item.logout { color: #EF4444; }
+        .menu-divider { height: 1px; background: #E5E7EB; margin: 8px 0; }
+        .main-content { padding: 16px; display: none; }
+        .main-content.active { display: block; }
+        .page-title { font-size: 24px; font-weight: bold; color: #1F2937; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+        .stat-cards { display: grid; gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); display: flex; align-items: center; gap: 16px; border-left: 4px solid; }
+        .stat-card.blue { border-left-color: #3B82F6; }
+        .stat-card.green { border-left-color: #10B981; }
+        .stat-card.yellow { border-left-color: #F59E0B; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+        .stat-icon.blue { background: #DBEAFE; color: #3B82F6; }
+        .stat-icon.green { background: #D1FAE5; color: #10B981; }
+        .stat-icon.yellow { background: #FEF3C7; color: #F59E0B; }
+        .stat-content { flex: 1; }
+        .stat-label { font-size: 14px; color: #6B7280; margin-bottom: 4px; }
+        .stat-value { font-size: 28px; font-weight: bold; color: #1F2937; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .btn-add { background: #059669; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+        .search-bar { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid #D1D5DB; border-radius: 8px; font-size: 14px; margin-bottom: 16px; background: white; }
+        .filter-row { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; }
+        .filter-btn { padding: 8px 16px; border: 1px solid #D1D5DB; border-radius: 8px; background: white; font-size: 14px; cursor: pointer; white-space: nowrap; }
+        .patient-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+        .patient-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .patient-name { font-size: 18px; font-weight: bold; color: #1F2937; }
+        .patient-id { font-size: 14px; color: #6B7280; }
+        .patient-info { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; font-size: 14px; color: #4B5563; }
+        .info-row { display: flex; align-items: center; gap: 6px; }
+        .patient-actions { display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid #E5E7EB; }
+        .btn-action { flex: 1; padding: 8px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-action.view { background: #059669; }
+        .btn-action.edit { background: #3B82F6; }
+        .btn-action.delete { background: #EF4444; }
+        .empty-state { text-align: center; padding: 60px 20px; }
+        .empty-icon { font-size: 80px; color: #D1D5DB; margin-bottom: 20px; }
+        .empty-title { font-size: 18px; font-weight: bold; color: #1F2937; margin-bottom: 8px; }
+        .empty-subtitle { font-size: 14px; color: #6B7280; margin-bottom: 24px; }
+        .fab { position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; background: #059669; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4); border: none; cursor: pointer; z-index: 50; }
+        .fab:active { transform: scale(0.95); }
+        .loading { text-align: center; padding: 40px; color: #6B7280; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div id="loginScreen" class="login-screen">
+        <div class="login-logo"><i class="fas fa-leaf"></i></div>
+        <div class="login-title">TPS DHANVANTARI</div>
+        <div class="login-subtitle">Ayurveda Clinic Management</div>
+        <div class="login-card">
+            <div class="input-group">
+                <label class="input-label">Email Address</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-envelope input-icon"></i>
+                    <input type="email" class="input-field" id="loginEmail" placeholder="tpsdhanvantari@gmail.com" value="tpsdhanvantari@gmail.com">
+                </div>
+            </div>
+            <div class="input-group">
+                <label class="input-label">Password</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-lock input-icon"></i>
+                    <input type="password" class="input-field" id="loginPassword" placeholder="Enter your password" value="123456">
+                </div>
+            </div>
+            <button class="btn-primary" onclick="handleLogin()">Sign In</button>
+        </div>
+        <div class="security-text"><i class="fas fa-shield-alt"></i> Secure authentication powered by session management</div>
+    </div>
+    <div id="appContainer" class="hidden">
+        <nav class="nav-header">
+            <div class="nav-top-row">
+                <div class="nav-email" id="userEmail">tpsdhanvantari@gmail.com</div>
+                <div class="nav-profile" id="userInitial">N</div>
+            </div>
+            <div style="display: flex; align-items: center;">
+                <button class="menu-btn" onclick="toggleMenu()"><i class="fas fa-ellipsis-v"></i></button>
+                <div class="nav-icons">
+                    <button class="nav-icon active" onclick="showSection('dashboard')" title="Home"><i class="fas fa-home"></i></button>
+                    <button class="nav-icon" onclick="showSection('patients')" title="Patients"><i class="fas fa-users"></i></button>
+                    <button class="nav-icon" onclick="showSection('appointments')" title="Appointments"><i class="fas fa-calendar-check"></i></button>
+                    <button class="nav-icon" onclick="showSection('herbs')" title="Herbs & Roots"><i class="fas fa-leaf"></i></button>
+                    <button class="nav-icon" onclick="showSection('reminders')" title="Reminders"><i class="fas fa-bell"></i></button>
+                </div>
+            </div>
+        </nav>
+        <div class="dropdown-menu" id="dropdownMenu">
+            <button class="menu-item"><i class="fas fa-cog"></i><span>Settings</span></button>
+            <button class="menu-item"><i class="fas fa-chart-bar"></i><span>Reports</span></button>
+            <div class="menu-divider"></div>
+            <button class="menu-item logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i><span>Logout</span></button>
+        </div>
+        <div id="dashboard" class="main-content active">
+            <div class="page-title"><i class="fas fa-chart-line"></i> Dashboard</div>
+            <div class="stat-cards">
+                <div class="stat-card blue"><div class="stat-icon blue"><i class="fas fa-users"></i></div><div class="stat-content"><div class="stat-label">Total Patients</div><div class="stat-value" id="statPatients">0</div></div></div>
+                <div class="stat-card green"><div class="stat-icon green"><i class="fas fa-calendar-check"></i></div><div class="stat-content"><div class="stat-label">Today's Appointments</div><div class="stat-value" id="statAppointments">0</div></div></div>
+                <div class="stat-card yellow"><div class="stat-icon yellow"><i class="fas fa-bell"></i></div><div class="stat-content"><div class="stat-label">Pending Reminders</div><div class="stat-value" id="statReminders">0</div></div></div>
+            </div>
+            <div class="page-title" style="font-size: 18px; margin-top: 20px;">Recent Appointments</div><div class="loading">Loading...</div>
+            <div class="page-title" style="font-size: 18px; margin-top: 20px;">Upcoming Reminders</div><div class="loading">Loading...</div>
+        </div>
+        <div id="patients" class="main-content">
+            <div class="page-header">
+                <div class="page-title"><i class="fas fa-users"></i> Patients</div>
+                <button class="btn-add"><i class="fas fa-plus"></i> Add Patient</button>
+            </div>
+            <div class="input-wrapper" style="position: relative; margin-bottom: 16px;">
+                <i class="fas fa-search input-icon"></i>
+                <input type="text" class="search-bar" placeholder="Search by name, phone, ID..." id="patientSearch">
+            </div>
+            <div class="filter-row">
+                <button class="filter-btn">All Countries</button>
+                <button class="filter-btn" style="background: #10B981; color: white; border-color: #10B981;"><i class="fas fa-file-csv"></i> CSV</button>
+                <button class="filter-btn" style="background: #3B82F6; color: white; border-color: #3B82F6;"><i class="fas fa-file-excel"></i> Excel</button>
+                <button class="filter-btn" style="background: #EF4444; color: white; border-color: #EF4444;"><i class="fas fa-file-pdf"></i> PDF</button>
+            </div>
+            <div id="patientsList"></div>
+        </div>
+        <div id="appointments" class="main-content">
+            <div class="page-title"><i class="fas fa-calendar-check"></i> Appointments</div>
+            <div class="input-wrapper" style="position: relative; margin-bottom: 16px;">
+                <i class="fas fa-search input-icon"></i>
+                <input type="text" class="search-bar" placeholder="Search by patient name or phone...">
+            </div>
+            <div class="empty-state">
+                <div class="empty-icon"><i class="fas fa-calendar-alt"></i></div>
+                <div class="empty-title">No appointments found</div>
+                <div class="empty-subtitle">Create your first appointment to get started</div>
+                <button class="btn-primary" style="max-width: 200px; margin: 0 auto;"><i class="fas fa-plus"></i> Add Appointment</button>
+            </div>
+            <button class="fab"><i class="fas fa-plus"></i></button>
+        </div>
+        <div id="herbs" class="main-content">
+            <div class="page-title"><i class="fas fa-leaf"></i> Herbs & Roots</div>
+            <div class="loading">Loading herbs & roots data...</div>
+        </div>
+        <div id="reminders" class="main-content">
+            <div class="page-title"><i class="fas fa-bell"></i> Reminders</div>
+            <div class="loading">Loading reminders...</div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script>
+        const API_BASE = window.location.origin + '/api';
+        let currentUser = null;
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            try {
+                const response = await axios.post(\`\${API_BASE}/auth/login\`, { email, password });
+                if (response.data.success) {
+                    currentUser = response.data.user;
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('appContainer').classList.remove('hidden');
+                    document.getElementById('userEmail').textContent = currentUser.email;
+                    document.getElementById('userInitial').textContent = currentUser.name.charAt(0).toUpperCase();
+                    loadDashboardData();
+                    loadPatients();
+                } else {
+                    alert('Login failed: ' + response.data.message);
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Login failed. Please try again.');
+            }
+        }
+        function handleLogout() {
+            document.getElementById('appContainer').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            currentUser = null;
+            toggleMenu();
+        }
+        function toggleMenu() {
+            const menu = document.getElementById('dropdownMenu');
+            menu.classList.toggle('show');
+        }
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('dropdownMenu');
+            const menuBtn = document.querySelector('.menu-btn');
+            if (!menu.contains(e.target) && !menuBtn.contains(e.target)) {
+                menu.classList.remove('show');
+            }
+        });
+        function showSection(sectionName) {
+            document.querySelectorAll('.main-content').forEach(section => section.classList.remove('active'));
+            document.getElementById(sectionName).classList.add('active');
+            document.querySelectorAll('.nav-icon').forEach(icon => icon.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+        async function loadDashboardData() {
+            try {
+                const response = await axios.get(\`\${API_BASE}/stats\`);
+                if (response.data.success) {
+                    const stats = response.data.data;
+                    document.getElementById('statPatients').textContent = stats.totalPatients || 0;
+                    document.getElementById('statAppointments').textContent = stats.todayAppointments || 0;
+                    document.getElementById('statReminders').textContent = stats.pendingReminders || 0;
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+        async function loadPatients() {
+            try {
+                const response = await axios.get(\`\${API_BASE}/patients\`);
+                if (response.data.success) {
+                    renderPatients(response.data.data);
+                }
+            } catch (error) {
+                console.error('Error loading patients:', error);
+            }
+        }
+        function renderPatients(patients) {
+            const container = document.getElementById('patientsList');
+            if (patients.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-title">No patients found</div></div>';
+                return;
+            }
+            container.innerHTML = patients.map(patient => \`
+                <div class="patient-card">
+                    <div class="patient-header">
+                        <div class="patient-name">\${patient.name}</div>
+                        <div class="patient-id">\${patient.patient_id || 'N/A'}</div>
+                    </div>
+                    <div class="patient-info">
+                        <div class="info-row"><i class="fas fa-user"></i> \${patient.age || 'N/A'} / \${patient.gender || 'N/A'}</div>
+                        <div class="info-row"><i class="fas fa-phone"></i> \${patient.phone || 'N/A'}</div>
+                        <div class="info-row"><i class="fas fa-flag"></i> \${patient.country || 'India'}</div>
+                        <div class="info-row"><i class="fas fa-calendar"></i> Added: \${formatDate(patient.created_at)}</div>
+                    </div>
+                    <div class="patient-actions">
+                        <button class="btn-action view" onclick="viewPatient(\${patient.id})"><i class="fas fa-eye"></i> View</button>
+                        <button class="btn-action edit" onclick="editPatient(\${patient.id})"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="btn-action delete" onclick="deletePatient(\${patient.id})"><i class="fas fa-trash"></i> Delete</button>
+                    </div>
+                </div>
+            \`).join('');
+        }
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+        function viewPatient(id) { alert('View patient ' + id + ' - Feature coming soon!'); }
+        function editPatient(id) { alert('Edit patient ' + id + ' - Feature coming soon!'); }
+        function deletePatient(id) { if (confirm('Are you sure you want to delete this patient?')) { alert('Delete patient ' + id + ' - Feature coming soon!'); } }
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/pwa-sw.js')
+                .then(reg => console.log('Service Worker registered'))
+                .catch(err => console.error('Service Worker registration failed:', err));
+        }
+    </script>
+</body>
+</html>`)
+})
 
-// Serve manifest.json
-app.get('/manifest.json', serveStatic({ path: './public/manifest.json' }))
+// PWA Manifest
+app.get('/pwa-manifest.json', (c) => {
+  return c.json({
+    "name": "TPS Dhanvantari Ayurveda",
+    "short_name": "TPS Ayurveda",
+    "description": "Mobile PWA for TPS Dhanvantari Ayurveda Clinic Management",
+    "start_url": "/pwa",
+    "display": "standalone",
+    "background_color": "#E8F5F0",
+    "theme_color": "#059669",
+    "orientation": "portrait-primary",
+    "icons": [
+      {
+        "src": "/static/ayurveda-logo.png",
+        "sizes": "192x192",
+        "type": "image/png",
+        "purpose": "any maskable"
+      }
+    ]
+  })
+})
 
-// Serve service worker  
-app.get('/sw.js', serveStatic({ path: './public/sw.js' }))
+// PWA Service Worker
+app.get('/pwa-sw.js', (c) => {
+  return c.text(`const CACHE_NAME = 'tps-ayurveda-pwa-v1';
+const urlsToCache = ['/pwa', '/pwa-manifest.json', 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css', 'https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js'];
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)).catch(err => console.log('Cache installation failed:', err)));
+  self.skipWaiting();
+});
+self.addEventListener('fetch', event => {
+  if (!event.request.url.startsWith('http')) return;
+  if (event.request.url.includes('/api/')) {
+    event.respondWith(fetch(event.request).then(response => {
+      const responseToCache = response.clone();
+      caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
+      return response;
+    }).catch(() => caches.match(event.request).then(response => response || new Response(JSON.stringify({ success: false, error: 'Offline', offline: true }), { headers: { 'Content-Type': 'application/json' } }))));
+    return;
+  }
+  event.respondWith(caches.match(event.request).then(response => {
+    if (response) return response;
+    return fetch(event.request).then(response => {
+      if (!response || response.status !== 200 || response.type !== 'basic') return response;
+      const responseToCache = response.clone();
+      caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
+      return response;
+    });
+  }));
+});
+self.addEventListener('activate', event => {
+  event.waitUntil(caches.keys().then(cacheNames => Promise.all(cacheNames.map(cacheName => {
+    if (cacheName !== CACHE_NAME) {
+      console.log('Deleting old cache:', cacheName);
+      return caches.delete(cacheName);
+    }
+  }))));
+  self.clients.claim();
+});`, 200, { 'Content-Type': 'application/javascript' })
+})
 
 export default app
