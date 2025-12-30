@@ -2014,82 +2014,6 @@ app.get('/', (c) => {
               height: 36px !important;
             }
             
-            /* ===== BOTTOM NAVIGATION (Clean & Modern) ===== */
-            .bottom-nav {
-              position: fixed !important;
-              bottom: 0 !important;
-              left: 0 !important;
-              right: 0 !important;
-              z-index: 50 !important;
-              background: white !important;
-              border-top: 1px solid #e5e7eb !important;
-              box-shadow: 0 -2px 12px rgba(0,0,0,0.08) !important;
-              display: none !important; /* Hidden on desktop */
-            }
-            
-            .bottom-nav-grid {
-              display: grid !important;
-              grid-template-columns: repeat(4, 1fr) !important;
-              gap: 0 !important;
-              padding: 0.5rem 0 !important;
-            }
-            
-            .bottom-nav-btn {
-              display: flex !important;
-              flex-direction: column !important;
-              align-items: center !important;
-              justify-content: center !important;
-              padding: 0.75rem 0.5rem !important;
-              font-size: 0.7rem !important;
-              color: #6b7280 !important;
-              text-decoration: none !important;
-              transition: all 0.2s ease !important;
-              border: none !important;
-              background: transparent !important;
-              cursor: pointer !important;
-              min-height: 70px !important;
-              width: 100% !important;
-            }
-            
-            .bottom-nav-btn:active {
-              transform: scale(0.95) !important;
-              background: #f3f4f6 !important;
-            }
-            
-            .bottom-nav-btn.active {
-              color: #059669 !important;
-              background: #f0fdf4 !important;
-            }
-            
-            .bottom-nav-btn i {
-              font-size: 1.75rem !important;
-              margin-bottom: 0.35rem !important;
-            }
-            
-            .bottom-nav-btn span {
-              font-size: 0.7rem !important;
-              font-weight: 500 !important;
-              text-align: center !important;
-              line-height: 1.2 !important;
-            }
-            
-            /* Show bottom nav on mobile only */
-            @media (max-width: 768px) {
-              .bottom-nav {
-                display: block !important;
-              }
-              
-              /* Add padding to main content to prevent overlap with bottom nav */
-              body {
-                padding-bottom: 80px !important;
-              }
-              
-              /* Ensure sections are visible */
-              .section {
-                min-height: calc(100vh - 180px) !important;
-              }
-            }
-            
             /* ===== MOBILE CARD LAYOUT ===== */
             .mobile-card {
               background: white !important;
@@ -3520,27 +3444,6 @@ app.get('/', (c) => {
         </div>
 
         <!-- Bottom Navigation (Mobile Only) -->
-        <nav class="bottom-nav">
-            <div class="bottom-nav-grid">
-                <button class="bottom-nav-btn" onclick="showSection('dashboard')" data-section="dashboard">
-                    <i class="fas fa-home"></i>
-                    <span>Home</span>
-                </button>
-                <button class="bottom-nav-btn" onclick="showSection('patients')" data-section="patients">
-                    <i class="fas fa-users"></i>
-                    <span>Patients</span>
-                </button>
-                <button class="bottom-nav-btn" onclick="showSection('herbs_routes')" data-section="herbs_routes">
-                    <i class="fas fa-leaf"></i>
-                    <span>Herbs</span>
-                </button>
-                <button class="bottom-nav-btn" onclick="showMobileMenu()">
-                    <i class="fas fa-bars"></i>
-                    <span>More</span>
-                </button>
-            </div>
-        </nav>
-
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/app.js"></script>
     </body>
