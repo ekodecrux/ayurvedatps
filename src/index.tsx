@@ -1927,91 +1927,445 @@ app.get('/', (c) => {
           }
         </script>
         <style>
-          /* ==================== CRITICAL MOBILE STYLES ==================== */
+          /* ==================== PROFESSIONAL MOBILE DESIGN ==================== */
+          
+          /* Base mobile improvements */
+          * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+          }
+          
+          /* Mobile-first responsive design */
           @media (max-width: 768px) {
-            /* Prevent horizontal overflow */
-            html, body {
+            /* Prevent any horizontal scroll */
+            html {
               overflow-x: hidden !important;
-              max-width: 100vw !important;
-              position: relative !important;
-            }
-            
-            /* Force containers to fit */
-            * {
-              max-width: 100vw !important;
-            }
-            
-            /* Make tables scrollable */
-            .overflow-x-auto {
-              overflow-x: auto !important;
-              -webkit-overflow-scrolling: touch !important;
-              display: block !important;
               width: 100% !important;
             }
             
-            /* Compact navigation */
-            .nav-btn span {
-              display: none !important;
+            body {
+              overflow-x: hidden !important;
+              width: 100% !important;
+              padding: 0 !important;
+              margin: 0 !important;
+            }
+            
+            /* ===== MOBILE NAVIGATION ===== */
+            nav {
+              position: sticky !important;
+              top: 0 !important;
+              z-index: 50 !important;
+              background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+              padding: 0.5rem 0.5rem !important;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+            }
+            
+            /* Logo and title */
+            nav > div:first-child {
+              display: flex !important;
+              justify-content: space-between !important;
+              align-items: center !important;
+              padding: 0.5rem !important;
+            }
+            
+            .logo-title h1 {
+              font-size: 0.9rem !important;
+              white-space: nowrap !important;
+              overflow: hidden !important;
+              text-overflow: ellipsis !important;
+              max-width: 180px !important;
+            }
+            
+            /* Navigation buttons - Bottom nav style */
+            nav > div:nth-child(2) {
+              display: grid !important;
+              grid-template-columns: repeat(6, 1fr) !important;
+              gap: 0.25rem !important;
+              padding: 0.5rem 0.25rem !important;
+              background: rgba(255,255,255,0.1) !important;
+              border-radius: 12px !important;
+              margin: 0.5rem !important;
             }
             
             .nav-btn {
-              padding: 0.5rem !important;
-              font-size: 0.75rem !important;
+              display: flex !important;
+              flex-direction: column !important;
+              align-items: center !important;
+              justify-content: center !important;
+              padding: 0.5rem 0.25rem !important;
+              font-size: 0.65rem !important;
+              min-height: 60px !important;
+              border-radius: 8px !important;
+              background: transparent !important;
+              transition: all 0.2s ease !important;
             }
             
-            /* Smaller text */
-            h1 { font-size: 1.25rem !important; }
-            h2 { font-size: 1.125rem !important; }
+            .nav-btn:hover,
+            .nav-btn:active {
+              background: rgba(255,255,255,0.2) !important;
+              transform: scale(0.95) !important;
+            }
             
-            /* Table responsiveness */
-            table {
-              font-size: 0.75rem !important;
+            .nav-btn i {
+              font-size: 1.25rem !important;
+              margin-right: 0 !important;
+              margin-bottom: 0.25rem !important;
+            }
+            
+            .nav-btn span {
               display: block !important;
-              overflow-x: auto !important;
+              font-size: 0.65rem !important;
+              text-align: center !important;
+              line-height: 1.1 !important;
               white-space: nowrap !important;
             }
             
-            table thead,
-            table tbody,
-            table tr {
-              display: table !important;
-              width: 100% !important;
+            /* Profile section */
+            nav .flex.items-center.space-x-4 {
+              display: flex !important;
+              align-items: center !important;
+              gap: 0.5rem !important;
             }
             
-            table th,
-            table td {
-              padding: 0.5rem !important;
+            nav .flex.items-center.space-x-4 > div:first-child {
               font-size: 0.75rem !important;
             }
             
-            /* Stack grids */
-            .grid {
-              grid-template-columns: 1fr !important;
+            nav img {
+              width: 32px !important;
+              height: 32px !important;
             }
             
-            /* Full width inputs */
-            input, select, textarea {
-              font-size: 1rem !important;
-              width: 100% !important;
-            }
-            
-            /* Reduce padding */
-            .p-8 { padding: 1rem !important; }
-            .p-6 { padding: 0.75rem !important; }
-            .px-8 { padding-left: 1rem !important; padding-right: 1rem !important; }
-            
-            /* Modal adjustments */
-            .fixed.inset-0 > div {
-              max-width: 95vw !important;
-              margin: 0.5rem !important;
+            /* ===== MAIN CONTENT AREA ===== */
+            main,
+            .section {
+              padding: 1rem 0.75rem !important;
+              max-width: 100% !important;
+              overflow-x: hidden !important;
             }
             
             /* Container */
             .container,
             .max-w-7xl,
-            .max-w-6xl {
-              padding-left: 1rem !important;
-              padding-right: 1rem !important;
+            .max-w-6xl,
+            .max-w-4xl {
+              max-width: 100% !important;
+              padding: 0 !important;
+              margin: 0 !important;
+            }
+            
+            /* ===== HEADERS ===== */
+            h1 {
+              font-size: 1.5rem !important;
+              line-height: 1.3 !important;
+              margin-bottom: 1rem !important;
+            }
+            
+            h2 {
+              font-size: 1.25rem !important;
+              line-height: 1.3 !important;
+              margin-bottom: 0.75rem !important;
+            }
+            
+            h3 {
+              font-size: 1.125rem !important;
+              line-height: 1.3 !important;
+            }
+            
+            /* ===== CARDS & WHITE BOXES ===== */
+            .bg-white,
+            .card {
+              margin-bottom: 1rem !important;
+              padding: 1rem !important;
+              border-radius: 12px !important;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+            }
+            
+            /* ===== GRIDS & STATS ===== */
+            .grid,
+            .grid-cols-2,
+            .grid-cols-3,
+            .grid-cols-4,
+            .md\\:grid-cols-2,
+            .md\\:grid-cols-3,
+            .lg\\:grid-cols-3,
+            .lg\\:grid-cols-4 {
+              grid-template-columns: 1fr !important;
+              gap: 1rem !important;
+            }
+            
+            /* Dashboard stats cards */
+            .bg-gradient-to-br {
+              padding: 1.25rem !important;
+              border-radius: 12px !important;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+            }
+            
+            /* ===== BUTTONS ===== */
+            button,
+            .btn {
+              padding: 0.75rem 1rem !important;
+              font-size: 0.9rem !important;
+              border-radius: 8px !important;
+              min-height: 44px !important;
+              font-weight: 500 !important;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+            }
+            
+            /* Primary buttons */
+            button[class*="bg-green"],
+            button[class*="bg-emerald"] {
+              background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+            }
+            
+            /* Button groups */
+            .flex.gap-2,
+            .flex.gap-4 {
+              flex-direction: column !important;
+              gap: 0.75rem !important;
+            }
+            
+            .flex.gap-2 button,
+            .flex.gap-4 button {
+              width: 100% !important;
+            }
+            
+            /* Action buttons in tables */
+            table button,
+            table .btn {
+              padding: 0.5rem 0.75rem !important;
+              font-size: 0.8rem !important;
+              min-height: 36px !important;
+            }
+            
+            /* ===== FORMS ===== */
+            input,
+            select,
+            textarea {
+              font-size: 16px !important; /* Prevent iOS zoom */
+              padding: 0.75rem !important;
+              border-radius: 8px !important;
+              border: 1.5px solid #d1d5db !important;
+              width: 100% !important;
+              min-height: 44px !important;
+            }
+            
+            input:focus,
+            select:focus,
+            textarea:focus {
+              border-color: #059669 !important;
+              outline: none !important;
+              box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1) !important;
+            }
+            
+            label {
+              font-size: 0.875rem !important;
+              font-weight: 500 !important;
+              margin-bottom: 0.5rem !important;
+              display: block !important;
+            }
+            
+            /* Form layout */
+            form .grid,
+            form .grid-cols-2 {
+              grid-template-columns: 1fr !important;
+              gap: 1rem !important;
+            }
+            
+            /* Search and filters */
+            .flex.items-center.gap-4,
+            .flex.items-center.space-x-4 {
+              flex-direction: column !important;
+              align-items: stretch !important;
+              gap: 0.75rem !important;
+            }
+            
+            /* Search input */
+            input[type="search"],
+            input[placeholder*="Search"] {
+              width: 100% !important;
+              margin-bottom: 0.75rem !important;
+            }
+            
+            /* ===== TABLES ===== */
+            .overflow-x-auto {
+              width: 100% !important;
+              overflow-x: auto !important;
+              -webkit-overflow-scrolling: touch !important;
+              border-radius: 12px !important;
+              margin: 1rem 0 !important;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+            }
+            
+            table {
+              width: 100% !important;
+              min-width: 800px !important;
+              font-size: 0.8rem !important;
+              border-collapse: separate !important;
+              border-spacing: 0 !important;
+            }
+            
+            table thead {
+              background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+              position: sticky !important;
+              top: 0 !important;
+              z-index: 10 !important;
+            }
+            
+            table th {
+              padding: 0.75rem 0.5rem !important;
+              font-size: 0.75rem !important;
+              font-weight: 600 !important;
+              text-transform: uppercase !important;
+              letter-spacing: 0.5px !important;
+              white-space: nowrap !important;
+              color: white !important;
+            }
+            
+            table td {
+              padding: 0.75rem 0.5rem !important;
+              font-size: 0.8rem !important;
+              border-bottom: 1px solid #f3f4f6 !important;
+              white-space: nowrap !important;
+            }
+            
+            table tbody tr {
+              background: white !important;
+              transition: background 0.2s ease !important;
+            }
+            
+            table tbody tr:hover {
+              background: #f9fafb !important;
+            }
+            
+            /* ===== MODALS ===== */
+            .fixed.inset-0 {
+              padding: 0 !important;
+              z-index: 100 !important;
+            }
+            
+            .fixed.inset-0 > div {
+              max-width: 100% !important;
+              max-height: 100vh !important;
+              margin: 0 !important;
+              border-radius: 0 !important;
+              height: 100vh !important;
+              overflow-y: auto !important;
+            }
+            
+            /* Modal header */
+            .fixed.inset-0 h2 {
+              position: sticky !important;
+              top: 0 !important;
+              background: white !important;
+              z-index: 10 !important;
+              padding: 1rem !important;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+            }
+            
+            /* Modal content */
+            .fixed.inset-0 .overflow-y-auto {
+              padding: 1rem !important;
+            }
+            
+            /* Modal buttons */
+            .fixed.inset-0 .flex.justify-end {
+              position: sticky !important;
+              bottom: 0 !important;
+              background: white !important;
+              padding: 1rem !important;
+              box-shadow: 0 -2px 8px rgba(0,0,0,0.1) !important;
+              flex-direction: column-reverse !important;
+              gap: 0.75rem !important;
+            }
+            
+            .fixed.inset-0 .flex.justify-end button {
+              width: 100% !important;
+            }
+            
+            /* ===== BADGES & PILLS ===== */
+            .inline-flex,
+            .badge,
+            span[class*="px-2"] {
+              font-size: 0.75rem !important;
+              padding: 0.375rem 0.75rem !important;
+              border-radius: 6px !important;
+            }
+            
+            /* ===== SPACING ===== */
+            .p-8 { padding: 1rem !important; }
+            .p-6 { padding: 1rem !important; }
+            .p-4 { padding: 0.75rem !important; }
+            .px-8 { padding-left: 1rem !important; padding-right: 1rem !important; }
+            .px-6 { padding-left: 1rem !important; padding-right: 1rem !important; }
+            .py-8 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+            .py-6 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+            
+            .gap-6 { gap: 1rem !important; }
+            .gap-4 { gap: 0.75rem !important; }
+            .space-x-4 > * + * { margin-left: 0.75rem !important; }
+            
+            .mb-6 { margin-bottom: 1rem !important; }
+            .mb-4 { margin-bottom: 0.75rem !important; }
+            
+            /* ===== EXPORT BUTTONS ===== */
+            div[class*="flex"] > button[class*="bg-green"],
+            div[class*="flex"] > button[class*="bg-red"] {
+              flex: 1 !important;
+              min-width: 0 !important;
+            }
+            
+            /* ===== LOADING & OVERLAYS ===== */
+            #loading-overlay {
+              z-index: 999 !important;
+            }
+            
+            /* ===== SCROLLBARS (WebKit) ===== */
+            .overflow-x-auto::-webkit-scrollbar {
+              height: 8px !important;
+            }
+            
+            .overflow-x-auto::-webkit-scrollbar-track {
+              background: #f1f5f9 !important;
+              border-radius: 4px !important;
+            }
+            
+            .overflow-x-auto::-webkit-scrollbar-thumb {
+              background: #059669 !important;
+              border-radius: 4px !important;
+            }
+            
+            /* ===== PROFILE DROPDOWN ===== */
+            #profile-dropdown {
+              right: 0.5rem !important;
+              left: auto !important;
+              min-width: 200px !important;
+              top: 100% !important;
+              margin-top: 0.5rem !important;
+            }
+          }
+          
+          /* Extra small devices (< 375px) */
+          @media (max-width: 375px) {
+            .nav-btn {
+              padding: 0.4rem 0.2rem !important;
+              min-height: 55px !important;
+            }
+            
+            .nav-btn span {
+              font-size: 0.6rem !important;
+            }
+            
+            .nav-btn i {
+              font-size: 1.1rem !important;
+            }
+            
+            table {
+              font-size: 0.75rem !important;
+            }
+            
+            button {
+              font-size: 0.85rem !important;
             }
           }
           
