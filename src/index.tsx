@@ -3761,4 +3761,13 @@ app.get('/', (c) => {
   `)
 })
 
+// PWA Mobile App Route
+app.get('/pwa', serveStatic({ path: './public/pwa.html' }))
+
+// Serve manifest.json
+app.get('/manifest.json', serveStatic({ path: './public/manifest.json' }))
+
+// Serve service worker  
+app.get('/sw.js', serveStatic({ path: './public/sw.js' }))
+
 export default app
