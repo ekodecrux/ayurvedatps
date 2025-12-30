@@ -2027,64 +2027,126 @@ app.get('/', (c) => {
               }
             }
             
-            /* Mobile Navigation Layout */
+            /* ===== MOBILE NAVIGATION - SIMPLE AND CLEAR ===== */
             
-            /* Hide desktop profile, show mobile elements */
+            /* Hide desktop profile */
             .desktop-profile {
               display: none !important;
             }
             
+            /* Show mobile elements */
             .mobile-settings-menu {
+              display: block !important;
+              width: 44px !important;
+              flex-shrink: 0 !important;
+            }
+            
+            .settings-menu-btn {
+              width: 44px !important;
+              height: 44px !important;
               display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
             }
             
             .mobile-profile {
-              display: flex !important;
+              display: block !important;
+              width: 44px !important;
+              flex-shrink: 0 !important;
             }
             
-            /* Horizontal navigation - compact on mobile */
+            /* Hide logo text on mobile */
+            .logo-text {
+              display: none !important;
+            }
+            
+            /* Mobile logo - hide completely to save space */
+            .mobile-logo {
+              display: none !important;
+            }
+            
+            /* Horizontal navigation - takes remaining space */
             .horizontal-nav {
+              display: flex !important;
               flex: 1 !important;
               overflow-x: auto !important;
               -webkit-overflow-scrolling: touch !important;
-              gap: 0.25rem !important;
-              padding: 0 0.5rem !important;
+              gap: 4px !important;
+              padding: 0 8px !important;
+              align-items: center !important;
             }
             
+            /* Hide scrollbar */
             .horizontal-nav::-webkit-scrollbar {
               display: none !important;
             }
             
-            /* Mobile nav buttons - show icons only */
+            /* Navigation buttons - icon only, large touch target */
             .nav-btn {
-              padding: 0.5rem 0.75rem !important;
-              white-space: nowrap !important;
-              font-size: 0.75rem !important;
+              min-width: 44px !important;
+              height: 44px !important;
+              padding: 0 !important;
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              flex-shrink: 0 !important;
+              border-radius: 8px !important;
             }
             
+            /* Show icons, hide text */
             .mobile-nav-icon {
               display: block !important;
-              font-size: 1.25rem !important;
+              font-size: 20px !important;
+              margin: 0 !important;
             }
             
             .mobile-nav-text {
               display: none !important;
             }
             
-            /* Logo - smaller on mobile */
-            .mobile-logo {
-              height: 32px !important;
-              width: 32px !important;
+            /* Profile icon styling */
+            #mobile-user-avatar-placeholder {
+              width: 36px !important;
+              height: 36px !important;
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              font-size: 16px !important;
             }
             
-            /* Settings menu dropdown */
+            /* Settings dropdown menu */
             .settings-menu-dropdown {
               background: rgba(5, 150, 105, 0.98) !important;
               border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+              width: 100% !important;
             }
             
             .settings-menu-dropdown.hidden {
               display: none !important;
+            }
+            
+            .mobile-menu-item {
+              display: flex !important;
+              align-items: center !important;
+              width: 100% !important;
+              padding: 12px 16px !important;
+              color: white !important;
+              text-align: left !important;
+              border: none !important;
+              background: transparent !important;
+              transition: background 0.2s !important;
+              font-size: 16px !important;
+              min-height: 48px !important;
+            }
+            
+            .mobile-menu-item:active {
+              background: rgba(255, 255, 255, 0.1) !important;
+            }
+            
+            .mobile-menu-item i {
+              width: 24px !important;
+              margin-right: 12px !important;
+              font-size: 18px !important;
             }
             
             .mobile-menu-item {
