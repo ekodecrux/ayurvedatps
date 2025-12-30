@@ -31,13 +31,20 @@ function updateUserUI() {
     document.getElementById('user-name').textContent = currentUser.name;
     document.getElementById('user-email').textContent = currentUser.email;
     
+    const initial = currentUser.name.charAt(0).toUpperCase();
+    
     if (currentUser.profile_picture) {
       document.getElementById('user-avatar').src = currentUser.profile_picture;
       document.getElementById('user-avatar').classList.remove('hidden');
       document.getElementById('user-avatar-placeholder').classList.add('hidden');
     } else {
-      const initial = currentUser.name.charAt(0).toUpperCase();
       document.getElementById('user-avatar-placeholder').textContent = initial;
+    }
+    
+    // Update mobile avatar
+    const mobileAvatar = document.getElementById('mobile-user-avatar-placeholder');
+    if (mobileAvatar) {
+      mobileAvatar.textContent = initial;
     }
   }
 }
@@ -344,6 +351,24 @@ function closeMobileMenu() {
     menu.style.opacity = '0';
     setTimeout(() => menu.remove(), 300);
   }
+}
+
+// New mobile menu functions for hamburger dropdown
+function toggleMobileMenu() {
+  const dropdown = document.getElementById('mobile-menu-dropdown');
+  if (dropdown) {
+    dropdown.classList.toggle('hidden');
+  }
+}
+
+function navigateToSection(sectionName) {
+  // Close the dropdown menu
+  const dropdown = document.getElementById('mobile-menu-dropdown');
+  if (dropdown) {
+    dropdown.classList.add('hidden');
+  }
+  // Navigate to section
+  showSection(sectionName);
 }
 
 function formatDate(dateString) {

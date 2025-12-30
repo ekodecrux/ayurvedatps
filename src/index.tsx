@@ -1954,6 +1954,19 @@ app.get('/', (c) => {
             .mobile-cards {
               display: none !important;
             }
+            
+            /* Desktop navigation - show desktop, hide mobile */
+            .desktop-nav {
+              display: flex !important;
+            }
+            
+            .mobile-nav {
+              display: none !important;
+            }
+            
+            .mobile-menu-dropdown {
+              display: none !important;
+            }
           }
           
           /* Mobile responsive design */
@@ -1996,37 +2009,56 @@ app.get('/', (c) => {
             
             /* Hide logo text on very small screens */
             @media (max-width: 400px) {
-              nav .text-xl {
+              nav .logo-text {
                 display: none !important;
               }
             }
             
-            .logo-title h1 {
+            /* Mobile Navigation - Show hamburger menu, hide desktop nav */
+            .desktop-nav {
+              display: none !important;
+            }
+            
+            .mobile-nav {
+              display: flex !important;
+            }
+            
+            /* Mobile menu dropdown */
+            .mobile-menu-dropdown {
+              background: rgba(5, 150, 105, 0.98) !important;
+              border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+            }
+            
+            .mobile-menu-dropdown.hidden {
+              display: none !important;
+            }
+            
+            .mobile-menu-item {
+              display: flex !important;
+              align-items: center !important;
+              width: 100% !important;
+              padding: 0.75rem 1rem !important;
+              color: white !important;
+              text-align: left !important;
+              border: none !important;
+              background: transparent !important;
+              transition: background 0.2s !important;
               font-size: 1rem !important;
-              color: #059669 !important;
-              font-weight: 700 !important;
-              white-space: nowrap !important;
-              overflow: hidden !important;
-              text-overflow: ellipsis !important;
-              max-width: 200px !important;
             }
             
-            /* Mobile navigation - make buttons smaller and scrollable */
-            nav .flex.items-center.space-x-4 {
-              overflow-x: auto !important;
-              -webkit-overflow-scrolling: touch !important;
-              flex-wrap: nowrap !important;
-              gap: 0.5rem !important;
+            .mobile-menu-item:hover,
+            .mobile-menu-item:active {
+              background: rgba(255, 255, 255, 0.1) !important;
             }
             
-            nav .nav-btn {
-              white-space: nowrap !important;
-              font-size: 0.75rem !important;
-              padding: 0.5rem 0.75rem !important;
+            .mobile-menu-item i {
+              width: 24px !important;
+              margin-right: 12px !important;
+              font-size: 1.1rem !important;
             }
             
-            nav .nav-btn i {
-              display: none !important; /* Hide icons on mobile to save space */
+            .mobile-menu-item span {
+              font-weight: 500 !important;
             }
             
             /* Profile section - simplified */
@@ -2571,11 +2603,14 @@ app.get('/', (c) => {
         <nav class="bg-gradient-to-r from-ayurveda-700 to-ayurveda-600 text-white shadow-lg sticky top-0 z-50">
             <div class="container mx-auto px-4 py-3">
                 <div class="flex items-center justify-between">
+                    <!-- Logo -->
                     <div class="flex items-center space-x-3">
                         <img src="/static/ayurveda-logo.png" alt="TPS Dhanvantri Ayurveda" class="h-10 w-10 object-contain">
-                        <span class="text-xl font-bold">TPS DHANVANTARI AYURVEDA</span>
+                        <span class="text-xl font-bold logo-text">TPS DHANVANTARI AYURVEDA</span>
                     </div>
-                    <div class="flex items-center space-x-4">
+                    
+                    <!-- Desktop Navigation -->
+                    <div class="desktop-nav flex items-center space-x-4">
                         <button onclick="showSection('dashboard')" class="nav-btn hover:bg-ayurveda-800 px-3 py-2 rounded transition">
                             <i class="fas fa-home mr-2"></i>Dashboard
                         </button>
@@ -2610,6 +2645,53 @@ app.get('/', (c) => {
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Mobile Navigation -->
+                    <div class="mobile-nav flex items-center space-x-3">
+                        <!-- Profile Icon -->
+                        <div id="mobile-user-avatar-placeholder" class="w-9 h-9 rounded-full bg-ayurveda-500 flex items-center justify-center font-bold text-sm">
+                            N
+                        </div>
+                        <!-- Hamburger Menu Button -->
+                        <button onclick="toggleMobileMenu()" class="mobile-menu-btn p-2 hover:bg-ayurveda-800 rounded transition">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mobile Dropdown Menu -->
+            <div id="mobile-menu-dropdown" class="mobile-menu-dropdown hidden">
+                <div class="container mx-auto px-4 py-2">
+                    <button onclick="navigateToSection('dashboard')" class="mobile-menu-item">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </button>
+                    <button onclick="navigateToSection('patients')" class="mobile-menu-item">
+                        <i class="fas fa-users"></i>
+                        <span>Patients</span>
+                    </button>
+                    <button onclick="navigateToSection('appointments')" class="mobile-menu-item">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Appointments</span>
+                    </button>
+                    <button onclick="navigateToSection('prescriptions')" class="mobile-menu-item">
+                        <i class="fas fa-leaf"></i>
+                        <span>Herbs & Roots</span>
+                    </button>
+                    <button onclick="navigateToSection('reminders')" class="mobile-menu-item">
+                        <i class="fas fa-bell"></i>
+                        <span>Reminders</span>
+                    </button>
+                    <button onclick="navigateToSection('settings')" class="mobile-menu-item">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </button>
+                    <div class="border-t border-ayurveda-500 my-2"></div>
+                    <button onclick="logout()" class="mobile-menu-item text-red-200">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </button>
                 </div>
             </div>
         </nav>
