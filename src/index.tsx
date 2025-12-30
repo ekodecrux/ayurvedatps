@@ -1879,10 +1879,7 @@ app.get('/login', (c) => {
 
             // Allow Enter key to submit
             document.getElementById('email').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') loginWithEmail();
-            });
-            document.getElementById('name').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') loginWithEmail();
+                if (e.key === 'Enter') loginWithPassword();
             });
         </script>
     </body>
@@ -1961,29 +1958,19 @@ app.get('/', (c) => {
           
           /* Mobile responsive design */
           @media (max-width: 768px) {
-            /* Prevent any horizontal scroll */
-            html {
+            /* Reset and simplify */
+            html, body {
               overflow-x: hidden !important;
-              width: 100% !important;
-            }
-            
-            body {
-              overflow-x: hidden !important;
-              width: 100% !important;
+              width: 100vw !important;
+              height: 100vh !important;
               margin: 0 !important;
-              padding-top: 70px !important; /* Space for fixed top nav */
-              padding-bottom: 80px !important; /* Space for fixed bottom nav */
-              padding-left: 0 !important;
-              padding-right: 0 !important;
+              padding: 0 !important;
             }
             
-            /* ===== MOBILE NAVIGATION (Simplified & Clean) ===== */
+            /* Top navigation - NOT fixed on mobile */
             nav {
-              position: fixed !important;
-              top: 0 !important;
-              left: 0 !important;
-              right: 0 !important;
-              z-index: 50 !important;
+              position: relative !important;
+              width: 100% !important;
               background: white !important;
               padding: 0.75rem 1rem !important;
               box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important;
@@ -2167,16 +2154,21 @@ app.get('/', (c) => {
             
             /* ===== MAIN CONTENT AREA ===== */
             main,
+            .container,
             .section {
+              display: block !important;
+              width: 100% !important;
               padding: 1rem !important;
-              max-width: 100% !important;
-              overflow-x: hidden !important;
-              min-height: 200px !important; /* Ensure sections have minimum height */
+              margin: 0 !important;
+              background: white !important;
+              min-height: 300px !important;
             }
             
-            /* Make sure dashboard section is visible */
+            /* Force dashboard to be visible */
             #dashboard-section {
               display: block !important;
+              visibility: visible !important;
+              opacity: 1 !important;
             }
             
             /* Container */
