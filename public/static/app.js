@@ -281,6 +281,12 @@ function showSection(sectionName) {
   document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
   document.getElementById(`${sectionName}-section`)?.classList.remove('hidden');
   
+  // Update bottom nav active state (mobile)
+  document.querySelectorAll('.bottom-nav-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  document.querySelector(`.bottom-nav-btn[data-section="${sectionName}"]`)?.classList.add('active');
+  
   switch(sectionName) {
     case 'dashboard': loadDashboard(); break;
     case 'patients': 
@@ -289,8 +295,54 @@ function showSection(sectionName) {
       break;
     case 'appointments': loadAppointments(); break;
     case 'prescriptions': loadHerbsRoutes(); break;
+    case 'herbs_routes': loadHerbsRoutes(); break; // Support both names
     case 'reminders': loadReminders(); break;
     case 'settings': loadSettings(); break;
+  }
+}
+
+// Mobile menu for "More" button
+function showMobileMenu() {
+  const menu = document.createElement('div');
+  menu.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end';
+  menu.innerHTML = `
+    <div class="bg-white w-full rounded-t-3xl p-6 space-y-3">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">More Options</h3>
+      <button onclick="showSection('appointments'); closeMobileMenu()" class="w-full flex items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg text-left">
+        <i class="fas fa-calendar text-xl text-blue-600 mr-3"></i>
+        <span class="font-medium">Appointments</span>
+      </button>
+      <button onclick="showSection('reminders'); closeMobileMenu()" class="w-full flex items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg text-left">
+        <i class="fas fa-bell text-xl text-yellow-600 mr-3"></i>
+        <span class="font-medium">Reminders</span>
+      </button>
+      <button onclick="showSection('settings'); closeMobileMenu()" class="w-full flex items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg text-left">
+        <i class="fas fa-cog text-xl text-gray-600 mr-3"></i>
+        <span class="font-medium">Settings</span>
+      </button>
+      <button onclick="logout(); closeMobileMenu()" class="w-full flex items-center p-4 bg-red-50 hover:bg-red-100 rounded-lg text-left">
+        <i class="fas fa-sign-out-alt text-xl text-red-600 mr-3"></i>
+        <span class="font-medium text-red-600">Logout</span>
+      </button>
+      <button onclick="closeMobileMenu()" class="w-full p-4 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium">
+        Cancel
+      </button>
+    </div>
+  `;
+  document.body.appendChild(menu);
+  
+  // Animate in
+  requestAnimationFrame(() => {
+    menu.style.transition = 'opacity 0.3s ease';
+    menu.style.opacity = '1';
+  });
+}
+
+function closeMobileMenu() {
+  const menu = document.querySelector('.fixed.inset-0.bg-black.bg-opacity-50');
+  if (menu) {
+    menu.style.opacity = '0';
+    setTimeout(() => menu.remove(), 300);
   }
 }
 

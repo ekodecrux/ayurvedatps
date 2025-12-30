@@ -1904,6 +1904,7 @@ app.get('/', (c) => {
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/styles.css" rel="stylesheet">
+        <link href="/static/mobile-fix.css" rel="stylesheet">
         <script>
           tailwind.config = {
             theme: {
@@ -1927,15 +1928,38 @@ app.get('/', (c) => {
           }
         </script>
         <style>
-          /* ==================== PROFESSIONAL MOBILE DESIGN ==================== */
+          /* ==================== MOBILE-FIRST CARD-BASED DESIGN ==================== */
           
-          /* Base mobile improvements */
+          /* Base improvements for all devices */
           * {
             -webkit-tap-highlight-color: transparent;
             -webkit-touch-callout: none;
+            box-sizing: border-box;
           }
           
-          /* Mobile-first responsive design */
+          /* Hide tables on mobile, show cards */
+          @media (max-width: 768px) {
+            .desktop-table {
+              display: none !important;
+            }
+            
+            .mobile-cards {
+              display: block !important;
+            }
+          }
+          
+          /* Hide cards on desktop, show tables */
+          @media (min-width: 769px) {
+            .desktop-table {
+              display: table !important;
+            }
+            
+            .mobile-cards {
+              display: none !important;
+            }
+          }
+          
+          /* Mobile responsive design */
           @media (max-width: 768px) {
             /* Prevent any horizontal scroll */
             html {
@@ -1950,90 +1974,185 @@ app.get('/', (c) => {
               margin: 0 !important;
             }
             
-            /* ===== MOBILE NAVIGATION ===== */
+            /* ===== MOBILE NAVIGATION (Simplified & Clean) ===== */
             nav {
-              position: sticky !important;
+              position: fixed !important;
               top: 0 !important;
+              left: 0 !important;
+              right: 0 !important;
               z-index: 50 !important;
-              background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
-              padding: 0.5rem 0.5rem !important;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+              background: white !important;
+              padding: 0.75rem 1rem !important;
+              box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important;
+              border-bottom: 1px solid #e5e7eb !important;
             }
             
-            /* Logo and title */
+            /* Top header with logo */
             nav > div:first-child {
               display: flex !important;
               justify-content: space-between !important;
               align-items: center !important;
-              padding: 0.5rem !important;
+              padding: 0 !important;
             }
             
             .logo-title h1 {
-              font-size: 0.9rem !important;
+              font-size: 1rem !important;
+              color: #059669 !important;
+              font-weight: 700 !important;
               white-space: nowrap !important;
               overflow: hidden !important;
               text-overflow: ellipsis !important;
-              max-width: 180px !important;
+              max-width: 200px !important;
             }
             
-            /* Navigation buttons - Bottom nav style */
+            /* Hide desktop nav buttons completely on mobile */
             nav > div:nth-child(2) {
+              display: none !important;
+            }
+            
+            /* Profile section - simplified */
+            nav .flex.items-center.space-x-4 {
+              gap: 0.5rem !important;
+            }
+            
+            nav .flex.items-center.space-x-4 > div:first-child {
+              display: none !important; /* Hide name, show only profile pic */
+            }
+            
+            nav img {
+              width: 36px !important;
+              height: 36px !important;
+            }
+            
+            /* Body padding to account for fixed nav */
+            body {
+              padding-top: 60px !important; /* Height of fixed nav */
+              padding-bottom: 80px !important; /* Height of bottom nav */
+            }
+            
+            /* ===== BOTTOM NAVIGATION (Clean & Modern) ===== */
+            .bottom-nav {
+              position: fixed !important;
+              bottom: 0 !important;
+              left: 0 !important;
+              right: 0 !important;
+              z-index: 50 !important;
+              background: white !important;
+              border-top: 1px solid #e5e7eb !important;
+              box-shadow: 0 -2px 12px rgba(0,0,0,0.08) !important;
               display: grid !important;
               grid-template-columns: repeat(6, 1fr) !important;
-              gap: 0.25rem !important;
-              padding: 0.5rem 0.25rem !important;
-              background: rgba(255,255,255,0.1) !important;
-              border-radius: 12px !important;
-              margin: 0.5rem !important;
+              gap: 0 !important;
+              padding: 0.5rem 0 !important;
             }
             
-            .nav-btn {
+            .bottom-nav-btn {
               display: flex !important;
               flex-direction: column !important;
               align-items: center !important;
               justify-content: center !important;
               padding: 0.5rem 0.25rem !important;
               font-size: 0.65rem !important;
-              min-height: 60px !important;
-              border-radius: 8px !important;
-              background: transparent !important;
+              color: #6b7280 !important;
+              text-decoration: none !important;
               transition: all 0.2s ease !important;
+              border: none !important;
+              background: transparent !important;
+              cursor: pointer !important;
+              min-height: 60px !important;
             }
             
-            .nav-btn:hover,
-            .nav-btn:active {
-              background: rgba(255,255,255,0.2) !important;
+            .bottom-nav-btn:active {
               transform: scale(0.95) !important;
+              background: #f3f4f6 !important;
             }
             
-            .nav-btn i {
-              font-size: 1.25rem !important;
-              margin-right: 0 !important;
+            .bottom-nav-btn.active {
+              color: #059669 !important;
+            }
+            
+            .bottom-nav-btn i {
+              font-size: 1.5rem !important;
               margin-bottom: 0.25rem !important;
             }
             
-            .nav-btn span {
-              display: block !important;
+            .bottom-nav-btn span {
               font-size: 0.65rem !important;
+              font-weight: 500 !important;
               text-align: center !important;
-              line-height: 1.1 !important;
-              white-space: nowrap !important;
+              line-height: 1 !important;
             }
             
-            /* Profile section */
-            nav .flex.items-center.space-x-4 {
+            /* ===== MOBILE CARD LAYOUT ===== */
+            .mobile-card {
+              background: white !important;
+              border-radius: 12px !important;
+              padding: 1rem !important;
+              margin-bottom: 0.75rem !important;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+              border: 1px solid #e5e7eb !important;
+            }
+            
+            .mobile-card-header {
               display: flex !important;
+              justify-content: space-between !important;
               align-items: center !important;
+              margin-bottom: 0.75rem !important;
+              padding-bottom: 0.75rem !important;
+              border-bottom: 1px solid #e5e7eb !important;
+            }
+            
+            .mobile-card-title {
+              font-size: 1rem !important;
+              font-weight: 600 !important;
+              color: #111827 !important;
+              margin: 0 !important;
+            }
+            
+            .mobile-card-subtitle {
+              font-size: 0.8rem !important;
+              color: #6b7280 !important;
+              margin-top: 0.25rem !important;
+            }
+            
+            .mobile-card-body {
+              display: grid !important;
               gap: 0.5rem !important;
             }
             
-            nav .flex.items-center.space-x-4 > div:first-child {
-              font-size: 0.75rem !important;
+            .mobile-card-row {
+              display: flex !important;
+              justify-content: space-between !important;
+              align-items: center !important;
+              padding: 0.5rem 0 !important;
+              font-size: 0.875rem !important;
             }
             
-            nav img {
-              width: 32px !important;
-              height: 32px !important;
+            .mobile-card-label {
+              font-weight: 500 !important;
+              color: #6b7280 !important;
+            }
+            
+            .mobile-card-value {
+              font-weight: 500 !important;
+              color: #111827 !important;
+              text-align: right !important;
+            }
+            
+            .mobile-card-actions {
+              display: flex !important;
+              gap: 0.5rem !important;
+              margin-top: 0.75rem !important;
+              padding-top: 0.75rem !important;
+              border-top: 1px solid #e5e7eb !important;
+            }
+            
+            .mobile-card-actions button {
+              flex: 1 !important;
+              padding: 0.5rem !important;
+              font-size: 0.8rem !important;
+              border-radius: 8px !important;
+              min-height: 40px !important;
             }
             
             /* ===== MAIN CONTENT AREA ===== */
@@ -3364,6 +3483,28 @@ app.get('/', (c) => {
                 <span class="text-lg">Loading...</span>
             </div>
         </div>
+
+        <!-- Bottom Navigation (Mobile Only) -->
+        <nav class="bottom-nav">
+            <div class="bottom-nav-grid">
+                <button class="bottom-nav-btn" onclick="showSection('dashboard')" data-section="dashboard">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </button>
+                <button class="bottom-nav-btn" onclick="showSection('patients')" data-section="patients">
+                    <i class="fas fa-users"></i>
+                    <span>Patients</span>
+                </button>
+                <button class="bottom-nav-btn" onclick="showSection('herbs_routes')" data-section="herbs_routes">
+                    <i class="fas fa-leaf"></i>
+                    <span>Herbs</span>
+                </button>
+                <button class="bottom-nav-btn" onclick="showMobileMenu()">
+                    <i class="fas fa-bars"></i>
+                    <span>More</span>
+                </button>
+            </div>
+        </nav>
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/app.js"></script>
