@@ -1967,22 +1967,38 @@ app.get('/', (c) => {
               padding: 0 !important;
             }
             
-            /* Top navigation - NOT fixed on mobile */
+            /* Top navigation - sticky and compact on mobile */
             nav {
-              position: relative !important;
+              position: sticky !important;
+              top: 0 !important;
               width: 100% !important;
-              background: white !important;
-              padding: 0.75rem 1rem !important;
-              box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important;
-              border-bottom: 1px solid #e5e7eb !important;
+              z-index: 50 !important;
             }
             
-            /* Top header with logo */
+            /* Reduce nav container padding */
+            nav .container {
+              padding: 0.5rem 0.75rem !important;
+            }
+            
+            /* Top header with logo - compact */
             nav > div:first-child {
               display: flex !important;
               justify-content: space-between !important;
               align-items: center !important;
               padding: 0 !important;
+            }
+            
+            /* Logo - smaller on mobile */
+            nav img {
+              height: 32px !important;
+              width: 32px !important;
+            }
+            
+            /* Hide logo text on very small screens */
+            @media (max-width: 400px) {
+              nav .text-xl {
+                display: none !important;
+              }
             }
             
             .logo-title h1 {
@@ -2025,6 +2041,32 @@ app.get('/', (c) => {
             nav img {
               width: 36px !important;
               height: 36px !important;
+            }
+            
+            /* Reduce main content padding on mobile */
+            .container.mx-auto {
+              padding-left: 0.75rem !important;
+              padding-right: 0.75rem !important;
+              padding-top: 1rem !important;
+              padding-bottom: 1rem !important;
+            }
+            
+            /* Compact dashboard cards on mobile */
+            #dashboard-section .bg-white {
+              padding: 1rem !important;
+            }
+            
+            #dashboard-section h2 {
+              font-size: 1.5rem !important;
+              margin-bottom: 1rem !important;
+            }
+            
+            #dashboard-section .text-3xl {
+              font-size: 1.75rem !important;
+            }
+            
+            #dashboard-section .text-4xl {
+              font-size: 2rem !important;
             }
             
             /* ===== MOBILE CARD LAYOUT ===== */
