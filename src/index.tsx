@@ -3902,17 +3902,19 @@ app.get('/pwa', (c) => {
                 <div class="stat-card green"><div class="stat-icon green"><i class="fas fa-calendar-check"></i></div><div class="stat-content"><div class="stat-label">Today's Appointments</div><div class="stat-value" id="statAppointments">0</div></div></div>
                 <div class="stat-card yellow"><div class="stat-icon yellow"><i class="fas fa-bell"></i></div><div class="stat-content"><div class="stat-label">Pending Reminders</div><div class="stat-value" id="statReminders">0</div></div></div>
             </div>
-            <div class="page-title" style="font-size: 18px; margin-top: 20px;">Recent Appointments</div><div class="loading">Loading...</div>
-            <div class="page-title" style="font-size: 18px; margin-top: 20px;">Upcoming Reminders</div><div class="loading">Loading...</div>
+            <div class="page-title" style="font-size: 18px; margin-top: 20px;">Recent Appointments</div>
+            <div id="recentAppointments"><div class="loading">Loading...</div></div>
+            <div class="page-title" style="font-size: 18px; margin-top: 20px;">Upcoming Reminders</div>
+            <div id="upcomingReminders"><div class="loading">Loading...</div></div>
         </div>
         <div id="patients" class="main-content">
             <div class="page-header">
                 <div class="page-title"><i class="fas fa-users"></i> Patients</div>
-                <button class="btn-add"><i class="fas fa-plus"></i> Add Patient</button>
+                <button class="btn-add" onclick="showPatientForm()"><i class="fas fa-plus"></i> Add Patient</button>
             </div>
             <div class="input-wrapper" style="position: relative; margin-bottom: 16px;">
                 <i class="fas fa-search input-icon"></i>
-                <input type="text" class="search-bar" placeholder="Search by name, phone, ID..." id="patientSearch">
+                <input type="text" class="search-bar" placeholder="Search by name, phone, ID..." id="patientSearch" oninput="searchPatients()">
             </div>
             <div class="filter-row">
                 <button class="filter-btn">All Countries</button>
@@ -3920,142 +3922,35 @@ app.get('/pwa', (c) => {
                 <button class="filter-btn" style="background: #3B82F6; color: white; border-color: #3B82F6;"><i class="fas fa-file-excel"></i> Excel</button>
                 <button class="filter-btn" style="background: #EF4444; color: white; border-color: #EF4444;"><i class="fas fa-file-pdf"></i> PDF</button>
             </div>
-            <div id="patientsList"></div>
+            <div id="patientsList"><div class="loading">Loading patients...</div></div>
         </div>
         <div id="appointments" class="main-content">
-            <div class="page-title"><i class="fas fa-calendar-check"></i> Appointments</div>
+            <div class="page-header">
+                <div class="page-title"><i class="fas fa-calendar-check"></i> Appointments</div>
+                <button class="btn-add" onclick="showAppointmentForm()"><i class="fas fa-plus"></i> Add</button>
+            </div>
             <div class="input-wrapper" style="position: relative; margin-bottom: 16px;">
                 <i class="fas fa-search input-icon"></i>
                 <input type="text" class="search-bar" placeholder="Search by patient name or phone...">
             </div>
-            <div class="empty-state">
-                <div class="empty-icon"><i class="fas fa-calendar-alt"></i></div>
-                <div class="empty-title">No appointments found</div>
-                <div class="empty-subtitle">Create your first appointment to get started</div>
-                <button class="btn-primary" style="max-width: 200px; margin: 0 auto;"><i class="fas fa-plus"></i> Add Appointment</button>
-            </div>
-            <button class="fab"><i class="fas fa-plus"></i></button>
+            <div id="appointmentsList"><div class="loading">Loading appointments...</div></div>
+            <button class="fab" onclick="showAppointmentForm()"><i class="fas fa-plus"></i></button>
         </div>
         <div id="herbs" class="main-content">
-            <div class="page-title"><i class="fas fa-leaf"></i> Herbs & Roots</div>
-            <div class="loading">Loading herbs & roots data...</div>
+            <div class="page-header">
+                <div class="page-title"><i class="fas fa-leaf"></i> Herbs & Roots</div>
+            </div>
+            <div id="herbsList"><div class="loading">Loading herbs & roots...</div></div>
         </div>
         <div id="reminders" class="main-content">
-            <div class="page-title"><i class="fas fa-bell"></i> Reminders</div>
-            <div class="loading">Loading reminders...</div>
+            <div class="page-header">
+                <div class="page-title"><i class="fas fa-bell"></i> Reminders</div>
+            </div>
+            <div id="remindersList"><div class="loading">Loading reminders...</div></div>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-    <script>
-        const API_BASE = window.location.origin + '/api';
-        let currentUser = null;
-        async function handleLogin() {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            try {
-                const response = await axios.post(\`\${API_BASE}/auth/login\`, { email, password });
-                if (response.data.success) {
-                    currentUser = response.data.user;
-                    document.getElementById('loginScreen').classList.add('hidden');
-                    document.getElementById('appContainer').classList.remove('hidden');
-                    document.getElementById('userEmail').textContent = currentUser.email;
-                    document.getElementById('userInitial').textContent = currentUser.name.charAt(0).toUpperCase();
-                    loadDashboardData();
-                    loadPatients();
-                } else {
-                    alert('Login failed: ' + response.data.message);
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                alert('Login failed. Please try again.');
-            }
-        }
-        function handleLogout() {
-            document.getElementById('appContainer').classList.add('hidden');
-            document.getElementById('loginScreen').classList.remove('hidden');
-            currentUser = null;
-            toggleMenu();
-        }
-        function toggleMenu() {
-            const menu = document.getElementById('dropdownMenu');
-            menu.classList.toggle('show');
-        }
-        document.addEventListener('click', (e) => {
-            const menu = document.getElementById('dropdownMenu');
-            const menuBtn = document.querySelector('.menu-btn');
-            if (!menu.contains(e.target) && !menuBtn.contains(e.target)) {
-                menu.classList.remove('show');
-            }
-        });
-        function showSection(sectionName) {
-            document.querySelectorAll('.main-content').forEach(section => section.classList.remove('active'));
-            document.getElementById(sectionName).classList.add('active');
-            document.querySelectorAll('.nav-icon').forEach(icon => icon.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-        }
-        async function loadDashboardData() {
-            try {
-                const response = await axios.get(\`\${API_BASE}/stats\`);
-                if (response.data.success) {
-                    const stats = response.data.data;
-                    document.getElementById('statPatients').textContent = stats.totalPatients || 0;
-                    document.getElementById('statAppointments').textContent = stats.todayAppointments || 0;
-                    document.getElementById('statReminders').textContent = stats.pendingReminders || 0;
-                }
-            } catch (error) {
-                console.error('Error loading dashboard data:', error);
-            }
-        }
-        async function loadPatients() {
-            try {
-                const response = await axios.get(\`\${API_BASE}/patients\`);
-                if (response.data.success) {
-                    renderPatients(response.data.data);
-                }
-            } catch (error) {
-                console.error('Error loading patients:', error);
-            }
-        }
-        function renderPatients(patients) {
-            const container = document.getElementById('patientsList');
-            if (patients.length === 0) {
-                container.innerHTML = '<div class="empty-state"><div class="empty-title">No patients found</div></div>';
-                return;
-            }
-            container.innerHTML = patients.map(patient => \`
-                <div class="patient-card">
-                    <div class="patient-header">
-                        <div class="patient-name">\${patient.name}</div>
-                        <div class="patient-id">\${patient.patient_id || 'N/A'}</div>
-                    </div>
-                    <div class="patient-info">
-                        <div class="info-row"><i class="fas fa-user"></i> \${patient.age || 'N/A'} / \${patient.gender || 'N/A'}</div>
-                        <div class="info-row"><i class="fas fa-phone"></i> \${patient.phone || 'N/A'}</div>
-                        <div class="info-row"><i class="fas fa-flag"></i> \${patient.country || 'India'}</div>
-                        <div class="info-row"><i class="fas fa-calendar"></i> Added: \${formatDate(patient.created_at)}</div>
-                    </div>
-                    <div class="patient-actions">
-                        <button class="btn-action view" onclick="viewPatient(\${patient.id})"><i class="fas fa-eye"></i> View</button>
-                        <button class="btn-action edit" onclick="editPatient(\${patient.id})"><i class="fas fa-edit"></i> Edit</button>
-                        <button class="btn-action delete" onclick="deletePatient(\${patient.id})"><i class="fas fa-trash"></i> Delete</button>
-                    </div>
-                </div>
-            \`).join('');
-        }
-        function formatDate(dateString) {
-            if (!dateString) return 'N/A';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-        }
-        function viewPatient(id) { alert('View patient ' + id + ' - Feature coming soon!'); }
-        function editPatient(id) { alert('Edit patient ' + id + ' - Feature coming soon!'); }
-        function deletePatient(id) { if (confirm('Are you sure you want to delete this patient?')) { alert('Delete patient ' + id + ' - Feature coming soon!'); } }
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/pwa-sw.js')
-                .then(reg => console.log('Service Worker registered'))
-                .catch(err => console.error('Service Worker registration failed:', err));
-        }
-    </script>
+    <script src="/static/pwa-app.js"></script>
 </body>
 </html>`)
 })
