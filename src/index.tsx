@@ -2040,8 +2040,12 @@ app.get('/', (c) => {
               background: white !important;
               border-top: 1px solid #e5e7eb !important;
               box-shadow: 0 -2px 12px rgba(0,0,0,0.08) !important;
+              display: none !important; /* Hidden on desktop */
+            }
+            
+            .bottom-nav-grid {
               display: grid !important;
-              grid-template-columns: repeat(6, 1fr) !important;
+              grid-template-columns: repeat(4, 1fr) !important;
               gap: 0 !important;
               padding: 0.5rem 0 !important;
             }
@@ -2051,15 +2055,16 @@ app.get('/', (c) => {
               flex-direction: column !important;
               align-items: center !important;
               justify-content: center !important;
-              padding: 0.5rem 0.25rem !important;
-              font-size: 0.65rem !important;
+              padding: 0.75rem 0.5rem !important;
+              font-size: 0.7rem !important;
               color: #6b7280 !important;
               text-decoration: none !important;
               transition: all 0.2s ease !important;
               border: none !important;
               background: transparent !important;
               cursor: pointer !important;
-              min-height: 60px !important;
+              min-height: 70px !important;
+              width: 100% !important;
             }
             
             .bottom-nav-btn:active {
@@ -2069,18 +2074,26 @@ app.get('/', (c) => {
             
             .bottom-nav-btn.active {
               color: #059669 !important;
+              background: #f0fdf4 !important;
             }
             
             .bottom-nav-btn i {
-              font-size: 1.5rem !important;
-              margin-bottom: 0.25rem !important;
+              font-size: 1.75rem !important;
+              margin-bottom: 0.35rem !important;
             }
             
             .bottom-nav-btn span {
-              font-size: 0.65rem !important;
+              font-size: 0.7rem !important;
               font-weight: 500 !important;
               text-align: center !important;
-              line-height: 1 !important;
+              line-height: 1.2 !important;
+            }
+            
+            /* Show bottom nav on mobile only */
+            @media (max-width: 768px) {
+              .bottom-nav {
+                display: block !important;
+              }
             }
             
             /* ===== MOBILE CARD LAYOUT ===== */
@@ -2696,7 +2709,8 @@ app.get('/', (c) => {
                         </button>
                     </div>
                     
-                    <div class="overflow-x-auto">
+                    <!-- Desktop Table View -->
+                    <div class="overflow-x-auto hidden md:block">
                         <table class="w-full">
                             <thead class="bg-gray-100">
                                 <tr>
@@ -2713,6 +2727,11 @@ app.get('/', (c) => {
                                 <tr><td colspan="7" class="text-center py-4">Loading...</td></tr>
                             </tbody>
                         </table>
+                    </div>
+                    
+                    <!-- Mobile Card View -->
+                    <div id="patients-mobile-cards" class="block md:hidden space-y-3">
+                        <p class="text-center text-gray-500 py-4">Loading...</p>
                     </div>
                 </div>
             </div>
@@ -2778,7 +2797,8 @@ app.get('/', (c) => {
                         </button>
                     </div>
                     
-                    <div class="overflow-x-auto">
+                    <!--  Desktop Table View -->
+                    <div class="overflow-x-auto hidden md:block">
                         <table class="w-full">
                             <thead class="bg-gray-100">
                                 <tr>
@@ -2798,6 +2818,11 @@ app.get('/', (c) => {
                                 <tr><td colspan="10" class="text-center py-4">Loading...</td></tr>
                             </tbody>
                         </table>
+                    </div>
+                    
+                    <!-- Mobile Card View -->
+                    <div id="prescriptions-mobile-cards" class="block md:hidden space-y-3">
+                        <p class="text-center text-gray-500 py-4">Loading...</p>
                     </div>
                 </div>
             </div>

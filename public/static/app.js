@@ -450,7 +450,8 @@ async function loadPatients() {
 }
 
 function renderPatients() {
-  const html = currentPatients.map(p => `
+  // Desktop table view
+  const tableHtml = currentPatients.map(p => `
     <tr class="hover:bg-gray-50">
       <td class="px-6 py-4 border-b">${p.patient_id || 'N/A'}</td>
       <td class="px-6 py-4 border-b font-medium">${p.name}</td>
@@ -466,7 +467,46 @@ function renderPatients() {
     </tr>
   `).join('') || '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No patients found</td></tr>';
   
-  document.getElementById('patients-table-body').innerHTML = html;
+  document.getElementById('patients-table-body').innerHTML = tableHtml;
+  
+  // Mobile card view
+  const cardsHtml = currentPatients.map(p => `
+    <div class="mobile-card">
+      <div class="mobile-card-header">
+        <div>
+          <h3 class="mobile-card-title">${p.patient_id || 'N/A'} - ${p.name}</h3>
+          <p class="mobile-card-subtitle">${p.age || 'N/A'} years | ${p.gender || 'N/A'} | ${p.country_code || ''} ${p.phone}</p>
+        </div>
+      </div>
+      <div class="mobile-card-body">
+        <div class="mobile-card-row">
+          <span class="mobile-card-label">Country:</span>
+          <span class="mobile-card-value">${p.country || 'N/A'}</span>
+        </div>
+        <div class="mobile-card-row">
+          <span class="mobile-card-label">Email:</span>
+          <span class="mobile-card-value">${p.email || 'N/A'}</span>
+        </div>
+        <div class="mobile-card-row">
+          <span class="mobile-card-label">Registered:</span>
+          <span class="mobile-card-value">${formatDate(p.created_at)}</span>
+        </div>
+      </div>
+      <div class="mobile-card-actions">
+        <button onclick="viewPatient(${p.id})" class="bg-blue-500 text-white">
+          <i class="fas fa-eye mr-1"></i> View
+        </button>
+        <button onclick="editPatient(${p.id})" class="bg-green-500 text-white">
+          <i class="fas fa-edit mr-1"></i> Edit
+        </button>
+        <button onclick="deletePatient(${p.id})" class="bg-red-500 text-white">
+          <i class="fas fa-trash mr-1"></i> Delete
+        </button>
+      </div>
+    </div>
+  `).join('') || '<p class="text-center text-gray-500 py-4">No patients found</p>';
+  
+  document.getElementById('patients-mobile-cards').innerHTML = cardsHtml;
 }
 
 // Country search and selection functions
@@ -1209,7 +1249,8 @@ async function loadHerbsRoutes() {
 }
 
 function renderHerbsRoutes() {
-  const html = currentHerbsRoutes.map(hr => {
+  // Desktop table view
+  const tableHtml = currentHerbsRoutes.map(hr => {
     return `
     <tr class="hover:bg-gray-50">
       <td class="px-6 py-4 border-b">${formatDate(hr.given_date || hr.created_at)}</td>
@@ -1242,7 +1283,53 @@ function renderHerbsRoutes() {
     </tr>
   `}).join('') || '<tr><td colspan="10" class="px-6 py-4 text-center text-gray-500">No records found</td></tr>';
   
-  document.getElementById('prescriptions-table-body').innerHTML = html;
+  document.getElementById('prescriptions-table-body').innerHTML = tableHtml;
+  
+  // Mobile card view
+  const cardsHtml = currentHerbsRoutes.map(hr => `
+    <div class="mobile-card">
+      <div class="mobile-card-header">
+        <div>
+          <h3 class="mobile-card-title">${hr.patient_id || 'N/A'} - ${hr.patient_name}</h3>
+          <p class="mobile-card-subtitle">${hr.age || 'N/A'} years | ${hr.gender || 'N/A'} | ${hr.patient_phone || 'N/A'}</p>
+        </div>
+        <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+          ${hr.active_course_months || 0} / ${hr.course || 0}
+        </span>
+      </div>
+      <div class="mobile-card-body">
+        <div class="mobile-card-row">
+          <span class="mobile-card-label">Given Date:</span>
+          <span class="mobile-card-value">${formatDate(hr.given_date || hr.created_at)}</span>
+        </div>
+        <div class="mobile-card-row">
+          <span class="mobile-card-label">Entire Course:</span>
+          <span class="mobile-card-value">${hr.course || 0} months</span>
+        </div>
+        <div class="mobile-card-row">
+          <span class="mobile-card-label">Completed:</span>
+          <span class="mobile-card-value">${hr.active_course_months || 0} months</span>
+        </div>
+        <div class="mobile-card-row">
+          <span class="mobile-card-label">Next Follow-up:</span>
+          <span class="mobile-card-value">${formatDate(hr.follow_up_date || hr.next_followup_date)}</span>
+        </div>
+      </div>
+      <div class="mobile-card-actions">
+        <button onclick="viewHerbsRoutes(${hr.id})" class="bg-blue-500 text-white">
+          <i class="fas fa-eye mr-1"></i> View
+        </button>
+        <button onclick="editHerbsRoutes(${hr.id})" class="bg-green-500 text-white">
+          <i class="fas fa-edit mr-1"></i> Edit
+        </button>
+        <button onclick="printHerbsRoutes(${hr.id})" class="bg-purple-500 text-white">
+          <i class="fas fa-print mr-1"></i> Print
+        </button>
+      </div>
+    </div>
+  `).join('') || '<p class="text-center text-gray-500 py-4">No records found</p>';
+  
+  document.getElementById('prescriptions-mobile-cards').innerHTML = cardsHtml;
 }
 
 function showHerbsRoutesModal() {
