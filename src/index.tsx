@@ -1995,9 +1995,22 @@ app.get('/', (c) => {
               max-width: 200px !important;
             }
             
-            /* Hide desktop nav buttons completely on mobile */
-            nav > div:nth-child(2) {
-              display: none !important;
+            /* Mobile navigation - make buttons smaller and scrollable */
+            nav .flex.items-center.space-x-4 {
+              overflow-x: auto !important;
+              -webkit-overflow-scrolling: touch !important;
+              flex-wrap: nowrap !important;
+              gap: 0.5rem !important;
+            }
+            
+            nav .nav-btn {
+              white-space: nowrap !important;
+              font-size: 0.75rem !important;
+              padding: 0.5rem 0.75rem !important;
+            }
+            
+            nav .nav-btn i {
+              display: none !important; /* Hide icons on mobile to save space */
             }
             
             /* Profile section - simplified */
