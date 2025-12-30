@@ -2168,9 +2168,15 @@ app.get('/', (c) => {
             /* ===== MAIN CONTENT AREA ===== */
             main,
             .section {
-              padding: 1rem 0.75rem !important;
+              padding: 1rem !important;
               max-width: 100% !important;
               overflow-x: hidden !important;
+              min-height: 200px !important; /* Ensure sections have minimum height */
+            }
+            
+            /* Make sure dashboard section is visible */
+            #dashboard-section {
+              display: block !important;
             }
             
             /* Container */
@@ -2179,8 +2185,13 @@ app.get('/', (c) => {
             .max-w-6xl,
             .max-w-4xl {
               max-width: 100% !important;
-              padding: 0 !important;
+              padding: 1rem !important;
               margin: 0 !important;
+            }
+            
+            /* Ensure main content wrapper has proper spacing */
+            .container.mx-auto {
+              padding: 1rem !important;
             }
             
             /* ===== HEADERS ===== */
