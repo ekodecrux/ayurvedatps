@@ -353,6 +353,14 @@ function closeMobileMenu() {
   }
 }
 
+// Settings menu functions (3-dot menu on left)
+function toggleSettingsMenu() {
+  const dropdown = document.getElementById('settings-menu-dropdown');
+  if (dropdown) {
+    dropdown.classList.toggle('hidden');
+  }
+}
+
 // New mobile menu functions for hamburger dropdown
 function toggleMobileMenu() {
   const dropdown = document.getElementById('mobile-menu-dropdown');
@@ -362,11 +370,17 @@ function toggleMobileMenu() {
 }
 
 function navigateToSection(sectionName) {
-  // Close the dropdown menu
-  const dropdown = document.getElementById('mobile-menu-dropdown');
-  if (dropdown) {
-    dropdown.classList.add('hidden');
+  // Close any open dropdowns
+  const settingsDropdown = document.getElementById('settings-menu-dropdown');
+  if (settingsDropdown) {
+    settingsDropdown.classList.add('hidden');
   }
+  
+  const mobileDropdown = document.getElementById('mobile-menu-dropdown');
+  if (mobileDropdown) {
+    mobileDropdown.classList.add('hidden');
+  }
+  
   // Navigate to section
   showSection(sectionName);
 }
