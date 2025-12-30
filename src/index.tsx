@@ -1970,8 +1970,11 @@ app.get('/', (c) => {
             body {
               overflow-x: hidden !important;
               width: 100% !important;
-              padding: 0 !important;
               margin: 0 !important;
+              padding-top: 70px !important; /* Space for fixed top nav */
+              padding-bottom: 80px !important; /* Space for fixed bottom nav */
+              padding-left: 0 !important;
+              padding-right: 0 !important;
             }
             
             /* ===== MOBILE NAVIGATION (Simplified & Clean) ===== */
@@ -2022,12 +2025,6 @@ app.get('/', (c) => {
             nav img {
               width: 36px !important;
               height: 36px !important;
-            }
-            
-            /* Body padding to account for fixed nav */
-            body {
-              padding-top: 60px !important; /* Height of fixed nav */
-              padding-bottom: 80px !important; /* Height of bottom nav */
             }
             
             /* ===== BOTTOM NAVIGATION (Clean & Modern) ===== */
