@@ -2078,6 +2078,16 @@ app.get('/', (c) => {
               .bottom-nav {
                 display: block !important;
               }
+              
+              /* Add padding to main content to prevent overlap with bottom nav */
+              body {
+                padding-bottom: 80px !important;
+              }
+              
+              /* Ensure sections are visible */
+              .section {
+                min-height: calc(100vh - 180px) !important;
+              }
             }
             
             /* ===== MOBILE CARD LAYOUT ===== */
