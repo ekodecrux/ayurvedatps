@@ -610,49 +610,155 @@ function showPatientForm(patient = null) {
     const isEdit = !!patient;
     const modal = `
         <div class="modal-overlay" onclick="closeModal()">
-            <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
                 <div class="modal-header">
                     <h3><i class="fas fa-user-plus"></i> ${isEdit ? 'Edit' : 'Add'} Patient</h3>
                     <button onclick="closeModal()" class="modal-close"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="modal-body">
                     <form id="patientForm" onsubmit="savePatient(event, ${isEdit ? patient.id : 'null'})">
+                        <!-- Personal Information -->
+                        <h4 style="margin: 0 0 16px 0; color: #059669; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-user"></i> Personal Information
+                        </h4>
+                        
                         <div class="form-group">
-                            <label>Name *</label>
-                            <input type="text" name="name" value="${patient?.name || ''}" required>
+                            <label>Full Name *</label>
+                            <input type="text" name="name" value="${patient?.name || ''}" placeholder="Enter full name" required>
                         </div>
+                        
                         <div class="form-row">
                             <div class="form-group">
-                                <label>Age</label>
-                                <input type="number" name="age" value="${patient?.age || ''}">
+                                <label>Date of Birth</label>
+                                <input type="date" name="date_of_birth" value="${patient?.date_of_birth || ''}">
                             </div>
+                            <div class="form-group">
+                                <label>Age</label>
+                                <input type="number" name="age" value="${patient?.age || ''}" placeholder="Age">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
                             <div class="form-group">
                                 <label>Gender</label>
                                 <select name="gender">
-                                    <option value="">Select</option>
+                                    <option value="">Select Gender</option>
                                     <option value="Male" ${patient?.gender === 'Male' ? 'selected' : ''}>Male</option>
                                     <option value="Female" ${patient?.gender === 'Female' ? 'selected' : ''}>Female</option>
                                     <option value="Other" ${patient?.gender === 'Other' ? 'selected' : ''}>Other</option>
                                 </select>
                             </div>
+                            <div class="form-group">
+                                <label>Blood Group</label>
+                                <select name="blood_group">
+                                    <option value="">Select Blood Group</option>
+                                    <option value="A+" ${patient?.blood_group === 'A+' ? 'selected' : ''}>A+</option>
+                                    <option value="A-" ${patient?.blood_group === 'A-' ? 'selected' : ''}>A-</option>
+                                    <option value="B+" ${patient?.blood_group === 'B+' ? 'selected' : ''}>B+</option>
+                                    <option value="B-" ${patient?.blood_group === 'B-' ? 'selected' : ''}>B-</option>
+                                    <option value="O+" ${patient?.blood_group === 'O+' ? 'selected' : ''}>O+</option>
+                                    <option value="O-" ${patient?.blood_group === 'O-' ? 'selected' : ''}>O-</option>
+                                    <option value="AB+" ${patient?.blood_group === 'AB+' ? 'selected' : ''}>AB+</option>
+                                    <option value="AB-" ${patient?.blood_group === 'AB-' ? 'selected' : ''}>AB-</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label>Phone *</label>
-                            <input type="tel" name="phone" value="${patient?.phone || ''}" required>
+                        
+                        <!-- Contact Information -->
+                        <h4 style="margin: 24px 0 16px 0; color: #059669; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-phone"></i> Contact Information
+                        </h4>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Phone *</label>
+                                <input type="tel" name="phone" value="${patient?.phone || ''}" placeholder="+91-XXXXXXXXXX" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Alternate Phone</label>
+                                <input type="tel" name="alternate_phone" value="${patient?.alternate_phone || ''}" placeholder="+91-XXXXXXXXXX">
+                            </div>
                         </div>
+                        
                         <div class="form-group">
                             <label>Email</label>
-                            <input type="email" name="email" value="${patient?.email || ''}">
+                            <input type="email" name="email" value="${patient?.email || ''}" placeholder="email@example.com">
                         </div>
-                        <div class="form-group">
-                            <label>Country</label>
-                            <input type="text" name="country" value="${patient?.country || 'India'}">
-                        </div>
+                        
+                        <!-- Address Information -->
+                        <h4 style="margin: 24px 0 16px 0; color: #059669; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-map-marker-alt"></i> Address Information
+                        </h4>
+                        
                         <div class="form-group">
                             <label>Address</label>
-                            <textarea name="address" rows="3">${patient?.address || ''}</textarea>
+                            <textarea name="address" rows="2" placeholder="Street address">${patient?.address || ''}</textarea>
                         </div>
-                        <button type="submit" class="btn-primary" style="width: 100%;">
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>City</label>
+                                <input type="text" name="city" value="${patient?.city || ''}" placeholder="City">
+                            </div>
+                            <div class="form-group">
+                                <label>State</label>
+                                <input type="text" name="state" value="${patient?.state || ''}" placeholder="State">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Country</label>
+                                <input type="text" name="country" value="${patient?.country || 'India'}" placeholder="Country">
+                            </div>
+                            <div class="form-group">
+                                <label>Pincode</label>
+                                <input type="text" name="pincode" value="${patient?.pincode || ''}" placeholder="Pincode">
+                            </div>
+                        </div>
+                        
+                        <!-- Emergency Contact -->
+                        <h4 style="margin: 24px 0 16px 0; color: #059669; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-user-shield"></i> Emergency Contact
+                        </h4>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Emergency Contact Name</label>
+                                <input type="text" name="emergency_contact_name" value="${patient?.emergency_contact_name || ''}" placeholder="Contact name">
+                            </div>
+                            <div class="form-group">
+                                <label>Emergency Contact Phone</label>
+                                <input type="tel" name="emergency_contact_phone" value="${patient?.emergency_contact_phone || ''}" placeholder="+91-XXXXXXXXXX">
+                            </div>
+                        </div>
+                        
+                        <!-- Medical Information -->
+                        <h4 style="margin: 24px 0 16px 0; color: #059669; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-notes-medical"></i> Medical Information
+                        </h4>
+                        
+                        <div class="form-group">
+                            <label>Medical History</label>
+                            <textarea name="medical_history" rows="2" placeholder="Previous medical conditions, surgeries, etc.">${patient?.medical_history || ''}</textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Allergies</label>
+                            <textarea name="allergies" rows="2" placeholder="Known allergies (medications, food, etc.)">${patient?.allergies || ''}</textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Current Medications</label>
+                            <textarea name="current_medications" rows="2" placeholder="Medications currently taking">${patient?.current_medications || ''}</textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Additional Notes</label>
+                            <textarea name="notes" rows="2" placeholder="Any additional information">${patient?.notes || ''}</textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary" style="width: 100%; margin-top: 16px;">
                             <i class="fas fa-save"></i> ${isEdit ? 'Update' : 'Add'} Patient
                         </button>
                     </form>
@@ -666,7 +772,18 @@ function showPatientForm(patient = null) {
 async function savePatient(event, patientId) {
     event.preventDefault();
     const formData = new FormData(event.target);
-    const data = Object.fromEntries(formData.entries());
+    const data = {};
+    
+    // Get all form data and ensure empty strings for optional fields
+    formData.forEach((value, key) => {
+        data[key] = value || '';
+    });
+    
+    // Validate required fields
+    if (!data.name || !data.phone) {
+        showToast('Please fill in all required fields', 'error');
+        return;
+    }
     
     try {
         const url = patientId ? `${API_BASE}/patients/${patientId}` : `${API_BASE}/patients`;
@@ -678,10 +795,12 @@ async function savePatient(event, patientId) {
             closeModal();
             loadPatients();
             loadDashboardData();
+        } else {
+            showToast(response.data.message || 'Failed to save patient', 'error');
         }
     } catch (error) {
         console.error('Error saving patient:', error);
-        showToast('Failed to save patient', 'error');
+        showToast(error.response?.data?.message || 'Failed to save patient', 'error');
     }
 }
 
