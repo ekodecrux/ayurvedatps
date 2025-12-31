@@ -277,6 +277,11 @@ app.get('/api/patients/countries', async (c) => {
 // Get all patients with search and filter
 app.get('/api/patients', async (c) => {
   try {
+    // Fallback when DB is not available
+    if (!c.env.DB) {
+      return c.json({ success: true, data: [] })
+    }
+    
     const search = c.req.query('search') || ''
     const gender = c.req.query('gender') || ''
     const country = c.req.query('country') || ''
@@ -832,6 +837,11 @@ app.delete('/api/patient-diseases/:id', async (c) => {
 // Get all appointments with search and filter
 app.get('/api/appointments', async (c) => {
   try {
+    // Fallback when DB is not available
+    if (!c.env.DB) {
+      return c.json({ success: true, data: [] })
+    }
+    
     const search = c.req.query('search') || ''
     const status = c.req.query('status') || ''
     const date = c.req.query('date') || ''
@@ -952,6 +962,11 @@ app.delete('/api/appointments/:id', async (c) => {
 // Get all herbs & routes with search and filter
 app.get('/api/prescriptions', async (c) => {
   try {
+    // Fallback when DB is not available
+    if (!c.env.DB) {
+      return c.json({ success: true, data: [] })
+    }
+    
     const search = c.req.query('search') || ''
     const dateFrom = c.req.query('dateFrom') || ''
     const dateTo = c.req.query('dateTo') || ''
@@ -1612,6 +1627,11 @@ app.post('/api/send-sms', async (c) => {
 // Get all reminders with search and filter
 app.get('/api/reminders', async (c) => {
   try {
+    // Fallback when DB is not available
+    if (!c.env.DB) {
+      return c.json({ success: true, data: [] })
+    }
+    
     const search = c.req.query('search') || ''
     const status = c.req.query('status') || ''
     const type = c.req.query('type') || ''
