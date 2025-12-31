@@ -14,4 +14,4 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "ayurveda-db-prod"
-database_id = "REPLACE_WITH_YOUR_DATABASE_ID"
+database_id = "7ce3cb22-22c5-42e1-87f7-d53b533df18c"
