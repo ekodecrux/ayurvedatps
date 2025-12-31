@@ -52,7 +52,7 @@ app.post('/api/auth/login', async (c) => {
     // Fallback authentication when DB is not available
     if (!c.env.DB) {
       // Mock authentication for demo purposes
-      if (email === 'tpsdhanvantari@gmail.com' && password === '123456') {
+      if (email === 'Shankaranherbaltreatment@gmail.com' && password === '123456') {
         const sessionToken = generateSessionToken()
         
         setCookie(c, 'session_token', sessionToken, {
@@ -66,7 +66,7 @@ app.post('/api/auth/login', async (c) => {
           success: true, 
           user: {
             id: 1,
-            email: 'tpsdhanvantari@gmail.com',
+            email: 'Shankaranherbaltreatment@gmail.com',
             name: 'Admin User',
             role: 'admin',
             profile_picture: null

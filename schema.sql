@@ -112,11 +112,11 @@ CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(session_token);
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 
 -- Insert Default Admin User
--- Email: tpsdhanvantari@gmail.com
+-- Email: Shankaranherbaltreatment@gmail.com
 -- Password: 123456
 -- Password Hash (SHA-256 of "123456"): 8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92
 INSERT OR IGNORE INTO admin_users (email, password_hash, name, role) 
-VALUES ('tpsdhanvantari@gmail.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'Admin User', 'admin');
+VALUES ('Shankaranherbaltreatment@gmail.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'Admin User', 'admin');
 
 -- Insert Sample Data for Testing (Optional)
 
