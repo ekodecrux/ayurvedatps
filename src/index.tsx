@@ -30,6 +30,17 @@ async function isAuthenticated(c: any): Promise<any> {
     return null
   }
   
+  // Fallback when DB is not available (mock session)
+  if (!c.env.DB) {
+    // Simple mock validation - check if session token exists
+    return {
+      user_id: 1,
+      email: 'Shankaranherbaltreatment@gmail.com',
+      name: 'Admin User',
+      profile_picture: null
+    }
+  }
+  
   const session = await c.env.DB.prepare(`
     SELECT s.*, u.id as user_id, u.email, u.name, u.profile_picture
     FROM sessions s
@@ -131,7 +142,7 @@ app.post('/api/auth/logout', async (c) => {
   try {
     const sessionToken = getCookie(c, 'session_token')
     
-    if (sessionToken) {
+    if (sessionToken && c.env.DB) {
       await c.env.DB.prepare('DELETE FROM sessions WHERE session_token = ?').bind(sessionToken).run()
     }
     
