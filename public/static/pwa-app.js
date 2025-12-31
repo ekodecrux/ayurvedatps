@@ -1291,6 +1291,49 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+// ==================== EXPORT FUNCTIONS ====================
+
+function exportToCSV() {
+    if (allPatients.length === 0) {
+        showToast('No patients to export', 'error');
+        return;
+    }
+    
+    const headers = ['Patient ID', 'Name', 'Age', 'Gender', 'Phone', 'Email', 'Country', 'Address', 'Date Added'];
+    const rows = allPatients.map(p => [
+        p.patient_id || '',
+        p.name || '',
+        p.age || '',
+        p.gender || '',
+        p.phone || '',
+        p.email || '',
+        p.country || '',
+        p.address || '',
+        formatDate(p.created_at)
+    ]);
+    
+    const csvContent = [headers, ...rows]
+        .map(row => row.map(cell => `"${cell}"`).join(','))
+        .join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `patients_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    showToast('CSV export successful', 'success');
+}
+
+function exportToExcel() {
+    showToast('Excel export coming soon', 'info');
+    // TODO: Implement Excel export using a library like xlsx
+}
+
+function exportToPDF() {
+    showToast('PDF export coming soon', 'info');
+    // TODO: Implement PDF export using a library like jsPDF
+}
+
 // Expose functions to global scope for onclick handlers
 window.showSettings = showSettings;
 window.showReports = showReports;
@@ -1301,6 +1344,9 @@ window.showSection = showSection;
 window.closeModal = closeModal;
 window.showPatientForm = showPatientForm;
 window.savePatient = savePatient;
+window.exportToCSV = exportToCSV;
+window.exportToExcel = exportToExcel;
+window.exportToPDF = exportToPDF;
 
 // Debug: Verify functions are loaded
 console.log('PWA App loaded:', {

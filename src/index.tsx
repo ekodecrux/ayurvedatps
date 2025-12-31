@@ -9,6 +9,14 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>()
 
+// In-memory storage for demo mode (when DB is not available)
+const memoryStorage = {
+  patients: [] as any[],
+  appointments: [] as any[],
+  prescriptions: [] as any[],
+  reminders: [] as any[]
+}
+
 // Enable CORS
 app.use('/api/*', cors())
 
@@ -277,9 +285,33 @@ app.get('/api/patients/countries', async (c) => {
 // Get all patients with search and filter
 app.get('/api/patients', async (c) => {
   try {
-    // Fallback when DB is not available
+    // Fallback when DB is not available - use memory storage
     if (!c.env.DB) {
-      return c.json({ success: true, data: [] })
+      const search = c.req.query('search') || ''
+      const gender = c.req.query('gender') || ''
+      const country = c.req.query('country') || ''
+      
+      let filtered = memoryStorage.patients
+      
+      if (search) {
+        const searchLower = search.toLowerCase()
+        filtered = filtered.filter((p: any) => 
+          (p.name && p.name.toLowerCase().includes(searchLower)) ||
+          (p.phone && p.phone.includes(search)) ||
+          (p.patient_id && p.patient_id.toLowerCase().includes(searchLower)) ||
+          (p.email && p.email.toLowerCase().includes(searchLower))
+        )
+      }
+      
+      if (gender) {
+        filtered = filtered.filter((p: any) => p.gender === gender)
+      }
+      
+      if (country) {
+        filtered = filtered.filter((p: any) => p.country === country)
+      }
+      
+      return c.json({ success: true, data: filtered })
     }
     
     const search = c.req.query('search') || ''
@@ -648,17 +680,29 @@ app.post('/api/patients', async (c) => {
   try {
     const body = await c.req.json()
     
-    // Fallback when DB is not available
+    // Fallback when DB is not available - save to memory storage
     if (!c.env.DB) {
-      // Mock response for demo purposes
       const mockPatientId = 'IND' + String(Math.floor(Math.random() * 90000) + 10000)
+      const newPatient = {
+        id: Date.now(),
+        patient_id: mockPatientId,
+        name: body.name || null,
+        age: body.age || null,
+        gender: body.gender || null,
+        phone: body.phone || null,
+        email: body.email || null,
+        address: body.address || null,
+        country: body.country || 'India',
+        country_code: body.country_code || '+91',
+        country_iso3: body.country_iso3 || 'IND',
+        medical_history: body.medical_history || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+      memoryStorage.patients.push(newPatient)
       return c.json({ 
         success: true, 
-        data: { 
-          id: Date.now(), 
-          patient_id: mockPatientId,
-          ...body 
-        } 
+        data: newPatient
       }, 201)
     }
     
@@ -859,9 +903,40 @@ app.delete('/api/patient-diseases/:id', async (c) => {
 // Get all appointments with search and filter
 app.get('/api/appointments', async (c) => {
   try {
-    // Fallback when DB is not available
+    // Fallback when DB is not available - use memory storage
     if (!c.env.DB) {
-      return c.json({ success: true, data: [] })
+      const search = c.req.query('search') || ''
+      const status = c.req.query('status') || ''
+      const date = c.req.query('date') || ''
+      
+      let filtered = memoryStorage.appointments.map((apt: any) => {
+        const patient = memoryStorage.patients.find((p: any) => p.id === apt.patient_id)
+        return {
+          ...apt,
+          patient_name: patient?.name || 'Unknown',
+          patient_phone: patient?.phone || '',
+          patient_id: patient?.patient_id || ''
+        }
+      })
+      
+      if (search) {
+        const searchLower = search.toLowerCase()
+        filtered = filtered.filter((a: any) => 
+          (a.patient_name && a.patient_name.toLowerCase().includes(searchLower)) ||
+          (a.patient_phone && a.patient_phone.includes(search)) ||
+          (a.patient_id && a.patient_id.toLowerCase().includes(searchLower))
+        )
+      }
+      
+      if (status) {
+        filtered = filtered.filter((a: any) => a.status === status)
+      }
+      
+      if (date) {
+        filtered = filtered.filter((a: any) => a.appointment_date && a.appointment_date.startsWith(date))
+      }
+      
+      return c.json({ success: true, data: filtered })
     }
     
     const search = c.req.query('search') || ''
@@ -941,11 +1016,22 @@ app.post('/api/appointments', async (c) => {
     const body = await c.req.json()
     const { patient_id, appointment_date, purpose, status, notes } = body
     
-    // Fallback when DB is not available
+    // Fallback when DB is not available - save to memory storage
     if (!c.env.DB) {
+      const newAppointment = {
+        id: Date.now(),
+        patient_id,
+        appointment_date,
+        purpose,
+        status: status || 'scheduled',
+        notes,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+      memoryStorage.appointments.push(newAppointment)
       return c.json({ 
         success: true, 
-        data: { id: Date.now(), ...body, status: status || 'scheduled' } 
+        data: newAppointment
       }, 201)
     }
     
@@ -4053,9 +4139,9 @@ app.get('/pwa', (c) => {
             </div>
             <div class="filter-row">
                 <button class="filter-btn">All Countries</button>
-                <button class="filter-btn" style="background: #10B981; color: white; border-color: #10B981;"><i class="fas fa-file-csv"></i> CSV</button>
-                <button class="filter-btn" style="background: #3B82F6; color: white; border-color: #3B82F6;"><i class="fas fa-file-excel"></i> Excel</button>
-                <button class="filter-btn" style="background: #EF4444; color: white; border-color: #EF4444;"><i class="fas fa-file-pdf"></i> PDF</button>
+                <button class="filter-btn" onclick="exportToCSV()" style="background: #10B981; color: white; border-color: #10B981;"><i class="fas fa-file-csv"></i> CSV</button>
+                <button class="filter-btn" onclick="exportToExcel()" style="background: #3B82F6; color: white; border-color: #3B82F6;"><i class="fas fa-file-excel"></i> Excel</button>
+                <button class="filter-btn" onclick="exportToPDF()" style="background: #EF4444; color: white; border-color: #EF4444;"><i class="fas fa-file-pdf"></i> PDF</button>
             </div>
             <div id="patientsList"><div class="loading">Loading patients...</div></div>
         </div>
