@@ -1821,6 +1821,11 @@ app.get('/login', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Login - TPS DHANVANTARI AYURVEDA</title>
+        
+        <!-- PWA Icons -->
+        <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+        <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+        
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -1968,7 +1973,15 @@ app.get('/', (c) => {
         <title>TPS DHANVANTARI AYURVEDA - Management System</title>
         <meta name="description" content="Professional Ayurveda clinic management system">
         <meta name="theme-color" content="#059669">
+        
+        <!-- PWA Icons -->
+        <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+        <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon.ico">
+        <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
+        <link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png">
+        <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
         <link rel="manifest" href="/static/manifest.json">
+        
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/styles.css" rel="stylesheet">
@@ -3843,7 +3856,15 @@ app.get('/pwa', (c) => {
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>TPS Dhanvantari Ayurveda</title>
+    
+    <!-- PWA Icons -->
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon.ico">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
     <link rel="manifest" href="/pwa-manifest.json">
+    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
