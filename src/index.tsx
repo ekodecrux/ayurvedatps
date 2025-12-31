@@ -49,6 +49,34 @@ app.post('/api/auth/login', async (c) => {
       return c.json({ success: false, error: 'Email and password are required' }, 400)
     }
     
+    // Fallback authentication when DB is not available
+    if (!c.env.DB) {
+      // Mock authentication for demo purposes
+      if (email === 'tpsdhanvantari@gmail.com' && password === '123456') {
+        const sessionToken = generateSessionToken()
+        
+        setCookie(c, 'session_token', sessionToken, {
+          path: '/',
+          httpOnly: true,
+          sameSite: 'Strict',
+          maxAge: 7 * 24 * 60 * 60 // 7 days
+        })
+        
+        return c.json({ 
+          success: true, 
+          user: {
+            id: 1,
+            email: 'tpsdhanvantari@gmail.com',
+            name: 'Admin User',
+            role: 'admin',
+            profile_picture: null
+          }
+        })
+      } else {
+        return c.json({ success: false, error: 'Invalid email or password' }, 401)
+      }
+    }
+    
     // Hash the provided password using Web Crypto API
     const encoder = new TextEncoder()
     const data = encoder.encode(password)
@@ -1710,6 +1738,18 @@ app.put('/api/settings/:key', async (c) => {
 
 app.get('/api/stats', async (c) => {
   try {
+    // Fallback when DB is not available
+    if (!c.env.DB) {
+      return c.json({ 
+        success: true, 
+        data: {
+          totalPatients: 0,
+          todayAppointments: 0,
+          pendingReminders: 0
+        }
+      })
+    }
+    
     // Get total patients
     const patientsCount = await c.env.DB.prepare(
       'SELECT COUNT(*) as count FROM patients'
