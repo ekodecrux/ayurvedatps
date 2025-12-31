@@ -94,6 +94,313 @@ function showSection(sectionName) {
     }
 }
 
+// ==================== SETTINGS ====================
+
+function showSettings() {
+    toggleMenu(); // Close the dropdown
+    
+    const modal = `
+        <div class="modal-overlay" onclick="closeModal()">
+            <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h3><i class="fas fa-cog"></i> Settings</h3>
+                    <button onclick="closeModal()" class="modal-close"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div style="display: grid; gap: 20px;">
+                        <!-- Profile Section -->
+                        <div style="background: #F9FAFB; padding: 16px; border-radius: 12px;">
+                            <h4 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-user-circle" style="color: #059669;"></i> Profile Information
+                            </h4>
+                            <div style="display: grid; gap: 8px; font-size: 14px;">
+                                <div><strong>Name:</strong> ${currentUser?.name || 'Admin'}</div>
+                                <div><strong>Email:</strong> ${currentUser?.email || 'N/A'}</div>
+                                <div><strong>Role:</strong> Administrator</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Clinic Settings -->
+                        <div style="background: #F9FAFB; padding: 16px; border-radius: 12px;">
+                            <h4 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-clinic-medical" style="color: #059669;"></i> Clinic Information
+                            </h4>
+                            <div style="display: grid; gap: 8px; font-size: 14px;">
+                                <div><strong>Name:</strong> TPS Dhanvantari Ayurveda</div>
+                                <div><strong>Type:</strong> Ayurvedic Clinic</div>
+                                <div><strong>System:</strong> Single Doctor Clinic</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notifications -->
+                        <div style="background: #F9FAFB; padding: 16px; border-radius: 12px;">
+                            <h4 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-bell" style="color: #059669;"></i> Notification Settings
+                            </h4>
+                            <div style="display: grid; gap: 12px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" checked style="width: 18px; height: 18px;">
+                                    <span>Appointment Reminders</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" checked style="width: 18px; height: 18px;">
+                                    <span>Follow-up Notifications</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" checked style="width: 18px; height: 18px;">
+                                    <span>WhatsApp Integration</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" style="width: 18px; height: 18px;">
+                                    <span>SMS Notifications</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Data Management -->
+                        <div style="background: #F9FAFB; padding: 16px; border-radius: 12px;">
+                            <h4 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-database" style="color: #059669;"></i> Data Management
+                            </h4>
+                            <div style="display: grid; gap: 8px;">
+                                <button onclick="exportAllData()" class="btn-primary" style="width: 100%; padding: 10px;">
+                                    <i class="fas fa-download"></i> Export All Data
+                                </button>
+                                <button onclick="showBackupInfo()" class="btn-primary" style="width: 100%; padding: 10px; background: #3B82F6;">
+                                    <i class="fas fa-cloud"></i> Backup Settings
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- System Info -->
+                        <div style="background: #F9FAFB; padding: 16px; border-radius: 12px;">
+                            <h4 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-info-circle" style="color: #059669;"></i> System Information
+                            </h4>
+                            <div style="display: grid; gap: 8px; font-size: 14px;">
+                                <div><strong>Version:</strong> 3.0.0</div>
+                                <div><strong>Platform:</strong> Cloudflare Workers PWA</div>
+                                <div><strong>Database:</strong> Cloudflare D1</div>
+                                <div><strong>Status:</strong> <span style="color: #059669; font-weight: 600;">● Online</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="closeModal()" class="btn-primary" style="background: #6B7280;">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modal);
+}
+
+function exportAllData() {
+    showToast('Exporting all data...', 'info');
+    // TODO: Implement export functionality
+    setTimeout(() => {
+        showToast('Export feature coming soon!', 'info');
+    }, 1000);
+}
+
+function showBackupInfo() {
+    showToast('Backup is automatic. All data is stored in Cloudflare D1.', 'success');
+}
+
+// ==================== REPORTS ====================
+
+async function showReports() {
+    toggleMenu(); // Close the dropdown
+    
+    // Load stats for reports
+    try {
+        const statsResponse = await axios.get(`${API_BASE}/stats`);
+        const patientsResponse = await axios.get(`${API_BASE}/patients`);
+        const appointmentsResponse = await axios.get(`${API_BASE}/appointments`);
+        const prescriptionsResponse = await axios.get(`${API_BASE}/prescriptions`);
+        const remindersResponse = await axios.get(`${API_BASE}/reminders`);
+        
+        const stats = statsResponse.data.success ? statsResponse.data.data : {};
+        const patients = patientsResponse.data.success ? patientsResponse.data.data : [];
+        const appointments = appointmentsResponse.data.success ? appointmentsResponse.data.data : [];
+        const prescriptions = prescriptionsResponse.data.success ? prescriptionsResponse.data.data : [];
+        const reminders = remindersResponse.data.success ? remindersResponse.data.data : [];
+        
+        // Calculate additional stats
+        const totalPatients = patients.length;
+        const totalAppointments = appointments.length;
+        const totalPrescriptions = prescriptions.length;
+        const totalReminders = reminders.length;
+        
+        const scheduledAppointments = appointments.filter(a => a.status === 'scheduled').length;
+        const confirmedAppointments = appointments.filter(a => a.status === 'confirmed').length;
+        const completedAppointments = appointments.filter(a => a.status === 'completed').length;
+        const cancelledAppointments = appointments.filter(a => a.status === 'cancelled').length;
+        
+        const pendingReminders = reminders.filter(r => r.status !== 'Sent').length;
+        const sentReminders = reminders.filter(r => r.status === 'Sent').length;
+        
+        // Country breakdown
+        const countryCounts = {};
+        patients.forEach(p => {
+            const country = p.country || 'Unknown';
+            countryCounts[country] = (countryCounts[country] || 0) + 1;
+        });
+        const topCountries = Object.entries(countryCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5);
+        
+        // Gender breakdown
+        const maleCount = patients.filter(p => p.gender === 'Male').length;
+        const femaleCount = patients.filter(p => p.gender === 'Female').length;
+        const otherCount = patients.filter(p => p.gender === 'Other' || !p.gender).length;
+        
+        const modal = `
+            <div class="modal-overlay" onclick="closeModal()">
+                <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-chart-bar"></i> Reports & Analytics</h3>
+                        <button onclick="closeModal()" class="modal-close"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="display: grid; gap: 20px;">
+                            <!-- Summary Stats -->
+                            <div>
+                                <h4 style="margin-bottom: 12px; color: #1F2937;">📊 Summary Statistics</h4>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                                    <div style="background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); color: white; padding: 16px; border-radius: 12px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+                                        <div style="font-size: 32px; font-weight: bold;">${totalPatients}</div>
+                                        <div style="font-size: 14px; opacity: 0.9;">Total Patients</div>
+                                    </div>
+                                    <div style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; padding: 16px; border-radius: 12px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                                        <div style="font-size: 32px; font-weight: bold;">${totalAppointments}</div>
+                                        <div style="font-size: 14px; opacity: 0.9;">Total Appointments</div>
+                                    </div>
+                                    <div style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); color: white; padding: 16px; border-radius: 12px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);">
+                                        <div style="font-size: 32px; font-weight: bold;">${totalPrescriptions}</div>
+                                        <div style="font-size: 14px; opacity: 0.9;">Prescriptions</div>
+                                    </div>
+                                    <div style="background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); color: white; padding: 16px; border-radius: 12px; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);">
+                                        <div style="font-size: 32px; font-weight: bold;">${totalReminders}</div>
+                                        <div style="font-size: 14px; opacity: 0.9;">Reminders</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Appointments Breakdown -->
+                            <div style="background: #F9FAFB; padding: 16px; border-radius: 12px;">
+                                <h4 style="margin-bottom: 12px; color: #1F2937;">📅 Appointments Breakdown</h4>
+                                <div style="display: grid; gap: 8px; font-size: 14px;">
+                                    <div style="display: flex; justify-content: space-between; padding: 8px; background: white; border-radius: 8px;">
+                                        <span><span style="color: #6B7280;">●</span> Scheduled</span>
+                                        <strong>${scheduledAppointments}</strong>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; padding: 8px; background: white; border-radius: 8px;">
+                                        <span><span style="color: #059669;">●</span> Confirmed</span>
+                                        <strong>${confirmedAppointments}</strong>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; padding: 8px; background: white; border-radius: 8px;">
+                                        <span><span style="color: #3B82F6;">●</span> Completed</span>
+                                        <strong>${completedAppointments}</strong>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; padding: 8px; background: white; border-radius: 8px;">
+                                        <span><span style="color: #EF4444;">●</span> Cancelled</span>
+                                        <strong>${cancelledAppointments}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Reminders Status -->
+                            <div style="background: #F9FAFB; padding: 16px; border-radius: 12px;">
+                                <h4 style="margin-bottom: 12px; color: #1F2937;">🔔 Reminders Status</h4>
+                                <div style="display: grid; gap: 8px; font-size: 14px;">
+                                    <div style="display: flex; justify-content: space-between; padding: 8px; background: white; border-radius: 8px;">
+                                        <span><span style="color: #F59E0B;">●</span> Pending</span>
+                                        <strong>${pendingReminders}</strong>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; padding: 8px; background: white; border-radius: 8px;">
+                                        <span><span style="color: #059669;">●</span> Sent</span>
+                                        <strong>${sentReminders}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Patient Demographics -->
+                            <div style="background: #F9FAFB; padding: 16px; border-radius: 12px;">
+                                <h4 style="margin-bottom: 12px; color: #1F2937;">👥 Patient Demographics</h4>
+                                <div style="display: grid; gap: 8px; font-size: 14px;">
+                                    <div style="display: flex; justify-content: space-between; padding: 8px; background: white; border-radius: 8px;">
+                                        <span><i class="fas fa-mars" style="color: #3B82F6;"></i> Male</span>
+                                        <strong>${maleCount}</strong>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; padding: 8px; background: white; border-radius: 8px;">
+                                        <span><i class="fas fa-venus" style="color: #EC4899;"></i> Female</span>
+                                        <strong>${femaleCount}</strong>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; padding: 8px; background: white; border-radius: 8px;">
+                                        <span><i class="fas fa-user" style="color: #6B7280;"></i> Other</span>
+                                        <strong>${otherCount}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Top Countries -->
+                            <div style="background: #F9FAFB; padding: 16px; border-radius: 12px;">
+                                <h4 style="margin-bottom: 12px; color: #1F2937;">🌍 Top Countries</h4>
+                                <div style="display: grid; gap: 8px; font-size: 14px;">
+                                    ${topCountries.map((country, index) => `
+                                        <div style="display: flex; justify-content: space-between; padding: 8px; background: white; border-radius: 8px;">
+                                            <span><span style="color: #059669; font-weight: bold;">#${index + 1}</span> ${country[0]}</span>
+                                            <strong>${country[1]} patients</strong>
+                                        </div>
+                                    `).join('')}
+                                    ${topCountries.length === 0 ? '<div style="text-align: center; color: #6B7280; padding: 20px;">No data available</div>' : ''}
+                                </div>
+                            </div>
+                            
+                            <!-- Export Options -->
+                            <div style="background: #F9FAFB; padding: 16px; border-radius: 12px;">
+                                <h4 style="margin-bottom: 12px; color: #1F2937;">📥 Export Reports</h4>
+                                <div style="display: grid; gap: 8px;">
+                                    <button onclick="exportReport('pdf')" class="btn-primary" style="width: 100%; padding: 10px; background: #EF4444;">
+                                        <i class="fas fa-file-pdf"></i> Export as PDF
+                                    </button>
+                                    <button onclick="exportReport('excel')" class="btn-primary" style="width: 100%; padding: 10px; background: #10B981;">
+                                        <i class="fas fa-file-excel"></i> Export as Excel
+                                    </button>
+                                    <button onclick="exportReport('csv')" class="btn-primary" style="width: 100%; padding: 10px; background: #3B82F6;">
+                                        <i class="fas fa-file-csv"></i> Export as CSV
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button onclick="closeModal()" class="btn-primary" style="background: #6B7280;">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modal);
+        
+    } catch (error) {
+        console.error('Error loading reports:', error);
+        showToast('Failed to load reports', 'error');
+    }
+}
+
+function exportReport(format) {
+    showToast(`Exporting report as ${format.toUpperCase()}...`, 'info');
+    // TODO: Implement actual export functionality
+    setTimeout(() => {
+        showToast(`${format.toUpperCase()} export feature coming soon!`, 'info');
+    }, 1000);
+}
+
 // ==================== DASHBOARD ====================
 
 async function loadDashboardData() {

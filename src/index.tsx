@@ -3890,8 +3890,8 @@ app.get('/pwa', (c) => {
             </div>
         </nav>
         <div class="dropdown-menu" id="dropdownMenu">
-            <button class="menu-item"><i class="fas fa-cog"></i><span>Settings</span></button>
-            <button class="menu-item"><i class="fas fa-chart-bar"></i><span>Reports</span></button>
+            <button class="menu-item" onclick="showSettings()"><i class="fas fa-cog"></i><span>Settings</span></button>
+            <button class="menu-item" onclick="showReports()"><i class="fas fa-chart-bar"></i><span>Reports</span></button>
             <div class="menu-divider"></div>
             <button class="menu-item logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i><span>Logout</span></button>
         </div>
