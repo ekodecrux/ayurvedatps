@@ -1284,6 +1284,15 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+// Expose functions to global scope for onclick handlers
+window.showSettings = showSettings;
+window.showReports = showReports;
+window.handleLogin = handleLogin;
+window.handleLogout = handleLogout;
+window.toggleMenu = toggleMenu;
+window.showSection = showSection;
+window.closeModal = closeModal;
+
 // Register Service Worker for PWA
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/pwa-sw.js')
