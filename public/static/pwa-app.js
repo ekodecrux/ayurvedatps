@@ -218,9 +218,8 @@ function showBackupInfo() {
 // ==================== REPORTS ====================
 
 async function showReports() {
-    try {
-        console.log('showReports called');
-        toggleMenu(); // Close the dropdown
+    console.log('showReports called');
+    toggleMenu(); // Close the dropdown
     
     // Load stats for reports
     try {
