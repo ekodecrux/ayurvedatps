@@ -3993,14 +3993,14 @@ app.get('/pwa', (c) => {
                 <label class="input-label">Email Address</label>
                 <div class="input-wrapper">
                     <i class="fas fa-envelope input-icon"></i>
-                    <input type="email" class="input-field" id="loginEmail" placeholder="tpsdhanvantari@gmail.com" value="tpsdhanvantari@gmail.com">
+                    <input type="email" class="input-field" id="loginEmail" placeholder="Enter your email" value="" autocomplete="off">
                 </div>
             </div>
             <div class="input-group">
                 <label class="input-label">Password</label>
                 <div class="input-wrapper">
                     <i class="fas fa-lock input-icon"></i>
-                    <input type="password" class="input-field" id="loginPassword" placeholder="Enter your password" value="123456">
+                    <input type="password" class="input-field" id="loginPassword" placeholder="Enter your password" value="" autocomplete="new-password">
                 </div>
             </div>
             <button class="btn-primary" onclick="handleLogin()">Sign In</button>
