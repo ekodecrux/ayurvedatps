@@ -1299,6 +1299,8 @@ window.handleLogout = handleLogout;
 window.toggleMenu = toggleMenu;
 window.showSection = showSection;
 window.closeModal = closeModal;
+window.showPatientForm = showPatientForm;
+window.savePatient = savePatient;
 
 // Debug: Verify functions are loaded
 console.log('PWA App loaded:', {
@@ -1306,6 +1308,44 @@ console.log('PWA App loaded:', {
     showReports: typeof window.showReports,
     handleLogin: typeof window.handleLogin
 });
+
+// Check authentication on page load
+async function checkAuthOnLoad() {
+    try {
+        const response = await axios.get(`${API_BASE}/auth/me`);
+        if (response.data.authenticated && response.data.user) {
+            // User is already logged in
+            currentUser = response.data.user;
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appContainer').classList.remove('hidden');
+            document.getElementById('userEmail').textContent = currentUser.email;
+            document.getElementById('userInitial').textContent = currentUser.name.charAt(0).toUpperCase();
+            
+            // Load all data
+            await Promise.all([
+                loadDashboardData(),
+                loadPatients(),
+                loadAppointments(),
+                loadHerbs(),
+                loadReminders()
+            ]);
+            
+            console.log('Auto-login successful');
+        } else {
+            // Show login screen
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('appContainer').classList.add('hidden');
+        }
+    } catch (error) {
+        console.error('Auth check failed:', error);
+        // Show login screen on error
+        document.getElementById('loginScreen').classList.remove('hidden');
+        document.getElementById('appContainer').classList.add('hidden');
+    }
+}
+
+// Run auth check when page loads
+document.addEventListener('DOMContentLoaded', checkAuthOnLoad);
 
 // Register Service Worker for PWA
 if ('serviceWorker' in navigator) {
