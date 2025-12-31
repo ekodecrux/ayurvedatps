@@ -661,6 +661,16 @@ app.get('/api/patients/export', async (c) => {
 app.get('/api/patients/:id', async (c) => {
   try {
     const id = c.req.param('id')
+    
+    // Fallback when DB is not available - use memory storage
+    if (!c.env.DB) {
+      const patient = memoryStorage.patients.find((p: any) => p.id == id)
+      if (!patient) {
+        return c.json({ success: false, error: 'Patient not found' }, 404)
+      }
+      return c.json({ success: true, data: patient })
+    }
+    
     const patient = await c.env.DB.prepare(
       'SELECT * FROM patients WHERE id = ?'
     ).bind(id).first()
@@ -980,6 +990,24 @@ app.get('/api/appointments', async (c) => {
 app.get('/api/appointments/:id', async (c) => {
   try {
     const id = c.req.param('id')
+    
+    // Fallback when DB is not available - use memory storage
+    if (!c.env.DB) {
+      const appointment = memoryStorage.appointments.find((a: any) => a.id == id)
+      if (!appointment) {
+        return c.json({ success: false, error: 'Appointment not found' }, 404)
+      }
+      const patient = memoryStorage.patients.find((p: any) => p.id === appointment.patient_id)
+      return c.json({ 
+        success: true, 
+        data: {
+          ...appointment,
+          patient_name: patient?.name || 'Unknown',
+          patient_phone: patient?.phone || ''
+        }
+      })
+    }
+    
     const appointment = await c.env.DB.prepare(`
       SELECT a.*, p.name as patient_name, p.phone as patient_phone
       FROM appointments a
@@ -1275,6 +1303,25 @@ app.get('/api/prescriptions/:id', async (c) => {
 app.post('/api/prescriptions', async (c) => {
   try {
     const body = await c.req.json()
+    
+    // Fallback when DB is not available - save to memory storage
+    if (!c.env.DB) {
+      const newPrescription = {
+        id: Date.now(),
+        patient_id: body.patient_id,
+        next_followup_date: body.follow_up_date || null,
+        diagnosis: body.diagnosis || null,
+        notes: body.notes || null,
+        course: body.course || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+      memoryStorage.prescriptions.push(newPrescription)
+      return c.json({ 
+        success: true, 
+        data: { id: newPrescription.id } 
+      }, 201)
+    }
     
     // Insert herbs_routes record (simplified - per-medicine data moved to medicines_tracking)
     const result = await c.env.DB.prepare(`
@@ -1898,14 +1945,19 @@ app.put('/api/settings/:key', async (c) => {
 
 app.get('/api/stats', async (c) => {
   try {
-    // Fallback when DB is not available
+    // Fallback when DB is not available - use memory storage
     if (!c.env.DB) {
+      const today = new Date().toISOString().split('T')[0]
+      const todayAppointments = memoryStorage.appointments.filter((apt: any) => 
+        apt.appointment_date && apt.appointment_date.startsWith(today)
+      ).length
+      
       return c.json({ 
         success: true, 
         data: {
-          totalPatients: 0,
-          todayAppointments: 0,
-          pendingReminders: 0
+          totalPatients: memoryStorage.patients.length,
+          todayAppointments: todayAppointments,
+          pendingReminders: memoryStorage.reminders.filter((r: any) => r.status === 'pending').length
         }
       })
     }
@@ -1972,7 +2024,7 @@ app.get('/login', (c) => {
             <div id="login-form" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                    <input type="email" id="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="tpsdhanvantari@gmail.com" required>
+                    <input type="email" id="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Enter your email" autocomplete="off" required>
                 </div>
                 
                 <div>
