@@ -97,7 +97,9 @@ function showSection(sectionName) {
 // ==================== SETTINGS ====================
 
 function showSettings() {
-    toggleMenu(); // Close the dropdown
+    try {
+        console.log('showSettings called');
+        toggleMenu(); // Close the dropdown
     
     const modal = `
         <div class="modal-overlay" onclick="closeModal()">
@@ -195,6 +197,10 @@ function showSettings() {
         </div>
     `;
     document.body.insertAdjacentHTML('beforeend', modal);
+    } catch (error) {
+        console.error('Error in showSettings:', error);
+        showToast('Error opening settings', 'error');
+    }
 }
 
 function exportAllData() {
@@ -212,7 +218,9 @@ function showBackupInfo() {
 // ==================== REPORTS ====================
 
 async function showReports() {
-    toggleMenu(); // Close the dropdown
+    try {
+        console.log('showReports called');
+        toggleMenu(); // Close the dropdown
     
     // Load stats for reports
     try {
@@ -1292,6 +1300,13 @@ window.handleLogout = handleLogout;
 window.toggleMenu = toggleMenu;
 window.showSection = showSection;
 window.closeModal = closeModal;
+
+// Debug: Verify functions are loaded
+console.log('PWA App loaded:', {
+    showSettings: typeof window.showSettings,
+    showReports: typeof window.showReports,
+    handleLogin: typeof window.handleLogin
+});
 
 // Register Service Worker for PWA
 if ('serviceWorker' in navigator) {
