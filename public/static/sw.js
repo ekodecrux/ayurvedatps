@@ -1,5 +1,5 @@
 // Service Worker for Ayurveda Clinic PWA
-const CACHE_NAME = 'ayurveda-clinic-v2.2.0';
+const CACHE_NAME = 'ayurveda-clinic-v2.2.1';
 const urlsToCache = [
   '/',
   '/static/app.js',
