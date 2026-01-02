@@ -1498,123 +1498,127 @@ function addMedicineToRow(courseId) {
       </div>
       
       <div>
-        <label class="block text-xs font-medium mb-2 text-ayurveda-700">Medicine Schedule</label>
+      <div>
+        <label class="block text-sm font-medium mb-2 text-ayurveda-700">Medicine Schedule</label>
         <p class="text-xs text-gray-600 mb-3">Configure time slots and quantities for each medicine</p>
         
-        <!-- Before Section -->
-        <div class="mb-4">
-          <h6 class="text-xs font-semibold text-gray-700 mb-2 pb-1 border-b">Before</h6>
-          <div class="grid grid-cols-1 gap-2">
-            <div class="flex items-center justify-between">
-              <label class="flex items-center cursor-pointer">
-                <input type="checkbox" id="morning_before_${courseId}_${medId}" name="morning_before_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'morning_before_qty_${courseId}_${medId}')">
-                <span class="text-sm">Morning - Before</span>
-              </label>
-              <select id="morning_before_qty_${courseId}_${medId}" name="morning_before_qty_${courseId}_${medId}" class="border rounded px-2 py-1 text-sm w-20 dosage-quantity" disabled>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-              </select>
-            </div>
-            <div class="flex items-center justify-between">
-              <label class="flex items-center cursor-pointer">
-                <input type="checkbox" id="afternoon_before_${courseId}_${medId}" name="afternoon_before_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'afternoon_before_qty_${courseId}_${medId}')">
-                <span class="text-sm">Afternoon - Before</span>
-              </label>
-              <select id="afternoon_before_qty_${courseId}_${medId}" name="afternoon_before_qty_${courseId}_${medId}" class="border rounded px-2 py-1 text-sm w-20 dosage-quantity" disabled>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-              </select>
-            </div>
-            <div class="flex items-center justify-between">
-              <label class="flex items-center cursor-pointer">
-                <input type="checkbox" id="evening_before_${courseId}_${medId}" name="evening_before_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'evening_before_qty_${courseId}_${medId}')">
-                <span class="text-sm">Evening - Before</span>
-              </label>
-              <select id="evening_before_qty_${courseId}_${medId}" name="evening_before_qty_${courseId}_${medId}" class="border rounded px-2 py-1 text-sm w-20 dosage-quantity" disabled>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-              </select>
-            </div>
-            <div class="flex items-center justify-between">
-              <label class="flex items-center cursor-pointer">
-                <input type="checkbox" id="night_before_${courseId}_${medId}" name="night_before_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'night_before_qty_${courseId}_${medId}')">
-                <span class="text-sm">Night - Before</span>
-              </label>
-              <select id="night_before_qty_${courseId}_${medId}" name="night_before_qty_${courseId}_${medId}" class="border rounded px-2 py-1 text-sm w-20 dosage-quantity" disabled>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-              </select>
+        <!-- Two Column Layout: Before and After side-by-side (matching design) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Before Column -->
+          <div>
+            <h6 class="text-base font-semibold text-ayurveda-600 mb-3 pb-2 border-b">Before</h6>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between gap-3">
+                <label class="flex items-center cursor-pointer flex-1">
+                  <input type="checkbox" id="morning_before_${courseId}_${medId}" name="morning_before_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'morning_before_qty_${courseId}_${medId}')">
+                  <span class="text-sm">Morning - Before</span>
+                </label>
+                <select id="morning_before_qty_${courseId}_${medId}" name="morning_before_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <div class="flex items-center justify-between gap-3">
+                <label class="flex items-center cursor-pointer flex-1">
+                  <input type="checkbox" id="afternoon_before_${courseId}_${medId}" name="afternoon_before_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'afternoon_before_qty_${courseId}_${medId}')">
+                  <span class="text-sm">Afternoon - Before</span>
+                </label>
+                <select id="afternoon_before_qty_${courseId}_${medId}" name="afternoon_before_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <div class="flex items-center justify-between gap-3">
+                <label class="flex items-center cursor-pointer flex-1">
+                  <input type="checkbox" id="evening_before_${courseId}_${medId}" name="evening_before_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'evening_before_qty_${courseId}_${medId}')">
+                  <span class="text-sm">Evening - Before</span>
+                </label>
+                <select id="evening_before_qty_${courseId}_${medId}" name="evening_before_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <div class="flex items-center justify-between gap-3">
+                <label class="flex items-center cursor-pointer flex-1">
+                  <input type="checkbox" id="night_before_${courseId}_${medId}" name="night_before_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'night_before_qty_${courseId}_${medId}')">
+                  <span class="text-sm">Night - Before</span>
+                </label>
+                <select id="night_before_qty_${courseId}_${medId}" name="night_before_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
             </div>
           </div>
-        </div>
-        
-        <!-- After Section -->
-        <div>
-          <h6 class="text-xs font-semibold text-gray-700 mb-2 pb-1 border-b">After</h6>
-          <div class="grid grid-cols-1 gap-2">
-            <div class="flex items-center justify-between">
-              <label class="flex items-center cursor-pointer">
-                <input type="checkbox" id="morning_after_${courseId}_${medId}" name="morning_after_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'morning_after_qty_${courseId}_${medId}')">
-                <span class="text-sm">Morning - After</span>
-              </label>
-              <select id="morning_after_qty_${courseId}_${medId}" name="morning_after_qty_${courseId}_${medId}" class="border rounded px-2 py-1 text-sm w-20 dosage-quantity" disabled>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-              </select>
-            </div>
-            <div class="flex items-center justify-between">
-              <label class="flex items-center cursor-pointer">
-                <input type="checkbox" id="afternoon_after_${courseId}_${medId}" name="afternoon_after_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'afternoon_after_qty_${courseId}_${medId}')">
-                <span class="text-sm">Afternoon - After</span>
-              </label>
-              <select id="afternoon_after_qty_${courseId}_${medId}" name="afternoon_after_qty_${courseId}_${medId}" class="border rounded px-2 py-1 text-sm w-20 dosage-quantity" disabled>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-              </select>
-            </div>
-            <div class="flex items-center justify-between">
-              <label class="flex items-center cursor-pointer">
-                <input type="checkbox" id="evening_after_${courseId}_${medId}" name="evening_after_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'evening_after_qty_${courseId}_${medId}')">
-                <span class="text-sm">Evening - After</span>
-              </label>
-              <select id="evening_after_qty_${courseId}_${medId}" name="evening_after_qty_${courseId}_${medId}" class="border rounded px-2 py-1 text-sm w-20 dosage-quantity" disabled>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-              </select>
-            </div>
-            <div class="flex items-center justify-between">
-              <label class="flex items-center cursor-pointer">
-                <input type="checkbox" id="night_after_${courseId}_${medId}" name="night_after_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'night_after_qty_${courseId}_${medId}')">
-                <span class="text-sm">Night - After</span>
-              </label>
-              <select id="night_after_qty_${courseId}_${medId}" name="night_after_qty_${courseId}_${medId}" class="border rounded px-2 py-1 text-sm w-20 dosage-quantity" disabled>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-              </select>
+          
+          <!-- After Column -->
+          <div>
+            <h6 class="text-base font-semibold text-ayurveda-600 mb-3 pb-2 border-b">After</h6>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between gap-3">
+                <label class="flex items-center cursor-pointer flex-1">
+                  <input type="checkbox" id="morning_after_${courseId}_${medId}" name="morning_after_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'morning_after_qty_${courseId}_${medId}')">
+                  <span class="text-sm">Morning - After</span>
+                </label>
+                <select id="morning_after_qty_${courseId}_${medId}" name="morning_after_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <div class="flex items-center justify-between gap-3">
+                <label class="flex items-center cursor-pointer flex-1">
+                  <input type="checkbox" id="afternoon_after_${courseId}_${medId}" name="afternoon_after_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'afternoon_after_qty_${courseId}_${medId}')">
+                  <span class="text-sm">Afternoon - After</span>
+                </label>
+                <select id="afternoon_after_qty_${courseId}_${medId}" name="afternoon_after_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <div class="flex items-center justify-between gap-3">
+                <label class="flex items-center cursor-pointer flex-1">
+                  <input type="checkbox" id="evening_after_${courseId}_${medId}" name="evening_after_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'evening_after_qty_${courseId}_${medId}')">
+                  <span class="text-sm">Evening - After</span>
+                </label>
+                <select id="evening_after_qty_${courseId}_${medId}" name="evening_after_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <div class="flex items-center justify-between gap-3">
+                <label class="flex items-center cursor-pointer flex-1">
+                  <input type="checkbox" id="night_after_${courseId}_${medId}" name="night_after_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'night_after_qty_${courseId}_${medId}')">
+                  <span class="text-sm">Night - After</span>
+                </label>
+                <select id="night_after_qty_${courseId}_${medId}" name="night_after_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
