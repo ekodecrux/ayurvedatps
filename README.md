@@ -415,14 +415,37 @@ For customization, feature requests, or support contact the development team.
 
 ---
 
-**Status**: ✅ **100% COMPLETE - Production Ready (PWA Cache Fixed)**  
+**Status**: ✅ **100% COMPLETE - Production Ready v2.3.0**  
 **Last Updated**: January 2, 2026  
-**Version**: 2.1.0 (TPS DHANVANTRI Edition - All Issues Fixed + PWA Cache Fixed)
+**Version**: 2.3.0 (Side-by-side Medicine Schedule Layout)
 
-## 🎯 Recent Fixes (v2.1.0)
-- ✅ Fixed PWA cache issue causing "Coming Soon" error in Edit Herbs & Routes
-- ✅ Updated Service Worker cache version to v2.1.0 for proper cache invalidation
-- ✅ Fixed CSV/Excel/PDF export functionality  
-- ✅ Fixed address and additional phone numbers display
-- ✅ Fixed Given Date and Follow-up Date extraction
-- ✅ All features tested and working in production
+## 🎯 Latest Updates (v2.3.0)
+- ✅ **Side-by-side medicine schedule layout** (Before | After columns)
+- ✅ **Additional phone numbers** (unlimited) with View/Edit/Print support
+- ✅ **Full address fields** (8 detailed fields) with View/Edit/Print support
+- ✅ **Medicine dosage checkboxes** with quantity dropdowns (1-5)
+- ✅ **Edit loads current data** correctly (no cache issues)
+- ✅ Service Worker v2.3.0 with cache-busting
+- ✅ All CRUD operations working perfectly
+- ✅ CSV/Excel/PDF exports functional
+
+## 📦 Download & Deploy
+
+**Complete Package**: https://www.genspark.ai/api/files/s/4R80zHaV
+
+**Quick Deploy**:
+```bash
+wget https://www.genspark.ai/api/files/s/4R80zHaV -O tps-dhanvantari.tar.gz
+tar -xzf tps-dhanvantari.tar.gz
+cd home/user/webapp
+npx wrangler login
+npx wrangler pages deploy dist --project-name ayurveda-clinic
+```
+
+**See**: `COMPLETE_DEPLOYMENT_GUIDE.md` for detailed instructions
+
+## 🔗 Production URLs
+
+- **Primary**: https://tpsdhanvantariayurveda.com
+- **Cloudflare Pages**: https://ayurveda-clinic.pages.dev
+- **Sandbox**: https://3000-ickijva4njj2u5hky0gzf-b9b802c4.sandbox.novita.ai
