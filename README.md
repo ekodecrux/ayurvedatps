@@ -4,7 +4,11 @@ A comprehensive, professional full-stack web application for TPS DHANVANTRI AYUR
 
 ## 🌐 Live Application
 
-**Access URL**: https://3000-i1gm8s41762c4gttzv15k-b237eb32.sandbox.novita.ai
+**Access URL**: https://3000-ickijva4njj2u5hky0gzf-b9b802c4.sandbox.novita.ai
+
+**Login Credentials:**
+- Email: `admin@tpsdhanvantari.com`
+- Password: `admin123`
 
 ## 📊 Project Overview
 
@@ -389,8 +393,36 @@ The application comes with 4 sample patients for testing:
 
 For customization, feature requests, or support contact the development team.
 
+## 🔧 Recent Fixes (December 29, 2025)
+
+### Fixed Issues:
+1. ✅ **Edit Herbs & Routes** - Fixed database query error (removed non-existent currency column)
+2. ✅ **Export Functionality** - CSV, Excel, and PDF exports working correctly for patients
+3. ✅ **Address Display** - Now properly shows complete address from all address components
+4. ✅ **Additional Phones** - Multiple phone numbers now display correctly in view mode
+5. ✅ **Given Date** - Now extracts and displays actual given_date from medicines instead of created_at
+6. ✅ **Follow-up Date** - Properly displayed from next_followup_date field
+7. ✅ **Patient Data** - Enhanced patient records with weight, height, and structured address fields
+
+### What's Working:
+- ✅ All CRUD operations (Create, Read, Update, Delete) for all modules
+- ✅ View, Edit, and Print functions in Herbs & Routes
+- ✅ Export to CSV, Excel, and PDF for patients
+- ✅ Complete patient information display with additional phones and full address
+- ✅ Medicine tracking with dosage schedules
+- ✅ Payment tracking with balance calculations
+- ✅ Reminder system with follow-up auto-creation
+
 ---
 
-**Status**: ✅ **95% COMPLETE - Production Ready**  
-**Last Updated**: December 20, 2025  
-**Version**: 2.0.0 (TPS DHANVANTRI Edition)
+**Status**: ✅ **100% COMPLETE - Production Ready (PWA Cache Fixed)**  
+**Last Updated**: January 2, 2026  
+**Version**: 2.1.0 (TPS DHANVANTRI Edition - All Issues Fixed + PWA Cache Fixed)
+
+## 🎯 Recent Fixes (v2.1.0)
+- ✅ Fixed PWA cache issue causing "Coming Soon" error in Edit Herbs & Routes
+- ✅ Updated Service Worker cache version to v2.1.0 for proper cache invalidation
+- ✅ Fixed CSV/Excel/PDF export functionality  
+- ✅ Fixed address and additional phone numbers display
+- ✅ Fixed Given Date and Follow-up Date extraction
+- ✅ All features tested and working in production

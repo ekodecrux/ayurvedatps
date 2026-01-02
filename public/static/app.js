@@ -2185,7 +2185,23 @@ async function viewHerbsRoutes(id) {
       ageGenderEl.textContent = `${hr.age || 'N/A'} / ${hr.gender || 'N/A'}`;
     }
     
-    setTextIfExists('summary-patient-phone', hr.patient_phone);
+    // Phone with additional phones
+    let phoneDisplay = hr.patient_phone || 'N/A';
+    if (hr.country_code && hr.patient_phone) {
+      phoneDisplay = `${hr.country_code} ${hr.patient_phone}`;
+    }
+    if (hr.additional_phones) {
+      try {
+        const additionalPhones = JSON.parse(hr.additional_phones);
+        if (additionalPhones && additionalPhones.length > 0) {
+          const additionalNumbers = additionalPhones.map(p => `${p.label}: ${p.number}`).join(', ');
+          phoneDisplay += ` (Additional: ${additionalNumbers})`;
+        }
+      } catch (e) {
+        console.log('Error parsing additional phones:', e);
+      }
+    }
+    setTextIfExists('summary-patient-phone', phoneDisplay);
     setTextIfExists('summary-patient-country', hr.country);
     
     // Weight/Height combined
@@ -2204,7 +2220,7 @@ async function viewHerbsRoutes(id) {
       hr.address_state,
       hr.address_pincode
     ].filter(p => p); // Remove null/undefined/empty
-    const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : 'N/A';
+    const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : (hr.address || 'N/A');
     setTextIfExists('summary-patient-address', fullAddress);
     
     // Display health issues from diseases JSON array
@@ -2223,8 +2239,12 @@ async function viewHerbsRoutes(id) {
     }
     setTextIfExists('summary-patient-health-issue', healthIssueText);
     
-    // Treatment details
-    setTextIfExists('summary-given-date', formatDate(hr.created_at));
+    // Treatment details - get given_date from first medicine if available
+    let givenDate = hr.given_date || hr.created_at;
+    if (hr.medicines && hr.medicines.length > 0 && hr.medicines[0].given_date) {
+      givenDate = hr.medicines[0].given_date;
+    }
+    setTextIfExists('summary-given-date', formatDate(givenDate));
     setTextIfExists('summary-treatment-months', 'See individual medicines');
     setTextIfExists('summary-followup-date', formatDate(hr.next_followup_date));
     setTextIfExists('summary-course', hr.course);
@@ -2255,7 +2275,7 @@ async function viewHerbsRoutes(id) {
         const courseAmount = parseFloat(firstMed.payment_amount || 0);
         const courseAdvance = parseFloat(firstMed.advance_payment || 0);
         const courseBalance = courseAmount - courseAdvance;
-        const symbol = hr.currency === 'USD' ? '$' : '₹';
+        const symbol = '₹'; // Default to INR
         
         const medicinesHtml = meds.map((med, index) => {
           // Build dosage schedule badges
@@ -2355,8 +2375,7 @@ async function viewHerbsRoutes(id) {
     }
     
     // Calculate and show payment summary
-    const currency = hr.currency || 'INR';
-    const symbol = currency === 'USD' ? '$' : '₹';
+    const symbol = '₹'; // Default to INR
     let totalAmount = 0;
     let totalAdvance = 0;
     let totalCollected = 0;

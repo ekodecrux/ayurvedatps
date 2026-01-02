@@ -1048,13 +1048,14 @@ app.get('/api/prescriptions/:id', async (c) => {
       SELECT h.id, h.patient_id as patient_fk, h.appointment_id, h.diagnosis, h.notes, 
              h.next_followup_date, h.created_at, h.updated_at, h.given_date,
              h.treatment_months, h.payment_amount, h.advance_payment, h.payment_notes,
-             h.due_balance, h.course, h.currency,
+             h.due_balance, h.course,
              p.name as patient_name, p.phone as patient_phone, p.email as patient_email, 
              p.patient_id as patient_identifier, p.id as patient_db_id,
-             p.age, p.gender, p.country, p.weight, p.height,
+             p.age, p.gender, p.country, p.country_code, p.weight, p.height,
              p.present_health_issue, p.present_medicine, p.mg_value, p.diseases,
              p.address_hno, p.address_street, p.address_apartment, p.address_area,
-             p.address_district, p.address_state, p.address_pincode
+             p.address_district, p.address_state, p.address_pincode, p.address,
+             p.additional_phones
       FROM herbs_routes h
       LEFT JOIN patients p ON h.patient_id = p.id
       WHERE h.id = ?
@@ -1198,7 +1199,7 @@ app.put('/api/prescriptions/:id', async (c) => {
     // Update herbs_routes record (simplified - per-medicine data moved to medicines_tracking)
     await c.env.DB.prepare(`
       UPDATE herbs_routes SET 
-        patient_id = ?, next_followup_date = ?, diagnosis = ?, notes = ?, course = ?, currency = ?,
+        patient_id = ?, next_followup_date = ?, diagnosis = ?, notes = ?, course = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(
@@ -1207,7 +1208,6 @@ app.put('/api/prescriptions/:id', async (c) => {
       body.diagnosis || null,
       body.notes || null,
       body.course || null,
-      body.currency || 'INR',
       id
     ).run()
     
