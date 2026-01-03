@@ -497,12 +497,12 @@ app.get('/api/patients/export', async (c) => {
         if (patient.additional_phones) {
           try {
             const phones = JSON.parse(patient.additional_phones)
-            phonesText = phones.map((p: any) => `<div>${p.label}: ${p.number}</div>`).join('')
+            phonesText = phones.map((p: any) => `${p.label}: ${p.number}`).join(', ')
           } catch (e) {
-            phonesText = '<div>N/A</div>'
+            phonesText = 'N/A'
           }
         } else {
-          phonesText = '<div>N/A</div>'
+          phonesText = 'N/A'
         }
         
         // Assemble address from individual fields
