@@ -4,7 +4,9 @@ A comprehensive, professional full-stack web application for TPS DHANVANTRI AYUR
 
 ## 🌐 Live Application
 
-**Access URL**: https://3000-ickijva4njj2u5hky0gzf-b9b802c4.sandbox.novita.ai
+**Sandbox URL**: https://3000-iwa68javvdw3c48pxrx7p-3844e1b6.sandbox.novita.ai
+
+**Production URL**: https://tpsdhanvantariayurveda.com (Requires API token with deployment permissions)
 
 **Login Credentials:**
 - Email: `admin@tpsdhanvantari.com`
