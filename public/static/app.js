@@ -1955,7 +1955,15 @@ async function saveHerbsRoutes() {
           evening_before: medItem.querySelector(`[name="evening_before_${medCourse}_${medId}"]`)?.checked ? 1 : 0,
           evening_after: medItem.querySelector(`[name="evening_after_${medCourse}_${medId}"]`)?.checked ? 1 : 0,
           night_before: medItem.querySelector(`[name="night_before_${medCourse}_${medId}"]`)?.checked ? 1 : 0,
-          night_after: medItem.querySelector(`[name="night_after_${medCourse}_${medId}"]`)?.checked ? 1 : 0
+          night_after: medItem.querySelector(`[name="night_after_${medCourse}_${medId}"]`)?.checked ? 1 : 0,
+          morning_before_qty: parseInt(medItem.querySelector(`[name="morning_before_qty_${medCourse}_${medId}"]`)?.value) || 1,
+          morning_after_qty: parseInt(medItem.querySelector(`[name="morning_after_qty_${medCourse}_${medId}"]`)?.value) || 1,
+          afternoon_before_qty: parseInt(medItem.querySelector(`[name="afternoon_before_qty_${medCourse}_${medId}"]`)?.value) || 1,
+          afternoon_after_qty: parseInt(medItem.querySelector(`[name="afternoon_after_qty_${medCourse}_${medId}"]`)?.value) || 1,
+          evening_before_qty: parseInt(medItem.querySelector(`[name="evening_before_qty_${medCourse}_${medId}"]`)?.value) || 1,
+          evening_after_qty: parseInt(medItem.querySelector(`[name="evening_after_qty_${medCourse}_${medId}"]`)?.value) || 1,
+          night_before_qty: parseInt(medItem.querySelector(`[name="night_before_qty_${medCourse}_${medId}"]`)?.value) || 1,
+          night_after_qty: parseInt(medItem.querySelector(`[name="night_after_qty_${medCourse}_${medId}"]`)?.value) || 1
         });
       });
     });
