@@ -2252,40 +2252,95 @@ async function editHerbsRoutes(id) {
               </div>
               
               <div>
-                <label class="block text-xs font-medium mb-2">Dosage Schedule</label>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                  <label class="flex items-center">
-                    <input type="checkbox" name="morning_before_${courseId}_${medId}" class="mr-1" ${med.morning_before ? 'checked' : ''}>
-                    Morning (Before)
-                  </label>
-                  <label class="flex items-center">
-                    <input type="checkbox" name="morning_after_${courseId}_${medId}" class="mr-1" ${med.morning_after ? 'checked' : ''}>
-                    Morning (After)
-                  </label>
-                  <label class="flex items-center">
-                    <input type="checkbox" name="afternoon_before_${courseId}_${medId}" class="mr-1" ${med.afternoon_before ? 'checked' : ''}>
-                    Afternoon (Before)
-                  </label>
-                  <label class="flex items-center">
-                    <input type="checkbox" name="afternoon_after_${courseId}_${medId}" class="mr-1" ${med.afternoon_after ? 'checked' : ''}>
-                    Afternoon (After)
-                  </label>
-                  <label class="flex items-center">
-                    <input type="checkbox" name="evening_before_${courseId}_${medId}" class="mr-1" ${med.evening_before ? 'checked' : ''}>
-                    Evening (Before)
-                  </label>
-                  <label class="flex items-center">
-                    <input type="checkbox" name="evening_after_${courseId}_${medId}" class="mr-1" ${med.evening_after ? 'checked' : ''}>
-                    Evening (After)
-                  </label>
-                  <label class="flex items-center">
-                    <input type="checkbox" name="night_before_${courseId}_${medId}" class="mr-1" ${med.night_before ? 'checked' : ''}>
-                    Night (Before)
-                  </label>
-                  <label class="flex items-center">
-                    <input type="checkbox" name="night_after_${courseId}_${medId}" class="mr-1" ${med.night_after ? 'checked' : ''}>
-                    Night (After)
-                  </label>
+                <label class="block text-sm font-medium mb-2 text-ayurveda-700">Medicine Schedule</label>
+                <p class="text-xs text-gray-600 mb-3">Configure time slots and quantities for each medicine</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <!-- Before Column -->
+                  <div>
+                    <h6 class="text-base font-semibold text-ayurveda-600 mb-3 pb-2 border-b">Before</h6>
+                    <div class="space-y-3">
+                      <div class="flex items-center justify-between gap-3">
+                        <label class="flex items-center cursor-pointer flex-1">
+                          <input type="checkbox" id="morning_before_${courseId}_${medId}" name="morning_before_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'morning_before_qty_${courseId}_${medId}')" ${med.morning_before ? 'checked' : ''}>
+                          <span class="text-sm">Morning - Before</span>
+                        </label>
+                        <select id="morning_before_qty_${courseId}_${medId}" name="morning_before_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity ${med.morning_before ? '' : 'bg-gray-100 cursor-not-allowed'}" ${med.morning_before ? '' : 'disabled'}>
+                          ${[1,2,3,4,5].map(q => `<option value="${q}" ${med.morning_before_qty == q ? 'selected' : ''}>${q}</option>`).join('')}
+                        </select>
+                      </div>
+                      <div class="flex items-center justify-between gap-3">
+                        <label class="flex items-center cursor-pointer flex-1">
+                          <input type="checkbox" id="afternoon_before_${courseId}_${medId}" name="afternoon_before_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'afternoon_before_qty_${courseId}_${medId}')" ${med.afternoon_before ? 'checked' : ''}>
+                          <span class="text-sm">Afternoon - Before</span>
+                        </label>
+                        <select id="afternoon_before_qty_${courseId}_${medId}" name="afternoon_before_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity ${med.afternoon_before ? '' : 'bg-gray-100 cursor-not-allowed'}" ${med.afternoon_before ? '' : 'disabled'}>
+                          ${[1,2,3,4,5].map(q => `<option value="${q}" ${med.afternoon_before_qty == q ? 'selected' : ''}>${q}</option>`).join('')}
+                        </select>
+                      </div>
+                      <div class="flex items-center justify-between gap-3">
+                        <label class="flex items-center cursor-pointer flex-1">
+                          <input type="checkbox" id="evening_before_${courseId}_${medId}" name="evening_before_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'evening_before_qty_${courseId}_${medId}')" ${med.evening_before ? 'checked' : ''}>
+                          <span class="text-sm">Evening - Before</span>
+                        </label>
+                        <select id="evening_before_qty_${courseId}_${medId}" name="evening_before_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity ${med.evening_before ? '' : 'bg-gray-100 cursor-not-allowed'}" ${med.evening_before ? '' : 'disabled'}>
+                          ${[1,2,3,4,5].map(q => `<option value="${q}" ${med.evening_before_qty == q ? 'selected' : ''}>${q}</option>`).join('')}
+                        </select>
+                      </div>
+                      <div class="flex items-center justify-between gap-3">
+                        <label class="flex items-center cursor-pointer flex-1">
+                          <input type="checkbox" id="night_before_${courseId}_${medId}" name="night_before_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'night_before_qty_${courseId}_${medId}')" ${med.night_before ? 'checked' : ''}>
+                          <span class="text-sm">Night - Before</span>
+                        </label>
+                        <select id="night_before_qty_${courseId}_${medId}" name="night_before_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity ${med.night_before ? '' : 'bg-gray-100 cursor-not-allowed'}" ${med.night_before ? '' : 'disabled'}>
+                          ${[1,2,3,4,5].map(q => `<option value="${q}" ${med.night_before_qty == q ? 'selected' : ''}>${q}</option>`).join('')}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- After Column -->
+                  <div>
+                    <h6 class="text-base font-semibold text-ayurveda-600 mb-3 pb-2 border-b">After</h6>
+                    <div class="space-y-3">
+                      <div class="flex items-center justify-between gap-3">
+                        <label class="flex items-center cursor-pointer flex-1">
+                          <input type="checkbox" id="morning_after_${courseId}_${medId}" name="morning_after_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'morning_after_qty_${courseId}_${medId}')" ${med.morning_after ? 'checked' : ''}>
+                          <span class="text-sm">Morning - After</span>
+                        </label>
+                        <select id="morning_after_qty_${courseId}_${medId}" name="morning_after_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity ${med.morning_after ? '' : 'bg-gray-100 cursor-not-allowed'}" ${med.morning_after ? '' : 'disabled'}>
+                          ${[1,2,3,4,5].map(q => `<option value="${q}" ${med.morning_after_qty == q ? 'selected' : ''}>${q}</option>`).join('')}
+                        </select>
+                      </div>
+                      <div class="flex items-center justify-between gap-3">
+                        <label class="flex items-center cursor-pointer flex-1">
+                          <input type="checkbox" id="afternoon_after_${courseId}_${medId}" name="afternoon_after_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'afternoon_after_qty_${courseId}_${medId}')" ${med.afternoon_after ? 'checked' : ''}>
+                          <span class="text-sm">Afternoon - After</span>
+                        </label>
+                        <select id="afternoon_after_qty_${courseId}_${medId}" name="afternoon_after_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity ${med.afternoon_after ? '' : 'bg-gray-100 cursor-not-allowed'}" ${med.afternoon_after ? '' : 'disabled'}>
+                          ${[1,2,3,4,5].map(q => `<option value="${q}" ${med.afternoon_after_qty == q ? 'selected' : ''}>${q}</option>`).join('')}
+                        </select>
+                      </div>
+                      <div class="flex items-center justify-between gap-3">
+                        <label class="flex items-center cursor-pointer flex-1">
+                          <input type="checkbox" id="evening_after_${courseId}_${medId}" name="evening_after_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'evening_after_qty_${courseId}_${medId}')" ${med.evening_after ? 'checked' : ''}>
+                          <span class="text-sm">Evening - After</span>
+                        </label>
+                        <select id="evening_after_qty_${courseId}_${medId}" name="evening_after_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity ${med.evening_after ? '' : 'bg-gray-100 cursor-not-allowed'}" ${med.evening_after ? '' : 'disabled'}>
+                          ${[1,2,3,4,5].map(q => `<option value="${q}" ${med.evening_after_qty == q ? 'selected' : ''}>${q}</option>`).join('')}
+                        </select>
+                      </div>
+                      <div class="flex items-center justify-between gap-3">
+                        <label class="flex items-center cursor-pointer flex-1">
+                          <input type="checkbox" id="night_after_${courseId}_${medId}" name="night_after_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'night_after_qty_${courseId}_${medId}')" ${med.night_after ? 'checked' : ''}>
+                          <span class="text-sm">Night - After</span>
+                        </label>
+                        <select id="night_after_qty_${courseId}_${medId}" name="night_after_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity ${med.night_after ? '' : 'bg-gray-100 cursor-not-allowed'}" ${med.night_after ? '' : 'disabled'}>
+                          ${[1,2,3,4,5].map(q => `<option value="${q}" ${med.night_after_qty == q ? 'selected' : ''}>${q}</option>`).join('')}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
