@@ -1,31 +1,105 @@
 # Dependencies
 node_modules/
+.npm
+.yarn
+.pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build output
+dist/
+.output/
+.vercel/
+.netlify/
+
+# Development
+.dev.vars
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # Runtime data
-pids
+pids/
 *.pid
 *.seed
 *.pid.lock
 
-# Compiled binary addons
-build
-dist
+# Wrangler
+.wrangler/
+wrangler.toml
 
-# dotenv environment variables file
-.env
-.dev.vars
+# Database
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
 
 # PM2
 .pm2/
-pids/
-logs/
-*.log
+.pm2/dump.pm2
 
-# Wrangler
-.wrangler/
+# SSH keys and credentials
+*.pem
+*.key
+*.cert
+id_rsa*
 
 # Backup files
-*.backup
-*.bak
 *.tar.gz
 *.zip
+app.js.backup
+app.js.original
+index.tsx.backup
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+ENV/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

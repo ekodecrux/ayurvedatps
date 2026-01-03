@@ -1,453 +1,364 @@
-# TPS DHANVANTRI AYURVEDA - Management System 🌿
+# 🏥 TPS DHANVANTARI AYURVEDA - Management System
 
-A comprehensive, professional full-stack web application for TPS DHANVANTRI AYURVEDA clinic to manage patients, appointments, herbs & routes (prescriptions), and automated reminders.
+[![Version](https://img.shields.io/badge/version-2.4.0-blue.svg)](https://github.com/ekodecrux/ayurvedatps)
+[![Status](https://img.shields.io/badge/status-production-green.svg)](http://88.222.244.84:3001)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## 🌐 Live Application
+A comprehensive Ayurveda clinic management system built with modern web technologies, deployed on Hostinger VPS.
 
-**Sandbox URL**: https://3000-iwa68javvdw3c48pxrx7p-3844e1b6.sandbox.novita.ai
+## 🌟 Features
 
-**Production URL**: https://tpsdhanvantariayurveda.com (Requires API token with deployment permissions)
+### Patient Management
+- ✅ Complete patient registration with detailed information
+- ✅ Medical history tracking
+- ✅ Disease and medication records
+- ✅ Multiple contact numbers support
+- ✅ Complete address management
+- ✅ Patient data export (CSV/Excel/PDF)
 
-**Login Credentials:**
-- Email: `admin@tpsdhanvantari.com`
-- Password: `admin123`
+### Herbs & Roots Prescription Management
+- ✅ Multi-course prescription tracking
+- ✅ Medicine dosage scheduling (Morning/Afternoon/Evening/Night)
+- ✅ Medicine quantity management with dropdown (1-360)
+- ✅ Roman ID system for medicine identification
+- ✅ Active/Inactive course status
+- ✅ Treatment months tracking (1-12 months)
 
-## 📊 Project Overview
+### Payment Management
+- ✅ Course-wise payment tracking
+- ✅ Payment collection recording
+- ✅ Advance payment tracking
+- ✅ Balance calculation with payment collections
+- ✅ Payment status (Paid/Due) with accurate calculation
+- ✅ Multiple payment methods support
+- ✅ Payment notes and history
 
-**Name**: TPS DHANVANTRI AYURVEDA Management System  
-**Domain**: TPSDHANVANTARIAYURVEDA.COM  
-**Tech Stack**: Hono + Cloudflare Workers + D1 Database + TypeScript + TailwindCSS  
-**Type**: Single Doctor Clinic Management System
-
-## ✨ Implemented Features
-
-### 1. Patient Management ✅
-
-**Patient Registration with Comprehensive Fields:**
-- ✅ Auto-generated Patient ID in format: **COUNTRYNAME0001** (e.g., INDIA0001, USA0001)
-- ✅ Basic Information: Name, C/o, Age, Gender, Weight, Height
-- ✅ Contact Information:
-  - Country selector with auto country-code
-  - Phone 1, Phone 2, Phone 3 (multiple phone numbers)
-  - Email address
-- ✅ Detailed Address:
-  - H.No/Door No, Street, Apartment/Building
-  - Area/Locality, District, State/Province, Pin Code
-  - Complete address for reference
-- ✅ Referred By: Name, Phone, Address
-- ✅ Medical Information:
-  - Present Health Issue
-  - Present Medicine
-  - MG Value
-  - Medical History
-  - Multiple Diseases tracking (add/remove)
-
-**Patient List Features:**
-- ✅ Search by name, phone, patient ID, or email
-- ✅ Filter by country
-- ✅ Export to CSV/Excel
-- ✅ View, Edit, Delete actions
-- ✅ Display Patient ID in COUNTRYNAME format
-
-### 2. Appointment Scheduling ✅
-
-- ✅ Schedule appointments with date & time
-- ✅ Track appointment status (scheduled, confirmed, completed, cancelled)
-- ✅ Link appointments to patients
-- ✅ Add purpose and notes
-- ✅ Search by patient name or phone
-- ✅ Filter by status
-- ✅ View today's appointments on dashboard
-
-### 3. Herbs & Routes (Prescriptions) ✅
-
-**Complete Redesign Based on Physical Prescription Format:**
-
-- ✅ Auto-display patient details when selected
-- ✅ **Given Date** field with today's date as default
-- ✅ **Treatment Months** dropdown (1-12 months)
-  - ✅ Auto-calculates Next Follow-up Date (Given Date + Months)
-  - ✅ Automatically creates follow-up reminder
-- ✅ **Problem/Diagnosis** field
-- ✅ **Course** dropdown (1-16 courses)
-
-**Medicine Entry System:**
-- ✅ Roman numerals auto-display (**M.M.(I), M.M.(II), ..., M.M.(XII)**)
-- ✅ Medicine Name text field
-- ✅ **Dosage Schedule Matrix** (8 checkboxes per medicine):
-  - Morning (Before/After meal)
-  - Afternoon (Before/After meal)
-  - Evening (Before/After meal)
-  - Night (Before/After meal)
-- ✅ Add/Remove medicine rows (up to 12 medicines)
-- ✅ Display in clean grid/table format
-
-**Payment Section:**
-- ✅ Total Amount field
-- ✅ Advance Paid field
-- ✅ **Balance Due auto-calculated** (Total - Advance) in real-time
-- ✅ Payment Notes textarea
-- ✅ Visual display of balance in red
-
-**Additional Features:**
-- ✅ Search by patient name or problem
-- ✅ Display list with Given Date, Problem, Course, Amount, Duration, Next Follow-up
-- ✅ View, Print, Delete actions
-
-### 4. Reminder System ✅
-
-- ✅ Auto-created reminders for follow-up appointments
-- ✅ Manual reminder creation
-- ✅ Search by patient name, phone, or patient ID
-- ✅ Filter by status (pending/sent)
-- ✅ Filter by reminder type (followup/medicine/other)
-- ✅ Mark reminders as sent
-- ✅ WhatsApp and SMS notification support (framework ready)
-
-### 5. Dashboard & Analytics ✅
-
-- ✅ Real-time statistics:
-  - Total patients count
-  - Today's appointments count
-  - Pending reminders count
-- ✅ Recent appointments widget
-- ✅ Upcoming reminders widget
-- ✅ Color-coded status indicators
-
-### 6. Settings Panel ✅
-
-- ✅ Clinic information configuration
-- ✅ TPS DHANVANTRI AYURVEDA branding
-- ✅ WhatsApp notifications toggle
-- ✅ SMS notifications configuration
-
-## 📊 Data Architecture
-
-### Database Tables (Cloudflare D1 - SQLite)
-
-1. **patients** - Comprehensive patient information
-   - Basic: name, c/o, age, gender, weight, height
-   - Contact: country, country_code, phone (primary), email, additional_phones (JSON)
-   - Address: h_no, street, apartment, area, district, state, pincode, lat/long, full address
-   - Referred by: name, phone, address
-   - Medical: present_health_issue, present_medicine, mg_value, medical_history
-   - Auto-generated: patient_id (COUNTRYNAME0001 format)
-
-2. **patient_diseases** - Multiple disease tracking per patient
-   - disease_name, attacked_by, notes
-
-3. **appointments** - Appointment scheduling
-
-4. **herbs_routes** - Prescription records (renamed from prescriptions)
-   - given_date, treatment_months, follow_up_date
-   - diagnosis (problem), notes, course
-   - payment_amount, advance_payment, due_balance, payment_notes
-
-5. **medicines_tracking** - Medicine details with dosage schedule
-   - herbs_route_id, roman_id, medicine_name
-   - given_date, treatment_months
-   - Dosage booleans: morning_before/after, afternoon_before/after, evening_before/after, night_before/after
-
-6. **reminders** - Notification and reminder management
-
-7. **settings** - Application configuration
-
-## 🚀 User Guide
-
-### Adding a New Patient
-
-1. Click **"Patients"** in the navigation
-2. Click **"+ Add Patient"** button
-3. Fill in the comprehensive patient form:
-   - **Basic Information**: Name (required), C/o, Age, Gender, Weight, Height
-   - **Contact Information**: 
-     - Select Country (this determines Patient ID format: INDIA0001, USA0001, etc.)
-     - Phone 1 (required), Phone 2, Phone 3, Email
-   - **Detailed Address**: H.No, Street, Apartment, Area, District, State, Pin Code
-   - **Referred By**: Name, Phone, Address of referrer
-   - **Medical Information**: Present Health Issue, Present Medicine, MG Value
-   - **Medical History**: Previous conditions, allergies, etc.
-   - **Multiple Diseases**: Click "+ Add Disease" to track multiple conditions
-4. Click **"Save Patient"**
-5. System automatically generates Patient ID (e.g., **INDIA0001**)
-
-### Creating Herbs & Routes Record
-
-1. Click **"Herbs & Routes"** in the navigation
-2. Click **"+ New Record"** button
-3. Fill in the prescription form:
-   - **Select Patient** (shows patient name and ID)
-   - **Given Date** (defaults to today)
-   - **Treatment Months** (1-12) - System auto-calculates follow-up date
-   - **Problem/Diagnosis**
-   - **Course** (1-16)
-4. **Add Medicines**:
-   - Click "+ Add Medicine" (Roman numerals auto-display: M.M.(I), M.M.(II), etc.)
-   - Enter Medicine Name
-   - Select Dosage Schedule (8 checkboxes: Before/After for Morning/Afternoon/Evening/Night)
-   - Add multiple medicines as needed (up to 12)
-5. **Payment Details**:
-   - Enter Total Amount
-   - Enter Advance Paid
-   - Balance Due automatically calculated and displayed
-   - Add Payment Notes (optional)
-6. Click **"Save Record"**
-7. System automatically:
-   - Saves all medicines with dosage schedules
-   - Creates follow-up reminder for calculated date
-   - Shows success message with follow-up date
-
-### Searching and Filtering
-
-**Patients:**
-- Search by name, phone, patient ID, or email
-- Filter by country
-- Export filtered results to CSV
-
-**Appointments:**
-- Search by patient name or phone
-- Filter by status (scheduled/confirmed/completed/cancelled)
-
-**Herbs & Routes:**
-- Search by patient name or problem
-- View detailed records with medicines and payment info
-
-**Reminders:**
-- Search by patient name
-- Filter by status (pending/sent)
-- Filter by type (followup/medicine/other)
-
-## 📋 API Endpoints
-
-### Patients
-- `GET /api/patients` - Get all patients (with search & filters)
-- `GET /api/patients/:id` - Get single patient
-- `POST /api/patients` - Create patient (auto-generates COUNTRYNAME0001 ID)
-- `PUT /api/patients/:id` - Update patient
-- `DELETE /api/patients/:id` - Delete patient
-- `GET /api/patients/export/csv` - Export patients to CSV
-- `GET /api/patients/:id/diseases` - Get patient diseases
-- `POST /api/patients/:id/diseases` - Add disease
-- `DELETE /api/patient-diseases/:id` - Delete disease
-
-### Herbs & Routes (Prescriptions)
-- `GET /api/prescriptions` - Get all herbs & routes records
-- `GET /api/prescriptions/:id` - Get single record with medicines
-- `GET /api/patients/:id/prescriptions` - Get patient prescriptions
-- `POST /api/prescriptions` - Create herbs & routes record
-- `PUT /api/prescriptions/:id` - Update record
-- `DELETE /api/prescriptions/:id` - Delete record
-
-### Appointments
-- `GET /api/appointments` - Get all appointments
-- `GET /api/patients/:id/appointments` - Get patient appointments
-- `POST /api/appointments` - Create appointment
-- `PUT /api/appointments/:id` - Update appointment
-- `DELETE /api/appointments/:id` - Delete appointment
+### Appointment System
+- ✅ Appointment scheduling
+- ✅ Status tracking (Pending/Confirmed/Completed)
+- ✅ Patient information integration
+- ✅ Appointment reminders
 
 ### Reminders
-- `GET /api/reminders` - Get all reminders
-- `PUT /api/reminders/:id` - Update reminder status
-- `DELETE /api/reminders/:id` - Delete reminder
+- ✅ WhatsApp integration for reminders
+- ✅ SMS reminder support
+- ✅ Follow-up date tracking
+- ✅ Reminder status management
 
-### Dashboard
-- `GET /api/stats` - Get dashboard statistics
+### Data Export
+- ✅ Patient list export (CSV/Excel)
+- ✅ Complete address in exports
+- ✅ Additional phone numbers included
+- ✅ Prescription reports (PDF/Excel)
+- ✅ Print-friendly views
 
-## 🔧 Development
+## 🚀 Technology Stack
 
-### Local Setup
+### Backend
+- **Framework**: Hono.js (Cloudflare Workers)
+- **Runtime**: Cloudflare Workers
+- **Database**: SQLite (D1)
+- **Build Tool**: Vite
+- **Language**: TypeScript
+
+### Frontend
+- **UI Framework**: Vanilla JavaScript
+- **CSS Framework**: Tailwind CSS (CDN)
+- **Icons**: Font Awesome 6
+- **HTTP Client**: Axios
+- **Utilities**: Lodash, Day.js
+
+### Deployment
+- **Server**: Hostinger VPS (88.222.244.84)
+- **Process Manager**: PM2
+- **Web Server**: Nginx (reverse proxy)
+- **Port**: 3001
+
+## 📦 Installation
+
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+- Git
+
+### Setup Steps
+
+1. **Clone the repository**
 ```bash
-# Install dependencies
+git clone https://github.com/ekodecrux/ayurvedatps.git
+cd ayurvedatps
+```
+
+2. **Install dependencies**
+```bash
 npm install
+```
 
-# Apply database migrations
-npm run db:migrate:local
+3. **Setup database**
+```bash
+# Create local D1 database
+npx wrangler d1 create webapp-production
 
-# Seed database with sample data
-npm run db:seed
+# Update wrangler.jsonc with database ID
 
+# Run migrations
+npx wrangler d1 migrations apply webapp-production --local
+```
+
+4. **Development**
+```bash
 # Build the project
 npm run build
 
 # Start development server
 npm run dev:sandbox
+```
 
-# Or use PM2 (recommended)
+5. **Production Deployment**
+```bash
+# Deploy to Cloudflare Pages
+npm run deploy
+
+# Or deploy to VPS using PM2
 pm2 start ecosystem.config.cjs
 ```
 
-### Database Commands
-```bash
-# Apply migrations locally
-npm run db:migrate:local
+## 🗂️ Project Structure
 
-# Apply migrations to production
-npm run db:migrate:prod
-
-# Execute SQL command
-npx wrangler d1 execute ayurveda-db --local --command="SELECT * FROM patients"
+```
+ayurvedatps/
+├── src/
+│   ├── index.tsx           # Main Hono application
+│   └── renderer.tsx        # SSR renderer
+├── public/
+│   └── static/
+│       ├── app.js          # Frontend application
+│       ├── styles.css      # Custom styles
+│       └── ayurveda-logo.png
+├── migrations/             # Database migrations
+├── deploy-package/         # Deployment scripts
+│   ├── ecosystem.config.cjs
+│   └── start.sh
+├── dist/                   # Built files
+│   ├── _worker.js          # Compiled backend
+│   └── static/             # Static assets
+├── wrangler.jsonc          # Cloudflare configuration
+├── package.json
+├── tsconfig.json
+└── vite.config.ts
 ```
 
-### Testing
-```bash
-# Test API endpoints
-curl http://localhost:3000/api/stats
-curl http://localhost:3000/api/patients
+## 🔧 Configuration
 
-# Check PM2 status
-pm2 list
-pm2 logs ayurveda-clinic --nostream
+### Environment Variables
+Create a `.dev.vars` file for local development:
+```bash
+# Add any environment variables here
 ```
+
+### Database Configuration
+Update `wrangler.jsonc`:
+```json
+{
+  "name": "webapp",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "webapp-production",
+      "database_id": "your-database-id"
+    }
+  ]
+}
+```
+
+### PM2 Configuration
+`ecosystem.config.cjs`:
+```javascript
+module.exports = {
+  apps: [{
+    name: 'ayurveda-clinic',
+    script: 'npx',
+    args: 'wrangler pages dev dist --ip 0.0.0.0 --port 3001',
+    env: {
+      NODE_ENV: 'development',
+      PORT: 3001
+    }
+  }]
+}
+```
+
+## 📚 API Endpoints
+
+### Authentication
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `GET /api/auth/me` - Get current user
+
+### Patients
+- `GET /api/patients` - List all patients
+- `GET /api/patients/:id` - Get patient details
+- `POST /api/patients` - Create new patient
+- `PUT /api/patients/:id` - Update patient
+- `DELETE /api/patients/:id` - Delete patient
+- `GET /api/patients/export?format=csv|excel` - Export patients
+
+### Prescriptions
+- `GET /api/prescriptions` - List all prescriptions
+- `GET /api/prescriptions/:id` - Get prescription details
+- `POST /api/prescriptions` - Create new prescription
+- `PUT /api/prescriptions/:id` - Update prescription
+- `DELETE /api/prescriptions/:id` - Delete prescription
+
+### Appointments
+- `GET /api/appointments` - List appointments
+- `POST /api/appointments` - Create appointment
+- `PUT /api/appointments/:id` - Update appointment
+- `DELETE /api/appointments/:id` - Delete appointment
+
+### Reminders
+- `GET /api/reminders` - List reminders
+- `POST /api/reminders` - Create reminder
+- `PUT /api/reminders/:id` - Update reminder
+- `DELETE /api/reminders/:id` - Delete reminder
+
+### WhatsApp Integration
+- `POST /api/send-whatsapp` - Send WhatsApp message
+
+## 🎯 Recent Updates (v2.4.0)
+
+### All 7 Issues Fixed ✅
+
+1. **Patient Excel Export** - Added complete address column to CSV/Excel exports
+2. **Add Herbs & Roots** - Fixed patient info display (address + phones)
+3. **View Herbs & Roots** - Added complete address display
+4. **View Herbs & Roots** - Added medicine quantity display
+5. **Edit Herbs & Roots** - Fixed patient info display
+6. **Edit Medicine** - Added quantity dropdown (1-360 options)
+7. **Payment Status** - Fixed balance calculation (amount - totalCollected)
+
+### Technical Improvements
+- Added 4 helper functions for data formatting
+- Improved address assembly logic
+- Enhanced payment tracking with collections
+- Better UI consistency across views
 
 ## 🚀 Deployment
 
-### Deploy to Cloudflare Pages
+### Production Server
+- **URL**: http://88.222.244.84:3001
+- **Server**: Hostinger VPS
+- **Process Manager**: PM2
+- **Status**: ✅ Online
 
-1. **Setup Cloudflare API Key** (via Deploy tab)
-2. **Create Production Database**
-   ```bash
-   npx wrangler d1 create ayurveda-db
-   ```
-3. **Apply Production Migrations**
-   ```bash
-   npm run db:migrate:prod
-   ```
-4. **Create Cloudflare Pages Project**
-   ```bash
-   npx wrangler pages project create tps-dhanvantri \
-     --production-branch main \
-     --compatibility-date 2025-12-17
-   ```
-5. **Deploy**
-   ```bash
-   npm run deploy:prod
-   ```
+### Deployment Commands
+```bash
+# Check PM2 status
+pm2 status ayurveda-clinic
 
-## ⚠️ Features Not Yet Implemented
+# View logs
+pm2 logs ayurveda-clinic --lines 50
 
-### Pending Enhancements
-1. **Prescription Print Format** - Match TPS DHANVANTRI physical prescription layout with:
-   - Medicine tracking table (10 months, 5 rows of 2-month periods)
-   - Date fields for each period
-   - Professional print view
-2. **WhatsApp Business Integration** - Actual API integration with WhatsApp Business
-3. **SMS Integration** - SMS gateway for reminders
-4. **Photo Upload** - Patient photo upload with Cloudflare R2
-5. **Map Integration** - Google Maps for patient address
-6. **Automatic Reminder Scheduling** - Cron job to auto-send reminders
+# Restart service
+pm2 restart ayurveda-clinic
 
-## 📝 Key Features Summary
+# Stop service
+pm2 stop ayurveda-clinic
+```
 
-### ✅ Completed (95%)
-- ✅ Complete patient management with COUNTRYNAME0001 ID format
-- ✅ Comprehensive patient forms with 30+ fields
-- ✅ Multiple phone numbers and detailed address tracking
-- ✅ Referred by information
-- ✅ Medical history with multiple diseases
-- ✅ Herbs & Routes with Roman numerals (M.M.(I) - M.M.(XII))
-- ✅ Dosage schedule matrix (8 checkboxes per medicine)
-- ✅ Auto follow-up date calculation
-- ✅ Payment with real-time balance calculation
-- ✅ Auto reminder creation for follow-ups
-- ✅ CSV export for patients
-- ✅ Search and filter across all sections
-- ✅ Dashboard with real-time statistics
+## 🔐 Default Credentials
 
-### ⏳ Pending (5%)
-- ⏳ Prescription print format (physical layout matching)
-- ⏳ WhatsApp/SMS actual integration
-- ⏳ Photo upload functionality
-- ⏳ Map integration for addresses
+**Admin Login**:
+- Email: `Shankaranherbaltreatment@gmail.com`
+- Password: `123456`
 
-## 🔐 Security & Privacy
+**Note**: Please change the password after first login in production.
 
-- All data stored in Cloudflare D1 with encryption at rest
-- HTTPS for all communications
-- Patient data privacy compliant
-- Regular database backups recommended
+## 📊 Database Schema
 
-## 📱 Progressive Web App (PWA)
+### Main Tables
+- `patients` - Patient information
+- `prescriptions` - Prescription records
+- `medicines` - Medicine details per prescription
+- `payment_collections` - Payment collection records
+- `appointments` - Appointment scheduling
+- `reminders` - Reminder system
+- `admin_users` - System users
 
-- ✅ Installable on mobile and desktop
-- ✅ Offline functionality with service worker
-- ✅ Network-first strategy for API calls
-- ✅ Responsive design for all screen sizes
+## 🧪 Testing
 
-## 📊 Sample Data
+### Test Patient Available
+- **Patient ID**: IND00001
+- **Name**: Rajesh Kumar
+- **Phone**: +91 9876543210
+- **Has**: Additional phones, complete address, prescriptions with payment collections
 
-The application comes with 4 sample patients for testing:
-- Rajesh Kumar (PAT00001)
-- Priya Sharma (PAT00002)
-- Anil Verma (PAT00003)
-- Parimi Venkata Lakshmi Prasad (PAT00004)
+### Testing Checklist
+1. ✅ Login functionality
+2. ✅ Patient CRUD operations
+3. ✅ Prescription management
+4. ✅ Payment tracking
+5. ✅ Export functionality (CSV/Excel)
+6. ✅ Appointment scheduling
+7. ✅ Reminder system
 
-## 🎨 Design System
+## 📝 Documentation
 
-### Colors
-- **Primary**: Ayurveda Green (#059669, #16a34a, #15803d)
-- **Secondary**: Gray scale for text and backgrounds
-- **Status Colors**: Blue (Scheduled), Green (Completed), Yellow (Pending), Red (Cancelled/Balance)
+Comprehensive documentation available in the repository:
+- `FINAL_FIXES_COMPLETE_v2.4.0.md` - Complete fix documentation
+- `QUICK_TEST_GUIDE_v2.4.0.md` - Testing instructions
+- `DEPLOYMENT_SUMMARY_v2.4.0.md` - Deployment details
+- `DOMAIN_MAPPING_COMPLETE_GUIDE.md` - Domain setup guide
 
-### Icons
-- Font Awesome 6.4.0 for consistent iconography
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👥 Authors
+
+- **Ekode Crux** - *Initial work* - [ekodecrux](https://github.com/ekodecrux)
+
+## 🙏 Acknowledgments
+
+- Thanks to all contributors
+- Hono.js framework team
+- Cloudflare Workers platform
+- Tailwind CSS team
 
 ## 📞 Support
 
-For customization, feature requests, or support contact the development team.
+For issues, questions, or contributions:
+- **GitHub Issues**: [Create an issue](https://github.com/ekodecrux/ayurvedatps/issues)
+- **Email**: Contact through GitHub profile
 
-## 🔧 Recent Fixes (December 29, 2025)
+## 🔄 Version History
 
-### Fixed Issues:
-1. ✅ **Edit Herbs & Routes** - Fixed database query error (removed non-existent currency column)
-2. ✅ **Export Functionality** - CSV, Excel, and PDF exports working correctly for patients
-3. ✅ **Address Display** - Now properly shows complete address from all address components
-4. ✅ **Additional Phones** - Multiple phone numbers now display correctly in view mode
-5. ✅ **Given Date** - Now extracts and displays actual given_date from medicines instead of created_at
-6. ✅ **Follow-up Date** - Properly displayed from next_followup_date field
-7. ✅ **Patient Data** - Enhanced patient records with weight, height, and structured address fields
+### v2.4.0 (January 3, 2026)
+- ✅ Fixed all 7 reported issues
+- ✅ Added complete address in exports
+- ✅ Added quantity dropdown in medicine edit
+- ✅ Fixed payment balance calculation
+- ✅ Improved patient info display consistency
 
-### What's Working:
-- ✅ All CRUD operations (Create, Read, Update, Delete) for all modules
-- ✅ View, Edit, and Print functions in Herbs & Routes
-- ✅ Export to CSV, Excel, and PDF for patients
-- ✅ Complete patient information display with additional phones and full address
-- ✅ Medicine tracking with dosage schedules
-- ✅ Payment tracking with balance calculations
-- ✅ Reminder system with follow-up auto-creation
+### v2.3.0
+- Added payment collections feature
+- Improved herbs & roots management
+- Enhanced UI/UX
+
+### v2.2.0
+- Initial production deployment
+- Core features implementation
+- Patient and prescription management
 
 ---
 
-**Status**: ✅ **100% COMPLETE - Production Ready v2.3.0**  
-**Last Updated**: January 2, 2026  
-**Version**: 2.3.0 (Side-by-side Medicine Schedule Layout)
-
-## 🎯 Latest Updates (v2.3.0)
-- ✅ **Side-by-side medicine schedule layout** (Before | After columns)
-- ✅ **Additional phone numbers** (unlimited) with View/Edit/Print support
-- ✅ **Full address fields** (8 detailed fields) with View/Edit/Print support
-- ✅ **Medicine dosage checkboxes** with quantity dropdowns (1-5)
-- ✅ **Edit loads current data** correctly (no cache issues)
-- ✅ Service Worker v2.3.0 with cache-busting
-- ✅ All CRUD operations working perfectly
-- ✅ CSV/Excel/PDF exports functional
-
-## 📦 Download & Deploy
-
-**Complete Package**: https://www.genspark.ai/api/files/s/4R80zHaV
-
-**Quick Deploy**:
-```bash
-wget https://www.genspark.ai/api/files/s/4R80zHaV -O tps-dhanvantari.tar.gz
-tar -xzf tps-dhanvantari.tar.gz
-cd home/user/webapp
-npx wrangler login
-npx wrangler pages deploy dist --project-name ayurveda-clinic
-```
-
-**See**: `COMPLETE_DEPLOYMENT_GUIDE.md` for detailed instructions
-
-## 🔗 Production URLs
-
-- **Primary**: https://tpsdhanvantariayurveda.com
-- **Cloudflare Pages**: https://ayurveda-clinic.pages.dev
-- **Sandbox**: https://3000-ickijva4njj2u5hky0gzf-b9b802c4.sandbox.novita.ai
+**Status**: ✅ Production Ready | **Version**: 2.4.0 | **Last Updated**: January 3, 2026
