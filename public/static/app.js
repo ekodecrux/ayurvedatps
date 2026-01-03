@@ -1355,9 +1355,13 @@ async function displayPatientInfo() {
     document.getElementById('display-patient-email').textContent = patient.email || 'N/A';
     document.getElementById('display-patient-weight-height').textContent = `${patient.weight || 'N/A'} kg / ${patient.height || 'N/A'} cm`;
     
-    // Build full address using helper function
-    const fullAddress = getCompleteAddress(patient);
-    document.getElementById('display-patient-address').textContent = fullAddress;
+    // Build assembled address from individual fields using helper function
+    const assembledAddress = getCompleteAddress(patient);
+    document.getElementById('display-patient-address').textContent = assembledAddress;
+    
+    // Display complete address from text area field
+    const completeAddressField = patient.address || 'N/A';
+    document.getElementById('display-patient-complete-address').textContent = completeAddressField;
     
     // Parse and display diseases from JSON array
     let diseasesText = 'N/A';

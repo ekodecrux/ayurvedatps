@@ -2750,6 +2750,10 @@ app.get('/', (c) => {
                                     <span id="display-patient-address" class="ml-2"></span>
                                 </div>
                                 <div class="md:col-span-3">
+                                    <span class="font-semibold">Complete Address:</span>
+                                    <span id="display-patient-complete-address" class="ml-2"></span>
+                                </div>
+                                <div class="md:col-span-3">
                                     <span class="font-semibold">Present Health Issue:</span>
                                     <span id="display-patient-health-issue" class="ml-2 text-red-600"></span>
                                 </div>
