@@ -529,6 +529,7 @@ app.get('/api/patients/export', async (c) => {
               <div class="detail-row">
                 <strong>Phone:</strong> ${patient.country_code || ''} ${patient.phone || 'N/A'}
               </div>
+              ${phonesText ? `<div class="detail-row"><strong>Additional Phones:</strong> ${phonesText}</div>` : ''}
               <div class="detail-row">
                 <strong>Email:</strong> ${patient.email || 'N/A'}
               </div>
@@ -541,7 +542,6 @@ app.get('/api/patients/export', async (c) => {
               <div class="detail-row">
                 <strong>Complete Address:</strong> ${completeAddress}
               </div>
-              ${phonesText ? `<div class="detail-row"><strong>Additional Phones:</strong> ${phonesText}</div>` : ''}
               ${diseasesText ? `<div class="detail-row"><strong>Diseases/Medicines:</strong> ${diseasesText}</div>` : ''}
               ${patient.medical_history ? `<div class="detail-row"><strong>Medical History:</strong> ${patient.medical_history}</div>` : ''}
               ${patient.referred_by_name ? `<div class="detail-row"><strong>Referred By:</strong> ${patient.referred_by_name} (${patient.referred_by_phone || 'N/A'}) - ${patient.referred_by_address || ''}</div>` : ''}
