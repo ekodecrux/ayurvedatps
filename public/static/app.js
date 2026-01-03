@@ -2100,12 +2100,11 @@ async function editHerbsRoutes(id) {
     const patientSelect = document.getElementById('prescription-patient');
     patientSelect.value = hr.patient_db_id || hr.patient_fk;
     
-    // Manually trigger change event to display patient info
-    const event = new Event('change');
-    patientSelect.dispatchEvent(event);
+    // Display patient info directly
+    await displayPatientInfo();
     
-    // Wait a bit for patient info to load
-    await new Promise(resolve => setTimeout(resolve, 300));
+    // Wait a bit for UI to update
+    await new Promise(resolve => setTimeout(resolve, 200));
     
     // Clear existing medicines list
     document.getElementById('medicines-list').innerHTML = '';
@@ -3014,5 +3013,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const isAuthenticated = await checkAuth();
   if (isAuthenticated) {
     loadDashboard();
+  }
+  
+  // Setup patient select change listener for Herbs & Roots modal
+  const patientSelect = document.getElementById('prescription-patient');
+  if (patientSelect) {
+    patientSelect.addEventListener('change', displayPatientInfo);
   }
 });
