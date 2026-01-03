@@ -2241,14 +2241,6 @@ async function editHerbsRoutes(id) {
                   <label class="block text-xs font-medium mb-1">Medicine Name *</label>
                   <input type="text" name="medicine_name_${courseId}_${medId}" class="w-full border rounded px-2 py-2 text-sm" required value="${med.medicine_name || ''}">
                 </div>
-                
-                <div>
-                  <label class="block text-xs font-medium mb-1">Quantity</label>
-                  <select name="quantity_${courseId}_${medId}" class="w-full border rounded px-2 py-2 text-sm">
-                    <option value="">Select Quantity</option>
-                    ${[1,2,3,4,5,6,7,8,9,10,15,20,25,30,40,50,60,75,90,100,120,150,180,200,250,300,360].map(q => `<option value="${q}" ${med.quantity == q ? 'selected' : ''}>${q}</option>`).join('')}
-                  </select>
-                </div>
               </div>
               
               <div>

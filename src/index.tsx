@@ -1148,8 +1148,10 @@ app.post('/api/prescriptions', async (c) => {
             herbs_route_id, roman_id, medicine_name, given_date, treatment_months,
             is_active, payment_amount, advance_payment, balance_due, payment_notes,
             morning_before, morning_after, afternoon_before, afternoon_after,
-            evening_before, evening_after, night_before, night_after
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            evening_before, evening_after, night_before, night_after,
+            morning_before_qty, morning_after_qty, afternoon_before_qty, afternoon_after_qty,
+            evening_before_qty, evening_after_qty, night_before_qty, night_after_qty
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           herbsRouteId,
           med.roman_id,
@@ -1168,7 +1170,15 @@ app.post('/api/prescriptions', async (c) => {
           med.evening_before ? 1 : 0,
           med.evening_after ? 1 : 0,
           med.night_before ? 1 : 0,
-          med.night_after ? 1 : 0
+          med.night_after ? 1 : 0,
+          med.morning_before_qty || 1,
+          med.morning_after_qty || 1,
+          med.afternoon_before_qty || 1,
+          med.afternoon_after_qty || 1,
+          med.evening_before_qty || 1,
+          med.evening_after_qty || 1,
+          med.night_before_qty || 1,
+          med.night_after_qty || 1
         ).run()
       }
     }
@@ -1247,8 +1257,10 @@ app.put('/api/prescriptions/:id', async (c) => {
             herbs_route_id, roman_id, medicine_name, given_date, treatment_months,
             is_active, payment_amount, advance_payment, balance_due, payment_notes,
             morning_before, morning_after, afternoon_before, afternoon_after,
-            evening_before, evening_after, night_before, night_after
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            evening_before, evening_after, night_before, night_after,
+            morning_before_qty, morning_after_qty, afternoon_before_qty, afternoon_after_qty,
+            evening_before_qty, evening_after_qty, night_before_qty, night_after_qty
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           id,
           med.roman_id,
@@ -1267,7 +1279,15 @@ app.put('/api/prescriptions/:id', async (c) => {
           med.evening_before ? 1 : 0,
           med.evening_after ? 1 : 0,
           med.night_before ? 1 : 0,
-          med.night_after ? 1 : 0
+          med.night_after ? 1 : 0,
+          med.morning_before_qty || 1,
+          med.morning_after_qty || 1,
+          med.afternoon_before_qty || 1,
+          med.afternoon_after_qty || 1,
+          med.evening_before_qty || 1,
+          med.evening_after_qty || 1,
+          med.night_before_qty || 1,
+          med.night_after_qty || 1
         ).run()
       }
     }
