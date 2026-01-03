@@ -497,7 +497,8 @@ app.get('/api/patients/export', async (c) => {
           phonesText = '<div>N/A</div>'
         }
         
-        const fullAddress = [
+        // Assemble complete address from individual fields
+        const assembledAddress = [
           patient.address_hno,
           patient.address_street,
           patient.address_apartment,
@@ -505,7 +506,10 @@ app.get('/api/patients/export', async (c) => {
           patient.address_district,
           patient.address_state,
           patient.address_pincode
-        ].filter(Boolean).join(', ') || 'N/A'
+        ].filter(Boolean).join(', ')
+        
+        // Use the single address field if available, otherwise use assembled address
+        const fullAddress = patient.address || assembledAddress || 'N/A'
         
         return `
           <div class="patient-card">
