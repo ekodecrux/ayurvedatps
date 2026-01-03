@@ -634,12 +634,30 @@ function removeDiseaseRow(id) {
   document.querySelector(`.disease-row[data-id="${id}"]`)?.remove();
 }
 
-function showPatientModal(patient = null) {
+function showPatientModal(patient = null, viewMode = false) {
   const modal = document.getElementById('patient-modal');
   const title = document.getElementById('patient-modal-title');
   const form = document.getElementById('patient-form');
   
-  title.textContent = patient ? 'Edit Patient' : 'Add New Patient';
+  // Set appropriate title
+  if (viewMode) {
+    title.textContent = 'View Patient Details';
+  } else {
+    title.textContent = patient ? 'Edit Patient' : 'Add New Patient';
+  }
+  
+  // Re-enable all fields (in case opened in view mode before)
+  if (!viewMode) {
+    modal.querySelectorAll('input, textarea, select, button').forEach(field => {
+      field.disabled = false;
+    });
+  }
+  
+  // Show/hide save button based on mode
+  const saveBtn = modal.querySelector('button[type="submit"]');
+  if (saveBtn) {
+    saveBtn.style.display = viewMode ? 'none' : '';
+  }
   
   // Clear diseases container
   document.getElementById('diseases-container').innerHTML = '';
@@ -741,6 +759,24 @@ function showPatientModal(patient = null) {
     
     // Set default country
     selectCountry('India', '+91', 'IND');
+  }
+  
+  // If view mode, disable all fields after populating
+  if (viewMode) {
+    modal.querySelectorAll('input, textarea, select, button').forEach(field => {
+      // Don't disable the close button
+      if (!field.hasAttribute('onclick') || !field.getAttribute('onclick').includes('closePatientModal')) {
+        field.disabled = true;
+      }
+    });
+    
+    // Also disable add buttons for diseases and phones
+    const addButtons = modal.querySelectorAll('button[onclick*="addDiseaseRow"], button[onclick*="addPhoneField"]');
+    addButtons.forEach(btn => btn.disabled = true);
+    
+    // Hide remove buttons in view mode
+    const removeButtons = modal.querySelectorAll('button[onclick*="removeDisease"], button[onclick*="removePhoneField"]');
+    removeButtons.forEach(btn => btn.style.display = 'none');
   }
   
   modal.classList.remove('hidden');
@@ -883,7 +919,16 @@ async function editPatient(id) {
 }
 
 async function viewPatient(id) {
-  editPatient(id);
+  try {
+    showLoading();
+    const res = await axios.get(`${API_BASE}/patients/${id}`);
+    showPatientModal(res.data.data, true); // Pass viewMode=true
+  } catch (error) {
+    console.error('Load patient error:', error);
+    alert('Error loading patient details');
+  } finally {
+    hideLoading();
+  }
 }
 
 async function exportPatients(format = 'csv') {
