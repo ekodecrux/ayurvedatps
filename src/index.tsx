@@ -1078,7 +1078,7 @@ app.get('/api/prescriptions/:id', async (c) => {
              p.present_health_issue, p.present_medicine, p.mg_value, p.diseases,
              p.address_hno, p.address_street, p.address_apartment, p.address_area,
              p.address_district, p.address_state, p.address_pincode, p.address,
-             p.additional_phones
+             p.additional_phones, p.medical_history
       FROM herbs_routes h
       LEFT JOIN patients p ON h.patient_id = p.id
       WHERE h.id = ?
