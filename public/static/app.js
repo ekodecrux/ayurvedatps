@@ -2416,24 +2416,32 @@ async function viewHerbsRoutes(id) {
       ageGenderEl.textContent = `${hr.age || 'N/A'} / ${hr.gender || 'N/A'}`;
     }
     
-    // Phone with additional phones
+    // Country
+    setTextIfExists('summary-patient-country', hr.country || 'N/A');
+    
+    // Phone (without additional phones inline)
     let phoneDisplay = hr.patient_phone || 'N/A';
     if (hr.country_code && hr.patient_phone) {
       phoneDisplay = `${hr.country_code} ${hr.patient_phone}`;
     }
+    setTextIfExists('summary-patient-phone', phoneDisplay);
+    
+    // Additional Phones (separate field)
+    let additionalPhonesDisplay = 'None';
     if (hr.additional_phones) {
       try {
         const additionalPhones = JSON.parse(hr.additional_phones);
         if (additionalPhones && additionalPhones.length > 0) {
-          const additionalNumbers = additionalPhones.map(p => `${p.label}: ${p.number}`).join(', ');
-          phoneDisplay += ` (Additional: ${additionalNumbers})`;
+          additionalPhonesDisplay = additionalPhones.map(p => `${p.label}: ${p.number}`).join(', ');
         }
       } catch (e) {
         console.log('Error parsing additional phones:', e);
       }
     }
-    setTextIfExists('summary-patient-phone', phoneDisplay);
-    setTextIfExists('summary-patient-country', hr.country);
+    setTextIfExists('summary-patient-additional-phones', additionalPhonesDisplay);
+    
+    // Email
+    setTextIfExists('summary-patient-email', hr.patient_email || 'N/A');
     
     // Weight/Height combined
     const weightHeightEl = document.getElementById('summary-patient-weight-height');
@@ -2451,8 +2459,11 @@ async function viewHerbsRoutes(id) {
       hr.address_state,
       hr.address_pincode
     ].filter(p => p); // Remove null/undefined/empty
-    const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : (hr.address || 'N/A');
-    setTextIfExists('summary-patient-address', fullAddress);
+    const assembledAddress = addressParts.length > 0 ? addressParts.join(', ') : 'N/A';
+    setTextIfExists('summary-patient-address', assembledAddress);
+    
+    // Complete Address (from patient.address field)
+    setTextIfExists('summary-patient-complete-address', hr.address || 'N/A');
     
     // Display health issues from diseases JSON array
     let healthIssueText = 'N/A';
@@ -2460,15 +2471,18 @@ async function viewHerbsRoutes(id) {
       healthIssueText = hr.diseases.map(d => {
         const parts = [];
         if (d.present_health_issue) parts.push(d.present_health_issue);
-        if (d.present_medicine) parts.push(`(${d.present_medicine})`);
-        if (d.mg_value) parts.push(`${d.mg_value}mg`);
-        if (d.attacked_by) parts.push(`- ${d.attacked_by}`);
+        if (d.present_medicine) parts.push(`: ${d.present_medicine}`);
+        if (d.mg_value) parts.push(`(${d.mg_value})`);
+        if (d.attacked_by) parts.push(`- Duration: ${d.attacked_by}`);
         return parts.join(' ');
       }).join('; ');
     } else if (hr.present_health_issue) {
       healthIssueText = hr.present_health_issue;
     }
     setTextIfExists('summary-patient-health-issue', healthIssueText);
+    
+    // Medical History
+    setTextIfExists('summary-patient-medical-history', hr.medical_history || 'N/A');
     
     // Treatment details - get given_date from first medicine if available
     let givenDate = hr.given_date || hr.created_at;
@@ -2519,16 +2533,16 @@ async function viewHerbsRoutes(id) {
         const symbol = '₹'; // Default to INR
         
         const medicinesHtml = meds.map((med, index) => {
-          // Build dosage schedule badges
+          // Build dosage schedule badges with quantities
           const dosages = [];
-          if (med.morning_before) dosages.push('<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">Morning (Before)</span>');
-          if (med.morning_after) dosages.push('<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">Morning (After)</span>');
-          if (med.afternoon_before) dosages.push('<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Afternoon (Before)</span>');
-          if (med.afternoon_after) dosages.push('<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Afternoon (After)</span>');
-          if (med.evening_before) dosages.push('<span class="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">Evening (Before)</span>');
-          if (med.evening_after) dosages.push('<span class="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">Evening (After)</span>');
-          if (med.night_before) dosages.push('<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">Night (Before)</span>');
-          if (med.night_after) dosages.push('<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">Night (After)</span>');
+          if (med.morning_before) dosages.push(`<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">Morning (Before) - Qty: ${med.morning_before_qty || 1}</span>`);
+          if (med.morning_after) dosages.push(`<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">Morning (After) - Qty: ${med.morning_after_qty || 1}</span>`);
+          if (med.afternoon_before) dosages.push(`<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Afternoon (Before) - Qty: ${med.afternoon_before_qty || 1}</span>`);
+          if (med.afternoon_after) dosages.push(`<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Afternoon (After) - Qty: ${med.afternoon_after_qty || 1}</span>`);
+          if (med.evening_before) dosages.push(`<span class="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">Evening (Before) - Qty: ${med.evening_before_qty || 1}</span>`);
+          if (med.evening_after) dosages.push(`<span class="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">Evening (After) - Qty: ${med.evening_after_qty || 1}</span>`);
+          if (med.night_before) dosages.push(`<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">Night (Before) - Qty: ${med.night_before_qty || 1}</span>`);
+          if (med.night_after) dosages.push(`<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">Night (After) - Qty: ${med.night_after_qty || 1}</span>`);
           
           return `
             <div class="p-3 border border-blue-200 rounded-lg bg-blue-50 mb-2">
