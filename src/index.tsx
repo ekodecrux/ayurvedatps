@@ -1071,7 +1071,7 @@ app.get('/api/prescriptions/:id', async (c) => {
       SELECT h.id, h.patient_id as patient_fk, h.appointment_id, h.diagnosis, h.notes, 
              h.next_followup_date, h.created_at, h.updated_at, h.given_date,
              h.treatment_months, h.payment_amount, h.advance_payment, h.payment_notes,
-             h.due_balance, h.course,
+             h.due_balance, h.course, h.currency,
              p.name as patient_name, p.phone as patient_phone, p.email as patient_email, 
              p.patient_id as patient_identifier, p.id as patient_db_id,
              p.age, p.gender, p.country, p.country_code, p.weight, p.height,
@@ -1128,14 +1128,15 @@ app.post('/api/prescriptions', async (c) => {
     // Insert herbs_routes record (simplified - per-medicine data moved to medicines_tracking)
     const result = await c.env.DB.prepare(`
       INSERT INTO herbs_routes (
-        patient_id, next_followup_date, diagnosis, notes, course
-      ) VALUES (?, ?, ?, ?, ?)
+        patient_id, next_followup_date, diagnosis, notes, course, currency
+      ) VALUES (?, ?, ?, ?, ?, ?)
     `).bind(
       body.patient_id,
       body.follow_up_date || null,
       body.diagnosis || null,
       body.notes || null,
-      body.course || null
+      body.course || null,
+      body.currency || 'INR'
     ).run()
     
     const herbsRouteId = result.meta.last_row_id
@@ -1232,7 +1233,7 @@ app.put('/api/prescriptions/:id', async (c) => {
     // Update herbs_routes record (simplified - per-medicine data moved to medicines_tracking)
     await c.env.DB.prepare(`
       UPDATE herbs_routes SET 
-        patient_id = ?, next_followup_date = ?, diagnosis = ?, notes = ?, course = ?,
+        patient_id = ?, next_followup_date = ?, diagnosis = ?, notes = ?, course = ?, currency = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(
@@ -1241,6 +1242,7 @@ app.put('/api/prescriptions/:id', async (c) => {
       body.diagnosis || null,
       body.notes || null,
       body.course || null,
+      body.currency || 'INR',
       id
     ).run()
     

@@ -2530,7 +2530,7 @@ async function viewHerbsRoutes(id) {
         }
         
         const courseBalance = courseAmount - totalCollectedForCourse;
-        const symbol = '₹'; // Default to INR
+        const symbol = hr.currency === 'USD' ? '$' : '₹'; // Use currency from record
         
         const medicinesHtml = meds.map((med, index) => {
           // Build dosage schedule badges with quantities
