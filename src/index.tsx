@@ -2718,6 +2718,10 @@ app.get('/', (c) => {
                                     <span class="font-semibold">Phone:</span>
                                     <span id="display-patient-phone" class="ml-2"></span>
                                 </div>
+                                <div class="md:col-span-2">
+                                    <span class="font-semibold">Additional Phones:</span>
+                                    <span id="display-patient-additional-phones" class="ml-2"></span>
+                                </div>
                                 <div>
                                     <span class="font-semibold">Email:</span>
                                     <span id="display-patient-email" class="ml-2"></span>
