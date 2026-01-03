@@ -2631,7 +2631,7 @@ async function viewHerbsRoutes(id) {
     }
     
     // Calculate and show payment summary
-    const symbol = '₹'; // Default to INR
+    const symbol = hr.currency === 'USD' ? '$' : '₹'; // Use currency from record
     let totalAmount = 0;
     let totalAdvance = 0;
     let totalCollected = 0;
