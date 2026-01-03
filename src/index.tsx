@@ -301,8 +301,7 @@ app.get('/api/patients/export', async (c) => {
       // CSV Export
       const headers = [
         'Patient ID', 'Name', 'Age', 'Gender', 'Country', 'Phone', 'Country Code',
-        'Email', 'Weight', 'Height', 'Address H.No', 'Street', 'Apartment', 'Area',
-        'District', 'State', 'Pin Code', 'Diseases/Medicines', 'Additional Phones',
+        'Email', 'Weight', 'Height', 'Complete Address', 'Diseases/Medicines', 'Additional Phones',
         'Referred By Name', 'Referred By Phone', 'Referred By Address', 'Medical History', 'Created At'
       ].join(',')
       
@@ -336,6 +335,17 @@ app.get('/api/patients/export', async (c) => {
           }
         }
         
+        // Combine all address fields into Complete Address
+        const addressParts = []
+        if (patient.address_hno) addressParts.push(patient.address_hno)
+        if (patient.address_street) addressParts.push(patient.address_street)
+        if (patient.address_apartment) addressParts.push(patient.address_apartment)
+        if (patient.address_area) addressParts.push(patient.address_area)
+        if (patient.address_district) addressParts.push(patient.address_district)
+        if (patient.address_state) addressParts.push(patient.address_state)
+        if (patient.address_pincode) addressParts.push(patient.address_pincode)
+        const completeAddress = addressParts.join(', ')
+        
         return [
           patient.patient_id || '',
           `"${(patient.name || '').replace(/"/g, '""')}"`,
@@ -347,13 +357,7 @@ app.get('/api/patients/export', async (c) => {
           patient.email || '',
           patient.weight || '',
           patient.height || '',
-          patient.address_hno || '',
-          `"${(patient.address_street || '').replace(/"/g, '""')}"`,
-          `"${(patient.address_apartment || '').replace(/"/g, '""')}"`,
-          `"${(patient.address_area || '').replace(/"/g, '""')}"`,
-          patient.address_district || '',
-          patient.address_state || '',
-          patient.address_pincode || '',
+          `"${completeAddress.replace(/"/g, '""')}"`,
           `"${diseasesText.replace(/"/g, '""')}"`,
           `"${phonesText.replace(/"/g, '""')}"`,
           patient.referred_by_name || '',
@@ -373,8 +377,7 @@ app.get('/api/patients/export', async (c) => {
     } else if (format === 'excel') {
       // Excel Export (using HTML table with Excel mime type)
       const headers = ['Patient ID', 'Name', 'Age', 'Gender', 'Country', 'Phone', 'Country Code',
-        'Email', 'Weight', 'Height', 'Address H.No', 'Street', 'Apartment', 'Area',
-        'District', 'State', 'Pin Code', 'Diseases/Medicines', 'Additional Phones', 
+        'Email', 'Weight', 'Height', 'Complete Address', 'Diseases/Medicines', 'Additional Phones', 
         'Referred By Name', 'Referred By Phone', 'Referred By Address', 'Medical History', 'Created At']
       
       const rows = results.map((patient: any) => {
@@ -407,6 +410,17 @@ app.get('/api/patients/export', async (c) => {
           }
         }
         
+        // Combine all address fields into Complete Address
+        const addressParts = []
+        if (patient.address_hno) addressParts.push(patient.address_hno)
+        if (patient.address_street) addressParts.push(patient.address_street)
+        if (patient.address_apartment) addressParts.push(patient.address_apartment)
+        if (patient.address_area) addressParts.push(patient.address_area)
+        if (patient.address_district) addressParts.push(patient.address_district)
+        if (patient.address_state) addressParts.push(patient.address_state)
+        if (patient.address_pincode) addressParts.push(patient.address_pincode)
+        const completeAddress = addressParts.join(', ')
+        
         return `<tr>
           <td>${patient.patient_id || ''}</td>
           <td>${patient.name || ''}</td>
@@ -418,13 +432,7 @@ app.get('/api/patients/export', async (c) => {
           <td>${patient.email || ''}</td>
           <td>${patient.weight || ''}</td>
           <td>${patient.height || ''}</td>
-          <td>${patient.address_hno || ''}</td>
-          <td>${patient.address_street || ''}</td>
-          <td>${patient.address_apartment || ''}</td>
-          <td>${patient.address_area || ''}</td>
-          <td>${patient.address_district || ''}</td>
-          <td>${patient.address_state || ''}</td>
-          <td>${patient.address_pincode || ''}</td>
+          <td>${completeAddress}</td>
           <td>${diseasesText}</td>
           <td>${phonesText}</td>
           <td>${patient.referred_by_name || ''}</td>
