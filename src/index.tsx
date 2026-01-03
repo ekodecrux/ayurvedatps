@@ -2941,7 +2941,7 @@ app.get('/', (c) => {
                     <!-- Payment Details -->
                     <div class="mb-6 bg-green-50 p-4 rounded-lg">
                         <h4 class="font-bold text-lg mb-3 text-green-800">
-                            <i class="fas fa-rupee-sign mr-2"></i>Payment Details
+                            <span id="summary-currency-icon" class="mr-2"></span>Payment Details
                         </h4>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                             <div><span class="font-semibold">Total Amount:</span> <span class="text-lg font-bold" id="summary-total-amount"></span></div>

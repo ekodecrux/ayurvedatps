@@ -2636,6 +2636,16 @@ async function viewHerbsRoutes(id) {
     let totalAdvance = 0;
     let totalCollected = 0;
     
+    // Set currency icon in Payment Details heading
+    const currencyIconEl = document.getElementById('summary-currency-icon');
+    if (currencyIconEl) {
+      if (hr.currency === 'USD') {
+        currencyIconEl.innerHTML = '<i class="fas fa-dollar-sign"></i>';
+      } else {
+        currencyIconEl.innerHTML = '<i class="fas fa-rupee-sign"></i>';
+      }
+    }
+    
     if (hr.medicines && hr.medicines.length > 0) {
       hr.medicines.forEach(med => {
         totalAmount += parseFloat(med.payment_amount || 0);
