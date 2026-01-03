@@ -483,7 +483,7 @@ function addDiseaseField() {
     <div class="flex gap-2 mb-2" id="disease-field-${diseaseFieldCount}">
       <input type="text" id="disease-name-${diseaseFieldCount}" placeholder="Disease Name" 
         class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm">
-      <input type="text" id="disease-attacked-${diseaseFieldCount}" placeholder="Attacked By" 
+      <input type="text" id="disease-attacked-${diseaseFieldCount}" placeholder="Attacked Duration" 
         class="w-48 border border-gray-300 rounded px-3 py-2 text-sm">
       <button type="button" onclick="removeDiseaseField(${diseaseFieldCount})" 
         class="px-3 py-2 text-red-600 hover:text-red-800">
@@ -661,14 +661,14 @@ async function viewPatientDetails(id) {
             <h4 class="font-bold text-lg mb-2">Current Health Status</h4>
             <div class="space-y-2 text-sm">
               ${patient.present_health_issue ? `<div><strong>Present Issue:</strong> ${patient.present_health_issue}</div>` : ''}
-              ${patient.present_medicine ? `<div><strong>Current Medicine:</strong> ${patient.present_medicine}</div>` : ''}
+              ${patient.present_medicine ? `<div><strong>Current Medication:</strong> ${patient.present_medicine}</div>` : ''}
               ${patient.mg_value ? `<div><strong>MG Value:</strong> ${patient.mg_value}</div>` : ''}
             </div>
           </div>
         ` : ''}
         
         <div>
-          <h4 class="font-bold text-lg mb-2">Recent Herbs & Routes (${prescriptions.length})</h4>
+          <h4 class="font-bold text-lg mb-2">Recent Herbs & Roots (${prescriptions.length})</h4>
           <div class="space-y-2">
             ${prescriptions.slice(0, 5).map(p => `
               <div class="border p-3 rounded">

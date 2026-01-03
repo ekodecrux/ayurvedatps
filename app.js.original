@@ -6,64 +6,6 @@ let currentHerbsRoutes = [];
 let currentReminders = [];
 let currentUser = null;
 
-// Helper function to format complete address from 8 fields
-function getCompleteAddress(patient) {
-    if (!patient) return 'N/A';
-    const parts = [];
-    if (patient.address_hno) parts.push(patient.address_hno);
-    if (patient.address_street) parts.push(patient.address_street);
-    if (patient.address_apartment) parts.push(patient.address_apartment);
-    if (patient.address_area) parts.push(patient.address_area);
-    if (patient.address_district) parts.push(patient.address_district);
-    if (patient.address_state) parts.push(patient.address_state);
-    if (patient.address_pincode) parts.push(patient.address_pincode);
-    return parts.length > 0 ? parts.join(', ') : 'N/A';
-}
-
-// Helper function to format additional phones from JSON
-function getAdditionalPhonesHTML(patient) {
-    if (!patient || !patient.additional_phones) return 'None';
-    try {
-        const phones = typeof patient.additional_phones === 'string' 
-            ? JSON.parse(patient.additional_phones) 
-            : patient.additional_phones;
-        if (Array.isArray(phones) && phones.length > 0) {
-            return phones.map(p => `<div>${p.label || 'Phone'}: ${p.number || ''}</div>`).join('');
-        }
-    } catch (e) {
-        console.error('Error parsing additional phones:', e);
-    }
-    return 'None';
-}
-
-// Helper function for plain text additional phones (for print/export)
-function getAdditionalPhonesText(patient) {
-    if (!patient || !patient.additional_phones) return '';
-    try {
-        const phones = typeof patient.additional_phones === 'string' 
-            ? JSON.parse(patient.additional_phones) 
-            : patient.additional_phones;
-        if (Array.isArray(phones) && phones.length > 0) {
-            return phones.map(p => `${p.label || 'Phone'}: ${p.number || ''}`).join(', ');
-        }
-    } catch (e) {
-        return '';
-    }
-    return '';
-}
-
-// Helper function to calculate balance correctly
-function calculateBalance(totalAmount, totalCollected) {
-    const amount = parseFloat(totalAmount || 0);
-    const collected = parseFloat(totalCollected || 0);
-    const balance = amount - collected;
-    return {
-        balance: balance,
-        status: balance <= 0.01 ? 'Paid' : 'Due',
-        formattedBalance: Math.abs(balance).toFixed(2)
-    };
-}
-
 // Authentication check
 async function checkAuth() {
   try {
@@ -1344,20 +1286,19 @@ async function displayPatientInfo() {
     document.getElementById('display-patient-age-gender').textContent = `${patient.age || 'N/A'} / ${patient.gender || 'N/A'}`;
     document.getElementById('display-patient-country').textContent = patient.country || 'N/A';
     document.getElementById('display-patient-phone').textContent = `${patient.country_code || ''} ${patient.phone || 'N/A'}`;
-    
-    // Display additional phones
-    const additionalPhonesElement = document.getElementById('display-patient-additional-phones');
-    if (additionalPhonesElement) {
-      const additionalPhones = getAdditionalPhonesText(patient);
-      additionalPhonesElement.textContent = additionalPhones || 'None';
-    }
-    
     document.getElementById('display-patient-email').textContent = patient.email || 'N/A';
     document.getElementById('display-patient-weight-height').textContent = `${patient.weight || 'N/A'} kg / ${patient.height || 'N/A'} cm`;
     
-    // Build full address using helper function
-    const fullAddress = getCompleteAddress(patient);
-    document.getElementById('display-patient-address').textContent = fullAddress;
+    // Build full address
+    const addressParts = [];
+    if (patient.address_hno) addressParts.push(patient.address_hno);
+    if (patient.address_street) addressParts.push(patient.address_street);
+    if (patient.address_apartment) addressParts.push(patient.address_apartment);
+    if (patient.address_area) addressParts.push(patient.address_area);
+    if (patient.address_district) addressParts.push(patient.address_district);
+    if (patient.address_state) addressParts.push(patient.address_state);
+    if (patient.address_pincode) addressParts.push(patient.address_pincode);
+    document.getElementById('display-patient-address').textContent = addressParts.join(', ') || 'N/A';
     
     // Parse and display diseases from JSON array
     let diseasesText = 'N/A';
@@ -2238,14 +2179,6 @@ async function editHerbsRoutes(id) {
                   <label class="block text-xs font-medium mb-1">Medicine Name *</label>
                   <input type="text" name="medicine_name_${courseId}_${medId}" class="w-full border rounded px-2 py-2 text-sm" required value="${med.medicine_name || ''}">
                 </div>
-                
-                <div>
-                  <label class="block text-xs font-medium mb-1">Quantity</label>
-                  <select name="quantity_${courseId}_${medId}" class="w-full border rounded px-2 py-2 text-sm">
-                    <option value="">Select Quantity</option>
-                    ${[1,2,3,4,5,6,7,8,9,10,15,20,25,30,40,50,60,75,90,100,120,150,180,200,250,300,360].map(q => `<option value="${q}" ${med.quantity == q ? 'selected' : ''}>${q}</option>`).join('')}
-                  </select>
-                </div>
               </div>
               
               <div>
@@ -2444,20 +2377,10 @@ async function viewHerbsRoutes(id) {
         const firstMed = meds[0];
         const actualCourseId = firstMed.course_number || courseDisplayNum;
         
-        // Calculate course totals - calculate total collected from payment_collections
+        // Calculate course totals
         const courseAmount = parseFloat(firstMed.payment_amount || 0);
         const courseAdvance = parseFloat(firstMed.advance_payment || 0);
-        
-        // Calculate actual total collected from payment collections
-        let totalCollectedForCourse = courseAdvance; // Start with advance
-        if (hr.payment_collections && hr.payment_collections.length > 0) {
-          const courseCollections = hr.payment_collections.filter(c => parseInt(c.course_id) === parseInt(actualCourseId));
-          if (courseCollections.length > 0) {
-            totalCollectedForCourse = courseCollections.reduce((sum, c) => sum + parseFloat(c.amount || 0), 0);
-          }
-        }
-        
-        const courseBalance = courseAmount - totalCollectedForCourse;
+        const courseBalance = courseAmount - courseAdvance;
         const symbol = '₹'; // Default to INR
         
         const medicinesHtml = meds.map((med, index) => {
@@ -2478,7 +2401,6 @@ async function viewHerbsRoutes(id) {
                 <h6 class="font-semibold text-blue-700 text-sm">
                   ${med.roman_id ? `<span class="mr-2">${med.roman_id}.</span>` : ''}
                   ${med.medicine_name}
-                  ${med.quantity ? `<span class="ml-2 text-xs font-normal text-gray-600">(Qty: ${med.quantity})</span>` : ''}
                 </h6>
                 <span class="px-2 py-1 rounded text-xs ${med.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'}">
                   ${med.is_active ? 'Active' : 'Inactive'}
@@ -2511,9 +2433,9 @@ async function viewHerbsRoutes(id) {
               </h6>
               <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                 <div><span class="font-medium">Amount:</span> <span class="font-bold text-blue-600">${symbol}${courseAmount.toFixed(2)}</span></div>
-                <div><span class="font-medium">Collected:</span> <span class="font-bold text-green-600">${symbol}${totalCollectedForCourse.toFixed(2)}</span></div>
-                <div><span class="font-medium">Balance:</span> <span class="font-bold ${courseBalance > 0.01 ? 'text-red-600' : 'text-green-600'}">${symbol}${Math.abs(courseBalance).toFixed(2)}</span></div>
-                <div class="col-span-2 md:col-span-1"><span class="font-medium">Status:</span> <span class="font-bold px-2 py-1 rounded ${courseBalance > 0.01 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}">${courseBalance > 0.01 ? 'Due' : 'Paid'}</span></div>
+                <div><span class="font-medium">Advance:</span> <span class="font-bold text-green-600">${symbol}${courseAdvance.toFixed(2)}</span></div>
+                <div><span class="font-medium">Balance:</span> <span class="font-bold ${courseBalance > 0 ? 'text-red-600' : 'text-green-600'}">${symbol}${courseBalance.toFixed(2)}</span></div>
+                <div class="col-span-2 md:col-span-1"><span class="font-medium">Status:</span> <span class="${courseBalance > 0 ? 'text-red-600' : 'text-green-600'}">${courseBalance > 0 ? 'Due' : 'Paid'}</span></div>
               </div>
               ${firstMed.payment_notes ? `<div class="mt-2 text-xs text-gray-600"><strong>Notes:</strong> ${firstMed.payment_notes}</div>` : ''}
               

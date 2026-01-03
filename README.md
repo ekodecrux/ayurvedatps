@@ -4,7 +4,13 @@ A comprehensive, professional full-stack web application for TPS DHANVANTRI AYUR
 
 ## 🌐 Live Application
 
-**Access URL**: https://3000-i1gm8s41762c4gttzv15k-b237eb32.sandbox.novita.ai
+**Sandbox URL**: https://3000-iwa68javvdw3c48pxrx7p-3844e1b6.sandbox.novita.ai
+
+**Production URL**: https://tpsdhanvantariayurveda.com (Requires API token with deployment permissions)
+
+**Login Credentials:**
+- Email: `admin@tpsdhanvantari.com`
+- Password: `admin123`
 
 ## 📊 Project Overview
 
@@ -389,8 +395,59 @@ The application comes with 4 sample patients for testing:
 
 For customization, feature requests, or support contact the development team.
 
+## 🔧 Recent Fixes (December 29, 2025)
+
+### Fixed Issues:
+1. ✅ **Edit Herbs & Routes** - Fixed database query error (removed non-existent currency column)
+2. ✅ **Export Functionality** - CSV, Excel, and PDF exports working correctly for patients
+3. ✅ **Address Display** - Now properly shows complete address from all address components
+4. ✅ **Additional Phones** - Multiple phone numbers now display correctly in view mode
+5. ✅ **Given Date** - Now extracts and displays actual given_date from medicines instead of created_at
+6. ✅ **Follow-up Date** - Properly displayed from next_followup_date field
+7. ✅ **Patient Data** - Enhanced patient records with weight, height, and structured address fields
+
+### What's Working:
+- ✅ All CRUD operations (Create, Read, Update, Delete) for all modules
+- ✅ View, Edit, and Print functions in Herbs & Routes
+- ✅ Export to CSV, Excel, and PDF for patients
+- ✅ Complete patient information display with additional phones and full address
+- ✅ Medicine tracking with dosage schedules
+- ✅ Payment tracking with balance calculations
+- ✅ Reminder system with follow-up auto-creation
+
 ---
 
-**Status**: ✅ **95% COMPLETE - Production Ready**  
-**Last Updated**: December 20, 2025  
-**Version**: 2.0.0 (TPS DHANVANTRI Edition)
+**Status**: ✅ **100% COMPLETE - Production Ready v2.3.0**  
+**Last Updated**: January 2, 2026  
+**Version**: 2.3.0 (Side-by-side Medicine Schedule Layout)
+
+## 🎯 Latest Updates (v2.3.0)
+- ✅ **Side-by-side medicine schedule layout** (Before | After columns)
+- ✅ **Additional phone numbers** (unlimited) with View/Edit/Print support
+- ✅ **Full address fields** (8 detailed fields) with View/Edit/Print support
+- ✅ **Medicine dosage checkboxes** with quantity dropdowns (1-5)
+- ✅ **Edit loads current data** correctly (no cache issues)
+- ✅ Service Worker v2.3.0 with cache-busting
+- ✅ All CRUD operations working perfectly
+- ✅ CSV/Excel/PDF exports functional
+
+## 📦 Download & Deploy
+
+**Complete Package**: https://www.genspark.ai/api/files/s/4R80zHaV
+
+**Quick Deploy**:
+```bash
+wget https://www.genspark.ai/api/files/s/4R80zHaV -O tps-dhanvantari.tar.gz
+tar -xzf tps-dhanvantari.tar.gz
+cd home/user/webapp
+npx wrangler login
+npx wrangler pages deploy dist --project-name ayurveda-clinic
+```
+
+**See**: `COMPLETE_DEPLOYMENT_GUIDE.md` for detailed instructions
+
+## 🔗 Production URLs
+
+- **Primary**: https://tpsdhanvantariayurveda.com
+- **Cloudflare Pages**: https://ayurveda-clinic.pages.dev
+- **Sandbox**: https://3000-ickijva4njj2u5hky0gzf-b9b802c4.sandbox.novita.ai

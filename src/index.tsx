@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { serveStatic } from 'hono/cloudflare-workers'
+import { getCookie, setCookie } from 'hono/cookie'
 
 type Bindings = {
   DB: D1Database;
@@ -23,17 +24,17 @@ function generateSessionToken(): string {
 
 // Helper function to check if user is authenticated
 async function isAuthenticated(c: any): Promise<any> {
-  const sessionToken = c.req.cookie('session_token')
+  const sessionToken = getCookie(c, 'session_token')
   
   if (!sessionToken) {
     return null
   }
   
   const session = await c.env.DB.prepare(`
-    SELECT s.*, u.id as user_id, u.email, u.name, u.role, u.profile_picture
+    SELECT s.*, u.id as user_id, u.email, u.name, u.profile_picture
     FROM sessions s
-    JOIN users u ON s.user_id = u.id
-    WHERE s.session_token = ? AND s.expires_at > datetime('now') AND u.is_active = 1
+    JOIN admin_users u ON s.user_id = u.id
+    WHERE s.session_token = ? AND s.expires_at > datetime('now')
   `).bind(sessionToken).first()
   
   return session
@@ -42,36 +43,26 @@ async function isAuthenticated(c: any): Promise<any> {
 // Login with Google (or email for now)
 app.post('/api/auth/login', async (c) => {
   try {
-    const { email, name, google_id, profile_picture } = await c.req.json()
+    const { email, password } = await c.req.json()
     
-    if (!email) {
-      return c.json({ success: false, error: 'Email is required' }, 400)
+    if (!email || !password) {
+      return c.json({ success: false, error: 'Email and password are required' }, 400)
     }
     
-    // Find or create user
-    let user = await c.env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email).first()
+    // Hash the provided password using Web Crypto API
+    const encoder = new TextEncoder()
+    const data = encoder.encode(password)
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    
+    // Find admin user
+    const user = await c.env.DB.prepare(
+      'SELECT * FROM admin_users WHERE email = ? AND password_hash = ?'
+    ).bind(email, passwordHash).first()
     
     if (!user) {
-      // Create new user
-      const result = await c.env.DB.prepare(`
-        INSERT INTO users (email, name, google_id, profile_picture)
-        VALUES (?, ?, ?, ?)
-      `).bind(email, name || email, google_id || null, profile_picture || null).run()
-      
-      user = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(result.meta.last_row_id).first()
-    } else {
-      // Update last login and profile info
-      await c.env.DB.prepare(`
-        UPDATE users 
-        SET last_login = datetime('now'), 
-            google_id = COALESCE(?, google_id),
-            profile_picture = COALESCE(?, profile_picture)
-        WHERE id = ?
-      `).bind(google_id || null, profile_picture || null, (user as any).id).run()
-    }
-    
-    if (!(user as any).is_active) {
-      return c.json({ success: false, error: 'Account is inactive' }, 403)
+      return c.json({ success: false, error: 'Invalid email or password' }, 401)
     }
     
     // Create session
@@ -79,13 +70,19 @@ app.post('/api/auth/login', async (c) => {
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7) // 7 days expiry
     
+    // Store session (use admin_users id)
     await c.env.DB.prepare(`
       INSERT INTO sessions (user_id, session_token, expires_at)
       VALUES (?, ?, ?)
     `).bind((user as any).id, sessionToken, expiresAt.toISOString()).run()
     
     // Set cookie
-    c.header('Set-Cookie', `session_token=${sessionToken}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${7 * 24 * 60 * 60}`)
+    setCookie(c, 'session_token', sessionToken, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'Strict',
+      maxAge: 7 * 24 * 60 * 60 // 7 days
+    })
     
     return c.json({ 
       success: true, 
@@ -93,7 +90,6 @@ app.post('/api/auth/login', async (c) => {
         id: (user as any).id,
         email: (user as any).email,
         name: (user as any).name,
-        role: (user as any).role,
         profile_picture: (user as any).profile_picture
       }
     })
@@ -105,13 +101,13 @@ app.post('/api/auth/login', async (c) => {
 // Logout
 app.post('/api/auth/logout', async (c) => {
   try {
-    const sessionToken = c.req.cookie('session_token')
+    const sessionToken = getCookie(c, 'session_token')
     
     if (sessionToken) {
       await c.env.DB.prepare('DELETE FROM sessions WHERE session_token = ?').bind(sessionToken).run()
     }
     
-    c.header('Set-Cookie', 'session_token=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0')
+    setCookie(c, 'session_token', '', { path: '/', httpOnly: true, sameSite: 'Strict', maxAge: 0 })
     return c.json({ success: true })
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
@@ -134,9 +130,91 @@ app.get('/api/auth/me', async (c) => {
         id: user.user_id,
         email: user.email,
         name: user.name,
-        role: user.role,
+        role: 'admin',
         profile_picture: user.profile_picture
       }
+    })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Update admin profile
+app.put('/api/admin/profile', async (c) => {
+  try {
+    const user = await isAuthenticated(c)
+    if (!user) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+
+    const { name, profile_picture } = await c.req.json()
+    
+    if (!name) {
+      return c.json({ success: false, error: 'Name is required' }, 400)
+    }
+
+    await c.env.DB.prepare(
+      'UPDATE admin_users SET name = ?, profile_picture = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(name, profile_picture || null, user.user_id).run()
+
+    return c.json({ 
+      success: true, 
+      message: 'Profile updated successfully',
+      user: { name, profile_picture }
+    })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Change admin password
+app.put('/api/admin/change-password', async (c) => {
+  try {
+    const user = await isAuthenticated(c)
+    if (!user) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+
+    const { currentPassword, newPassword } = await c.req.json()
+    
+    if (!currentPassword || !newPassword) {
+      return c.json({ success: false, error: 'Both current and new passwords are required' }, 400)
+    }
+
+    if (newPassword.length < 6) {
+      return c.json({ success: false, error: 'New password must be at least 6 characters' }, 400)
+    }
+
+    // Hash current password
+    const encoder = new TextEncoder()
+    const currentData = encoder.encode(currentPassword)
+    const currentHashBuffer = await crypto.subtle.digest('SHA-256', currentData)
+    const currentHashArray = Array.from(new Uint8Array(currentHashBuffer))
+    const currentPasswordHash = currentHashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+
+    // Verify current password
+    const adminUser = await c.env.DB.prepare(
+      'SELECT * FROM admin_users WHERE id = ? AND password_hash = ?'
+    ).bind(user.user_id, currentPasswordHash).first()
+
+    if (!adminUser) {
+      return c.json({ success: false, error: 'Current password is incorrect' }, 401)
+    }
+
+    // Hash new password
+    const newData = encoder.encode(newPassword)
+    const newHashBuffer = await crypto.subtle.digest('SHA-256', newData)
+    const newHashArray = Array.from(new Uint8Array(newHashBuffer))
+    const newPasswordHash = newHashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+
+    // Update password
+    await c.env.DB.prepare(
+      'UPDATE admin_users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(newPasswordHash, user.user_id).run()
+
+    return c.json({ 
+      success: true, 
+      message: 'Password changed successfully'
     })
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
@@ -223,8 +301,7 @@ app.get('/api/patients/export', async (c) => {
       // CSV Export
       const headers = [
         'Patient ID', 'Name', 'Age', 'Gender', 'Country', 'Phone', 'Country Code',
-        'Email', 'Weight', 'Height', 'Address H.No', 'Street', 'Apartment', 'Area',
-        'District', 'State', 'Pin Code', 'Diseases/Medicines', 'Additional Phones',
+        'Email', 'Weight', 'Height', 'Complete Address', 'Diseases/Medicines', 'Additional Phones',
         'Referred By Name', 'Referred By Phone', 'Referred By Address', 'Medical History', 'Created At'
       ].join(',')
       
@@ -235,16 +312,16 @@ app.get('/api/patients/export', async (c) => {
           try {
             const diseases = JSON.parse(patient.diseases)
             diseasesText = diseases.map((d: any) => 
-              `${d.present_health_issue || ''} - ${d.present_medicine || ''} (${d.mg_value || ''}) - Attacked: ${d.attacked_by || ''}`
+              `${d.present_health_issue || ''} - ${d.present_medicine || ''} (${d.mg_value || ''}) - Duration: ${d.attacked_by || ''}`
             ).join('; ')
           } catch (e) {
             // Fallback to old fields
             if (patient.present_health_issue) {
-              diseasesText = `${patient.present_health_issue || ''} - ${patient.present_medicine || ''} (${patient.mg_value || ''}) - Attacked: ${patient.attacked_by || ''}`
+              diseasesText = `${patient.present_health_issue || ''} - ${patient.present_medicine || ''} (${patient.mg_value || ''}) - Duration: ${patient.attacked_by || ''}`
             }
           }
         } else if (patient.present_health_issue) {
-          diseasesText = `${patient.present_health_issue || ''} - ${patient.present_medicine || ''} (${patient.mg_value || ''}) - Attacked: ${patient.attacked_by || ''}`
+          diseasesText = `${patient.present_health_issue || ''} - ${patient.present_medicine || ''} (${patient.mg_value || ''}) - Duration: ${patient.attacked_by || ''}`
         }
         
         // Parse additional phones JSON
@@ -258,6 +335,17 @@ app.get('/api/patients/export', async (c) => {
           }
         }
         
+        // Combine all address fields into Complete Address
+        const addressParts = []
+        if (patient.address_hno) addressParts.push(patient.address_hno)
+        if (patient.address_street) addressParts.push(patient.address_street)
+        if (patient.address_apartment) addressParts.push(patient.address_apartment)
+        if (patient.address_area) addressParts.push(patient.address_area)
+        if (patient.address_district) addressParts.push(patient.address_district)
+        if (patient.address_state) addressParts.push(patient.address_state)
+        if (patient.address_pincode) addressParts.push(patient.address_pincode)
+        const completeAddress = addressParts.join(', ')
+        
         return [
           patient.patient_id || '',
           `"${(patient.name || '').replace(/"/g, '""')}"`,
@@ -269,13 +357,7 @@ app.get('/api/patients/export', async (c) => {
           patient.email || '',
           patient.weight || '',
           patient.height || '',
-          patient.address_hno || '',
-          `"${(patient.address_street || '').replace(/"/g, '""')}"`,
-          `"${(patient.address_apartment || '').replace(/"/g, '""')}"`,
-          `"${(patient.address_area || '').replace(/"/g, '""')}"`,
-          patient.address_district || '',
-          patient.address_state || '',
-          patient.address_pincode || '',
+          `"${completeAddress.replace(/"/g, '""')}"`,
           `"${diseasesText.replace(/"/g, '""')}"`,
           `"${phonesText.replace(/"/g, '""')}"`,
           patient.referred_by_name || '',
@@ -295,8 +377,7 @@ app.get('/api/patients/export', async (c) => {
     } else if (format === 'excel') {
       // Excel Export (using HTML table with Excel mime type)
       const headers = ['Patient ID', 'Name', 'Age', 'Gender', 'Country', 'Phone', 'Country Code',
-        'Email', 'Weight', 'Height', 'Address H.No', 'Street', 'Apartment', 'Area',
-        'District', 'State', 'Pin Code', 'Diseases/Medicines', 'Additional Phones', 
+        'Email', 'Weight', 'Height', 'Complete Address', 'Diseases/Medicines', 'Additional Phones', 
         'Referred By Name', 'Referred By Phone', 'Referred By Address', 'Medical History', 'Created At']
       
       const rows = results.map((patient: any) => {
@@ -329,6 +410,17 @@ app.get('/api/patients/export', async (c) => {
           }
         }
         
+        // Combine all address fields into Complete Address
+        const addressParts = []
+        if (patient.address_hno) addressParts.push(patient.address_hno)
+        if (patient.address_street) addressParts.push(patient.address_street)
+        if (patient.address_apartment) addressParts.push(patient.address_apartment)
+        if (patient.address_area) addressParts.push(patient.address_area)
+        if (patient.address_district) addressParts.push(patient.address_district)
+        if (patient.address_state) addressParts.push(patient.address_state)
+        if (patient.address_pincode) addressParts.push(patient.address_pincode)
+        const completeAddress = addressParts.join(', ')
+        
         return `<tr>
           <td>${patient.patient_id || ''}</td>
           <td>${patient.name || ''}</td>
@@ -340,13 +432,7 @@ app.get('/api/patients/export', async (c) => {
           <td>${patient.email || ''}</td>
           <td>${patient.weight || ''}</td>
           <td>${patient.height || ''}</td>
-          <td>${patient.address_hno || ''}</td>
-          <td>${patient.address_street || ''}</td>
-          <td>${patient.address_apartment || ''}</td>
-          <td>${patient.address_area || ''}</td>
-          <td>${patient.address_district || ''}</td>
-          <td>${patient.address_state || ''}</td>
-          <td>${patient.address_pincode || ''}</td>
+          <td>${completeAddress}</td>
           <td>${diseasesText}</td>
           <td>${phonesText}</td>
           <td>${patient.referred_by_name || ''}</td>
@@ -364,7 +450,7 @@ app.get('/api/patients/export', async (c) => {
             <style>table { border-collapse: collapse; } td, th { border: 1px solid #ddd; padding: 8px; white-space: nowrap; }</style>
           </head>
           <body>
-            <h2>TPS DHANVANTRI AYURVEDA - Patients Export</h2>
+            <h2>TPS DHANVANTARI AYURVEDA - Patients Export</h2>
             <p>Export Date: ${date} | Total Patients: ${results.length}</p>
             <table>
               <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
@@ -387,15 +473,15 @@ app.get('/api/patients/export', async (c) => {
           try {
             const diseases = JSON.parse(patient.diseases)
             diseasesText = diseases.map((d: any) => 
-              `<div style="margin-bottom: 5px;"><strong>${d.present_health_issue || 'N/A'}:</strong> ${d.present_medicine || 'N/A'} (${d.mg_value || ''}) - Attacked: ${d.attacked_by || 'N/A'}</div>`
+              `<div style="margin-bottom: 5px;"><strong>${d.present_health_issue || 'N/A'}:</strong> ${d.present_medicine || 'N/A'} (${d.mg_value || ''}) - Duration: ${d.attacked_by || 'N/A'}</div>`
             ).join('')
           } catch (e) {
             if (patient.present_health_issue) {
-              diseasesText = `<div><strong>${patient.present_health_issue}:</strong> ${patient.present_medicine || 'N/A'} (${patient.mg_value || ''}) - Attacked: ${patient.attacked_by || 'N/A'}</div>`
+              diseasesText = `<div><strong>${patient.present_health_issue}:</strong> ${patient.present_medicine || 'N/A'} (${patient.mg_value || ''}) - Duration: ${patient.attacked_by || 'N/A'}</div>`
             }
           }
         } else if (patient.present_health_issue) {
-          diseasesText = `<div><strong>${patient.present_health_issue}:</strong> ${patient.present_medicine || 'N/A'} (${patient.mg_value || ''}) - Attacked: ${patient.attacked_by || 'N/A'}</div>`
+          diseasesText = `<div><strong>${patient.present_health_issue}:</strong> ${patient.present_medicine || 'N/A'} (${patient.mg_value || ''}) - Duration: ${patient.attacked_by || 'N/A'}</div>`
         }
         
         // Parse additional phones JSON
@@ -486,7 +572,7 @@ app.get('/api/patients/export', async (c) => {
             </script>
           </head>
           <body>
-            <h1>TPS DHANVANTRI AYURVEDA - Patients List</h1>
+            <h1>TPS DHANVANTARI AYURVEDA - Patients List</h1>
             <div class="export-info">Export Date: ${date} | Total Patients: ${results.length}${country ? ` | Country: ${country}` : ''}</div>
             <button id="printBtn" class="print-btn no-print">Print / Save as PDF</button>
             ${rows}
@@ -840,7 +926,7 @@ app.get('/api/prescriptions', async (c) => {
     const dateTo = c.req.query('dateTo') || ''
     
     let query = `
-      SELECT h.*, p.name as patient_name, p.phone as patient_phone, p.patient_id, p.country
+      SELECT h.*, p.name as patient_name, p.phone as patient_phone, p.patient_id, p.country, p.age, p.gender
       FROM herbs_routes h
       LEFT JOIN patients p ON h.patient_id = p.id
       WHERE 1=1
@@ -866,7 +952,82 @@ app.get('/api/prescriptions', async (c) => {
     query += ' ORDER BY h.created_at DESC'
     
     const { results } = await c.env.DB.prepare(query).bind(...params).all()
-    return c.json({ success: true, data: results })
+    
+    // For each herbs_routes record, calculate summary from medicines
+    const enhancedResults = await Promise.all(results.map(async (hr: any) => {
+      // Get medicines for this record
+      const { results: medicines } = await c.env.DB.prepare(
+        'SELECT * FROM medicines_tracking WHERE herbs_route_id = ?'
+      ).bind(hr.id).all()
+      
+      // Get payment collections for this record
+      const { results: collections } = await c.env.DB.prepare(
+        'SELECT * FROM payment_collections WHERE herbs_route_id = ?'
+      ).bind(hr.id).all()
+      
+      // Calculate totals
+      let totalAmount = 0
+      let totalAdvance = 0
+      let totalCollected = 0
+      let activeCourseMonths = 0
+      let totalCourseMonths = 0
+      let earliestGivenDate = null
+      
+      // Group medicines by course (given_date + treatment_months + payment details)
+      const courseGroups: any = {}
+      medicines.forEach((med: any) => {
+        const courseKey = `${med.given_date}_${med.treatment_months}_${med.payment_amount}_${med.advance_payment}_${med.is_active}`
+        if (!courseGroups[courseKey]) {
+          courseGroups[courseKey] = {
+            given_date: med.given_date,
+            treatment_months: parseInt(med.treatment_months || 0),
+            payment_amount: parseFloat(med.payment_amount || 0),
+            advance_payment: parseFloat(med.advance_payment || 0),
+            is_active: med.is_active,
+            medicines: []
+          }
+        }
+        courseGroups[courseKey].medicines.push(med)
+      })
+      
+      // Calculate totals from courses (not individual medicines)
+      Object.values(courseGroups).forEach((course: any) => {
+        totalAmount += course.payment_amount
+        totalAdvance += course.advance_payment
+        
+        // Sum treatment months from all courses
+        totalCourseMonths += course.treatment_months
+        
+        // Sum treatment months from active courses only
+        if (course.is_active) {
+          activeCourseMonths += course.treatment_months
+        }
+        
+        // Track earliest given_date
+        if (course.given_date && (!earliestGivenDate || course.given_date < earliestGivenDate)) {
+          earliestGivenDate = course.given_date
+        }
+      })
+      
+      collections.forEach((col: any) => {
+        totalCollected += parseFloat(col.amount || 0)
+      })
+      
+      const totalBalance = totalAmount - totalAdvance - totalCollected
+      
+      return {
+        ...hr,
+        given_date: earliestGivenDate || hr.created_at,
+        total_amount: totalAmount,
+        total_advance: totalAdvance,
+        total_collected: totalCollected,
+        total_balance: totalBalance,
+        total_course_months: totalCourseMonths,
+        active_course_months: activeCourseMonths
+      }
+    }))
+    
+    return c.json({ success: true, data: enhancedResults })
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
   }
@@ -892,16 +1053,33 @@ app.get('/api/prescriptions/:id', async (c) => {
     
     // Get herbs & routes details
     const herbsRoute = await c.env.DB.prepare(`
-      SELECT h.*, p.name as patient_name, p.phone as patient_phone, p.email as patient_email, 
-             p.patient_id, p.age, p.gender, p.country, p.weight, p.height,
-             p.present_health_issue, p.present_medicine, p.mg_value
+      SELECT h.id, h.patient_id as patient_fk, h.appointment_id, h.diagnosis, h.notes, 
+             h.next_followup_date, h.created_at, h.updated_at, h.given_date,
+             h.treatment_months, h.payment_amount, h.advance_payment, h.payment_notes,
+             h.due_balance, h.course,
+             p.name as patient_name, p.phone as patient_phone, p.email as patient_email, 
+             p.patient_id as patient_identifier, p.id as patient_db_id,
+             p.age, p.gender, p.country, p.country_code, p.weight, p.height,
+             p.present_health_issue, p.present_medicine, p.mg_value, p.diseases,
+             p.address_hno, p.address_street, p.address_apartment, p.address_area,
+             p.address_district, p.address_state, p.address_pincode, p.address,
+             p.additional_phones
       FROM herbs_routes h
       LEFT JOIN patients p ON h.patient_id = p.id
       WHERE h.id = ?
     `).bind(id).first()
     
     if (!herbsRoute) {
-      return c.json({ success: false, error: 'Herbs & Routes not found' }, 404)
+      return c.json({ success: false, error: 'Herbs & Roots not found' }, 404)
+    }
+    
+    // Parse diseases JSON if present
+    if (herbsRoute.diseases) {
+      try {
+        herbsRoute.diseases = JSON.parse(herbsRoute.diseases as string)
+      } catch (e) {
+        herbsRoute.diseases = []
+      }
     }
     
     // Get medicines for this herbs & routes
@@ -909,11 +1087,17 @@ app.get('/api/prescriptions/:id', async (c) => {
       'SELECT * FROM medicines_tracking WHERE herbs_route_id = ? ORDER BY roman_id'
     ).bind(id).all()
     
+    // Get payment collections for this prescription (herbs_route)
+    const { results: paymentCollections } = await c.env.DB.prepare(
+      'SELECT * FROM payment_collections WHERE herbs_route_id = ? ORDER BY collection_date DESC'
+    ).bind(id).all()
+    
     return c.json({ 
       success: true, 
       data: { 
         ...herbsRoute, 
-        medicines 
+        medicines,
+        payment_collections: paymentCollections
       } 
     })
   } catch (error: any) {
@@ -926,79 +1110,87 @@ app.post('/api/prescriptions', async (c) => {
   try {
     const body = await c.req.json()
     
-    // Calculate follow-up date from given_date + treatment_months
-    const followUpDate = new Date(body.given_date)
-    followUpDate.setMonth(followUpDate.getMonth() + body.treatment_months)
-    const followUpDateStr = followUpDate.toISOString().split('T')[0]
-    
-    // Insert herbs_routes record with global fields
+    // Insert herbs_routes record (simplified - per-medicine data moved to medicines_tracking)
     const result = await c.env.DB.prepare(`
       INSERT INTO herbs_routes (
-        patient_id, given_date, treatment_months, next_followup_date,
-        diagnosis, notes, course, currency
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        patient_id, next_followup_date, diagnosis, notes, course
+      ) VALUES (?, ?, ?, ?, ?)
     `).bind(
       body.patient_id,
-      body.given_date,
-      body.treatment_months,
-      followUpDateStr,
+      body.follow_up_date || null,
       body.diagnosis || null,
       body.notes || null,
-      body.course || null,
-      body.currency || 'INR'
+      body.course || null
     ).run()
     
     const herbsRouteId = result.meta.last_row_id
     
-    // Insert medicines grouped by course
-    if (body.courses && body.courses.length > 0) {
-      for (const course of body.courses) {
-        for (const med of course.medicines) {
-          await c.env.DB.prepare(`
-            INSERT INTO medicines_tracking (
-              herbs_route_id, course_number, roman_id, medicine_name,
-              given_date, treatment_months,
-              payment_amount, advance_payment, balance_due, payment_notes,
-              morning_before, morning_after, afternoon_before, afternoon_after,
-              evening_before, evening_after, night_before, night_after
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).bind(
-            herbsRouteId,
-            course.course_number,
-            med.roman_id || '',
-            med.medicine_name,
-            body.given_date, // Use global given date
-            body.treatment_months, // Use global treatment months
-            course.payment_amount || 0,
-            course.advance_payment || 0,
-            course.balance_due || 0,
-            course.payment_notes || null,
-            med.morning_before ? 1 : 0,
-            med.morning_after ? 1 : 0,
-            med.afternoon_before ? 1 : 0,
-            med.afternoon_after ? 1 : 0,
-            med.evening_before ? 1 : 0,
-            med.evening_after ? 1 : 0,
-            med.night_before ? 1 : 0,
-            med.night_after ? 1 : 0
-          ).run()
-        }
+    // Insert medicines with per-medicine fields
+    if (body.medicines && body.medicines.length > 0) {
+      for (const med of body.medicines) {
+        await c.env.DB.prepare(`
+          INSERT INTO medicines_tracking (
+            herbs_route_id, roman_id, medicine_name, given_date, treatment_months,
+            is_active, payment_amount, advance_payment, balance_due, payment_notes,
+            morning_before, morning_after, afternoon_before, afternoon_after,
+            evening_before, evening_after, night_before, night_after
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          herbsRouteId,
+          med.roman_id,
+          med.medicine_name,
+          med.given_date,
+          med.treatment_months,
+          med.is_active ? 1 : 0,
+          med.payment_amount || 0,
+          med.advance_payment || 0,
+          med.balance_due || 0,
+          med.payment_notes || null,
+          med.morning_before ? 1 : 0,
+          med.morning_after ? 1 : 0,
+          med.afternoon_before ? 1 : 0,
+          med.afternoon_after ? 1 : 0,
+          med.evening_before ? 1 : 0,
+          med.evening_after ? 1 : 0,
+          med.night_before ? 1 : 0,
+          med.night_after ? 1 : 0
+        ).run()
       }
     }
     
-    // Create follow-up reminder
-    await c.env.DB.prepare(`
-      INSERT INTO reminders (
-        patient_id, type, scheduled_date, title, message, status
-      ) VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(
-      body.patient_id,
-      'Follow-up',
-      followUpDateStr,
-      'Follow-up Consultation',
-      'Time for your follow-up consultation',
-      'Pending'
-    ).run()
+    // Save payment collections
+    if (body.payment_collections && body.payment_collections.length > 0) {
+      for (const collection of body.payment_collections) {
+        await c.env.DB.prepare(`
+          INSERT INTO payment_collections (
+            herbs_route_id, course_id, collection_date, amount, payment_method, notes
+          ) VALUES (?, ?, ?, ?, ?, ?)
+        `).bind(
+          herbsRouteId,
+          collection.course_id,
+          collection.collection_date,
+          collection.amount,
+          collection.payment_method || 'Cash',
+          collection.notes || null
+        ).run()
+      }
+    }
+    
+    // Create follow-up reminder (only if follow_up_date exists)
+    if (body.follow_up_date) {
+      await c.env.DB.prepare(`
+        INSERT INTO reminders (
+          patient_id, prescription_id, reminder_type, reminder_date, message, status
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(
+        body.patient_id,
+        herbsRouteId,
+        'Follow-up',
+        body.follow_up_date || null,
+        'Time for your follow-up consultation',
+        'pending'
+      ).run()
+    }
     
     return c.json({ success: true, data: { id: herbsRouteId } }, 201)
   } catch (error: any) {
@@ -1065,6 +1257,56 @@ app.put('/api/prescriptions/:id', async (c) => {
       }
     }
     
+    // Delete existing payment collections
+    await c.env.DB.prepare(
+      'DELETE FROM payment_collections WHERE herbs_route_id = ?'
+    ).bind(id).run()
+    
+    // Insert updated payment collections
+    if (body.payment_collections && body.payment_collections.length > 0) {
+      for (const collection of body.payment_collections) {
+        await c.env.DB.prepare(`
+          INSERT INTO payment_collections (
+            herbs_route_id, course_id, collection_date, amount, payment_method, notes
+          ) VALUES (?, ?, ?, ?, ?, ?)
+        `).bind(
+          id,
+          collection.course_id,
+          collection.collection_date,
+          collection.amount,
+          collection.payment_method || 'Cash',
+          collection.notes || null
+        ).run()
+      }
+    }
+    
+    // Update or create follow-up reminder
+    if (body.follow_up_date) {
+      // Delete existing reminders for this prescription
+      await c.env.DB.prepare(
+        'DELETE FROM reminders WHERE prescription_id = ?'
+      ).bind(id).run()
+      
+      // Create new reminder
+      await c.env.DB.prepare(`
+        INSERT INTO reminders (
+          patient_id, prescription_id, reminder_type, reminder_date, message, status
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(
+        body.patient_id,
+        id,
+        'Follow-up',
+        body.follow_up_date,
+        'Time for your follow-up consultation',
+        'pending'
+      ).run()
+    } else {
+      // If no follow_up_date, delete any existing reminders
+      await c.env.DB.prepare(
+        'DELETE FROM reminders WHERE prescription_id = ?'
+      ).bind(id).run()
+    }
+    
     return c.json({ success: true })
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
@@ -1076,6 +1318,56 @@ app.delete('/api/prescriptions/:id', async (c) => {
   try {
     const id = c.req.param('id')
     await c.env.DB.prepare('DELETE FROM herbs_routes WHERE id = ?').bind(id).run()
+    return c.json({ success: true })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// ==================== PAYMENT COLLECTION APIs ====================
+
+// Get payment collections for a medicine/course
+app.get('/api/medicines/:medicineId/payments', async (c) => {
+  try {
+    const medicineId = c.req.param('medicineId')
+    const { results: payments } = await c.env.DB.prepare(
+      'SELECT * FROM payment_collections WHERE medicine_id = ? ORDER BY collection_date DESC'
+    ).bind(medicineId).all()
+    
+    return c.json({ success: true, data: payments })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Add a payment collection
+app.post('/api/medicines/:medicineId/payments', async (c) => {
+  try {
+    const medicineId = c.req.param('medicineId')
+    const body = await c.req.json()
+    
+    const result = await c.env.DB.prepare(`
+      INSERT INTO payment_collections (medicine_id, collection_date, amount, payment_method, notes)
+      VALUES (?, ?, ?, ?, ?)
+    `).bind(
+      medicineId,
+      body.collection_date,
+      body.amount,
+      body.payment_method || 'Cash',
+      body.notes || ''
+    ).run()
+    
+    return c.json({ success: true, id: result.meta.last_row_id })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Delete a payment collection
+app.delete('/api/payments/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    await c.env.DB.prepare('DELETE FROM payment_collections WHERE id = ?').bind(id).run()
     return c.json({ success: true })
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
@@ -1297,6 +1589,7 @@ app.get('/api/reminders', async (c) => {
       SELECT r.*, p.name as patient_name, p.phone as patient_phone, p.patient_id
       FROM reminders r
       LEFT JOIN patients p ON r.patient_id = p.id
+      INNER JOIN herbs_routes h ON r.prescription_id = h.id
       WHERE 1=1
     `
     const params: any[] = []
@@ -1333,6 +1626,7 @@ app.get('/api/reminders/pending', async (c) => {
       SELECT r.*, p.name as patient_name, p.phone as patient_phone, p.email as patient_email
       FROM reminders r
       LEFT JOIN patients p ON r.patient_id = p.id
+      INNER JOIN herbs_routes h ON r.prescription_id = h.id
       WHERE r.status = 'pending' AND r.reminder_date <= datetime('now', '+3 days')
       ORDER BY r.reminder_date ASC
     `).all()
@@ -1434,9 +1728,11 @@ app.get('/api/stats', async (c) => {
       "SELECT COUNT(*) as count FROM appointments WHERE DATE(appointment_date) = DATE('now')"
     ).first()
     
-    // Get pending reminders
+    // Get pending reminders (only for existing herbs_routes records)
     const pendingReminders = await c.env.DB.prepare(
-      "SELECT COUNT(*) as count FROM reminders WHERE status = 'pending' AND reminder_date <= datetime('now', '+3 days')"
+      `SELECT COUNT(*) as count FROM reminders r 
+       INNER JOIN herbs_routes h ON r.prescription_id = h.id 
+       WHERE r.status = 'pending' AND r.reminder_date <= datetime('now', '+3 days')`
     ).first()
     
     return c.json({ 
@@ -1461,7 +1757,7 @@ app.get('/login', (c) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Login - TPS DHANVANTRI AYURVEDA</title>
+        <title>Login - TPS DHANVANTARI AYURVEDA</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -1472,50 +1768,25 @@ app.get('/login', (c) => {
                 <div class="bg-gradient-to-r from-green-600 to-emerald-600 text-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-leaf text-4xl"></i>
                 </div>
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">TPS DHANVANTRI</h1>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">TPS DHANVANTARI</h1>
                 <p class="text-gray-600">Ayurveda Clinic Management</p>
             </div>
 
             <div id="login-form" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                    <input type="email" id="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="your.email@gmail.com" required>
+                    <input type="email" id="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="tpsdhanvantari@gmail.com" required>
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                    <input type="text" id="name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Your Name" required>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input type="password" id="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Enter your password" required>
                 </div>
 
-                <button onclick="loginWithEmail()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition duration-200 flex items-center justify-center">
+                <button onclick="loginWithPassword()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition duration-200 flex items-center justify-center">
                     <i class="fas fa-sign-in-alt mr-2"></i>
                     Sign In
                 </button>
-
-                <div class="relative my-6">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-300"></div>
-                    </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="px-4 bg-white text-gray-500">Or continue with</span>
-                    </div>
-                </div>
-
-                <!-- Google Sign-In Button -->
-                <div id="g_id_onload"
-                     data-client_id="YOUR_GOOGLE_CLIENT_ID"
-                     data-callback="handleGoogleLogin"
-                     data-auto_prompt="false">
-                </div>
-                <div class="g_id_signin" 
-                     data-type="standard"
-                     data-size="large"
-                     data-theme="outline"
-                     data-text="sign_in_with"
-                     data-shape="rectangular"
-                     data-logo_alignment="left"
-                     data-width="384">
-                </div>
             </div>
 
             <div id="error-message" class="hidden mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm"></div>
@@ -1531,12 +1802,12 @@ app.get('/login', (c) => {
         <script>
             const API_BASE = '/api';
 
-            async function loginWithEmail() {
-                const email = document.getElementById('email').value;
-                const name = document.getElementById('name').value;
+            async function loginWithPassword() {
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
 
-                if (!email || !name) {
-                    showError('Please enter both email and name');
+                if (!email || !password) {
+                    showError('Please enter both email and password');
                     return;
                 }
 
@@ -1548,7 +1819,7 @@ app.get('/login', (c) => {
                 try {
                     const res = await axios.post(\`\${API_BASE}/auth/login\`, {
                         email: email,
-                        name: name
+                        password: password
                     });
 
                     if (res.data.success) {
@@ -1557,13 +1828,22 @@ app.get('/login', (c) => {
                             window.location.href = '/';
                         }, 1000);
                     } else {
-                        showError(res.data.error || 'Login failed');
+                        showError(res.data.error || 'Invalid credentials');
                     }
                 } catch (error) {
                     console.error('Login error:', error);
-                    showError(error.response?.data?.error || 'Login failed. Please try again.');
+                    showError(error.response?.data?.error || 'Invalid email or password');
                 }
             }
+            
+            // Enter key support
+            document.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('password').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        loginWithPassword();
+                    }
+                });
+            });
 
             async function handleGoogleLogin(response) {
                 try {
@@ -1625,7 +1905,7 @@ app.get('/', (c) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>TPS DHANVANTRI AYURVEDA - Management System</title>
+        <title>TPS DHANVANTARI AYURVEDA - Management System</title>
         <meta name="description" content="Professional Ayurveda clinic management system">
         <meta name="theme-color" content="#059669">
         <link rel="manifest" href="/static/manifest.json">
@@ -1656,23 +1936,77 @@ app.get('/', (c) => {
         </script>
         <style>
           @media print {
+            /* Hide everything except print content */
             body * {
               visibility: hidden;
             }
             .print-content, .print-content * {
               visibility: visible;
             }
+            
+            /* Position print content at top - use absolute for multi-page */
             .print-content {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
+              position: absolute !important;
+              left: 0 !important;
+              top: 0 !important;
+              width: 100% !important;
+              padding: 0 !important;
+              margin: 0 !important;
             }
+            
+            /* Remove all spacing from modal in print */
+            #prescription-summary-modal {
+              position: static !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              height: auto !important;
+              overflow: visible !important;
+            }
+            
+            #prescription-summary-modal > div {
+              padding: 0 !important;
+              margin: 0 !important;
+              max-height: none !important;
+              overflow: visible !important;
+              height: auto !important;
+            }
+            
+            /* Remove spacing from first elements */
+            .print-content > div:first-child {
+              margin-top: 0 !important;
+              padding-top: 0 !important;
+            }
+            
+            /* Hide non-print elements */
             .no-print {
               display: none !important;
             }
+            
+            /* Allow page breaks */
+            .print-content {
+              page-break-inside: auto;
+            }
+            
+            /* Avoid breaks inside course sections */
+            .medicine-row, .border-2 {
+              page-break-inside: avoid;
+            }
+            
+            /* Page settings */
             @page {
-              margin: 1cm;
+              margin: 0.8cm;
+              size: A4;
+            }
+            
+            /* Ensure body starts at top */
+            body {
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+            
+            html, body {
+              height: auto !important;
+              overflow: visible !important;
             }
           }
         </style>
@@ -1683,8 +2017,8 @@ app.get('/', (c) => {
             <div class="container mx-auto px-4 py-3">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3">
-                        <i class="fas fa-leaf text-2xl"></i>
-                        <span class="text-xl font-bold">TPS DHANVANTRI AYURVEDA</span>
+                        <img src="/static/ayurveda-logo.png" alt="TPS Dhanvantri Ayurveda" class="h-10 w-10 object-contain">
+                        <span class="text-xl font-bold">TPS DHANVANTARI AYURVEDA</span>
                     </div>
                     <div class="flex items-center space-x-4">
                         <button onclick="showSection('dashboard')" class="nav-btn hover:bg-ayurveda-800 px-3 py-2 rounded transition">
@@ -1697,7 +2031,7 @@ app.get('/', (c) => {
                             <i class="fas fa-calendar-alt mr-2"></i>Appointments
                         </button>
                         <button onclick="showSection('prescriptions')" class="nav-btn hover:bg-ayurveda-800 px-3 py-2 rounded transition">
-                            <i class="fas fa-leaf mr-2"></i>Herbs & Routes
+                            <i class="fas fa-leaf mr-2"></i>Herbs & Roots
                         </button>
                         <button onclick="showSection('reminders')" class="nav-btn hover:bg-ayurveda-800 px-3 py-2 rounded transition">
                             <i class="fas fa-bell mr-2"></i>Reminders
@@ -1793,7 +2127,7 @@ app.get('/', (c) => {
                 
                 <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <input type="text" id="patient-search" placeholder="Search by name, phone, ID..." class="border rounded px-3 py-2" onkeyup="loadPatients()">
+                        <input type="text" id="patient-search" name="patient-search-filter" placeholder="Search by name, phone, ID..." class="border rounded px-3 py-2" onkeyup="loadPatients()" autocomplete="off">
                         <select id="patient-filter-country" class="border rounded px-3 py-2" onchange="loadPatients()">
                             <option value="">All Countries</option>
                             <!-- Options loaded dynamically from /api/patients/countries -->
@@ -1874,15 +2208,21 @@ app.get('/', (c) => {
             <!-- HERBS & ROUTES (PRESCRIPTIONS) SECTION -->
             <div id="prescriptions-section" class="section hidden">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-leaf mr-2 text-ayurveda-600"></i>Herbs & Routes</h2>
+                    <h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-leaf mr-2 text-ayurveda-600"></i>Herbs & Roots</h2>
                     <button onclick="showHerbsRoutesModal()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg">
                         <i class="fas fa-plus mr-2"></i>New Record
                     </button>
                 </div>
                 
                 <div class="bg-white rounded-lg shadow-lg p-6">
-                    <div class="mb-4">
-                        <input type="text" id="prescription-search" placeholder="Search by patient name or problem..." class="border rounded px-3 py-2 w-full" onkeyup="loadHerbsRoutes()">
+                    <div class="mb-4 flex gap-2 items-center">
+                        <input type="text" id="prescription-search" name="herbs-search-filter" autocomplete="off" placeholder="Search by patient ID, name, or problem..." class="border rounded px-3 py-2 flex-1" onkeyup="loadHerbsRoutes()">
+                        <button onclick="exportToExcel()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                            <i class="fas fa-file-excel mr-2"></i>Export Excel
+                        </button>
+                        <button onclick="exportToPDF()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                            <i class="fas fa-file-pdf mr-2"></i>Export PDF
+                        </button>
                     </div>
                     
                     <div class="overflow-x-auto">
@@ -1890,17 +2230,19 @@ app.get('/', (c) => {
                             <thead class="bg-gray-100">
                                 <tr>
                                     <th class="px-6 py-3 text-left">Given Date</th>
+                                    <th class="px-6 py-3 text-left">Patient Number</th>
                                     <th class="px-6 py-3 text-left">Patient</th>
-                                    <th class="px-6 py-3 text-left">Problem</th>
-                                    <th class="px-6 py-3 text-left">Course</th>
-                                    <th class="px-6 py-3 text-left">Amount</th>
-                                    <th class="px-6 py-3 text-left">Duration</th>
+                                    <th class="px-6 py-3 text-left">Phone</th>
+                                    <th class="px-6 py-3 text-left">Age</th>
+                                    <th class="px-6 py-3 text-left">Gender</th>
+                                    <th class="px-6 py-3 text-left">Entire Course</th>
+                                    <th class="px-6 py-3 text-left">Completed Months</th>
                                     <th class="px-6 py-3 text-left">Next Follow-up</th>
                                     <th class="px-6 py-3 text-left">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="prescriptions-table-body">
-                                <tr><td colspan="8" class="text-center py-4">Loading...</td></tr>
+                                <tr><td colspan="10" class="text-center py-4">Loading...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1949,13 +2291,82 @@ app.get('/', (c) => {
                 <h2 class="text-2xl font-bold text-gray-800 mb-6">Settings</h2>
                 
                 <div class="space-y-6">
+                    <!-- Admin Profile Management -->
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <h3 class="text-xl font-bold mb-4 text-ayurveda-700">
+                            <i class="fas fa-user-shield mr-2"></i>Admin Profile
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Name</label>
+                                <input type="text" id="profile-name" class="border rounded px-3 py-2 w-full" placeholder="Your name">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Email (Cannot be changed)</label>
+                                <input type="email" id="profile-email" class="border rounded px-3 py-2 w-full bg-gray-100" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Profile Picture</label>
+                                <div class="flex items-start gap-4">
+                                    <!-- Current/Preview Image -->
+                                    <div class="flex-shrink-0">
+                                        <div id="profile-picture-preview" class="w-24 h-24 rounded-full border-2 border-gray-300 overflow-hidden bg-gray-100 flex items-center justify-center">
+                                            <i class="fas fa-user text-4xl text-gray-400"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Upload Controls -->
+                                    <div class="flex-1 space-y-2">
+                                        <input type="file" id="profile-picture-upload" accept="image/*" class="hidden" onchange="handleProfilePictureUpload(event)">
+                                        <button type="button" onclick="document.getElementById('profile-picture-upload').click()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm">
+                                            <i class="fas fa-upload mr-2"></i>Upload Photo
+                                        </button>
+                                        <button type="button" onclick="removeProfilePicture()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm ml-2">
+                                            <i class="fas fa-trash mr-2"></i>Remove
+                                        </button>
+                                        <p class="text-xs text-gray-500 mt-1">Recommended: Square image, at least 200x200px</p>
+                                        <p class="text-xs text-gray-500">Supported: JPG, PNG, GIF (Max 2MB)</p>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="profile-picture" value="">
+                            </div>
+                            <button onclick="updateProfile()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+                                <i class="fas fa-save mr-2"></i>Update Profile
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Change Password -->
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <h3 class="text-xl font-bold mb-4 text-red-700">
+                            <i class="fas fa-key mr-2"></i>Change Password
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Current Password</label>
+                                <input type="password" id="current-password" class="border rounded px-3 py-2 w-full" placeholder="Enter current password">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">New Password</label>
+                                <input type="password" id="new-password" class="border rounded px-3 py-2 w-full" placeholder="Enter new password">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Confirm New Password</label>
+                                <input type="password" id="confirm-password" class="border rounded px-3 py-2 w-full" placeholder="Re-enter new password">
+                            </div>
+                            <button onclick="changePassword()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg">
+                                <i class="fas fa-lock mr-2"></i>Change Password
+                            </button>
+                        </div>
+                    </div>
+                    
                     <!-- Clinic Information -->
                     <div class="bg-white rounded-lg shadow-lg p-6">
                         <h3 class="text-xl font-bold mb-4 text-ayurveda-700">Clinic Information</h3>
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium mb-1">Clinic Name</label>
-                                <input type="text" id="setting-clinic_name" class="border rounded px-3 py-2 w-full" value="TPS DHANVANTRI AYURVEDA">
+                                <input type="text" id="setting-clinic_name" class="border rounded px-3 py-2 w-full" value="TPS DHANVANTARI AYURVEDA">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">Phone</label>
@@ -2136,7 +2547,7 @@ app.get('/', (c) => {
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">Email</label>
-                                <input type="email" id="patient-email" class="border rounded px-3 py-2 w-full">
+                                <input type="email" id="patient-email" name="patient-email-field" class="border rounded px-3 py-2 w-full" autocomplete="email">
                             </div>
                         </div>
                         
@@ -2269,9 +2680,9 @@ app.get('/', (c) => {
 
             <!-- HERBS & ROUTES MODAL -->
             <div id="prescription-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div class="bg-white rounded-lg p-8 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="bg-white rounded-lg p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto mx-4">
                     <div class="flex justify-between items-center mb-6">
-                        <h3 id="prescription-modal-title" class="text-2xl font-bold"><i class="fas fa-leaf mr-2 text-ayurveda-600"></i>New Herbs & Routes Record</h3>
+                        <h3 id="prescription-modal-title" class="text-2xl font-bold"><i class="fas fa-leaf mr-2 text-ayurveda-600"></i>New Herbs & Roots Record</h3>
                         <button onclick="closeHerbsRoutesModal()" class="text-gray-500 hover:text-gray-700">
                             <i class="fas fa-times text-2xl"></i>
                         </button>
@@ -2330,59 +2741,39 @@ app.get('/', (c) => {
                             </div>
                         </div>
                         
-                        <!-- Global Treatment Fields -->
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                            <h4 class="font-bold text-lg mb-4 text-blue-800"><i class="fas fa-calendar-alt mr-2"></i>Treatment Schedule</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium mb-1">Given Date *</label>
-                                    <input type="date" id="prescription-given-date" class="border rounded px-3 py-2 w-full" required>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium mb-1">Treatment Months *</label>
-                                    <select id="prescription-treatment-months" class="border rounded px-3 py-2 w-full" required>
-                                        <option value="1">1 Month</option>
-                                        <option value="2">2 Months</option>
-                                        <option value="3">3 Months</option>
-                                        <option value="4">4 Months</option>
-                                        <option value="5">5 Months</option>
-                                        <option value="6">6 Months</option>
-                                        <option value="7">7 Months</option>
-                                        <option value="8">8 Months</option>
-                                        <option value="9">9 Months</option>
-                                        <option value="10">10 Months</option>
-                                        <option value="11">11 Months</option>
-                                        <option value="12">12 Months</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium mb-1">Entire Course (1-16)</label>
-                                    <select id="prescription-course" class="border rounded px-3 py-2 w-full">
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                        <option value="5">5</option>
-                                        <option value="6">6</option>
-                                        <option value="7">7</option>
-                                        <option value="8">8</option>
-                                        <option value="9">9</option>
-                                        <option value="10">10</option>
-                                        <option value="11">11</option>
-                                        <option value="12">12</option>
-                                        <option value="13">13</option>
-                                        <option value="14">14</option>
-                                        <option value="15">15</option>
-                                        <option value="16">16</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium mb-1">Currency</label>
-                                    <select id="prescription-currency" class="border rounded px-3 py-2 w-full" onchange="updateCurrencyDisplay()">
-                                        <option value="INR" selected>₹ INR (Rupees)</option>
-                                        <option value="USD">$ USD (Dollars)</option>
-                                    </select>
-                                </div>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Currency *</label>
+                                <select id="prescription-currency" class="border rounded px-3 py-2 w-full" onchange="updateAllCurrencyDisplays()">
+                                    <option value="INR">₹ Indian Rupee (INR)</option>
+                                    <option value="USD">$ US Dollar (USD)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Entire Course (1-16)</label>
+                                <select id="prescription-course" class="border rounded px-3 py-2 w-full">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="7">7</option>
+                                    <option value="8">8</option>
+                                    <option value="9">9</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                    <option value="13">13</option>
+                                    <option value="14">14</option>
+                                    <option value="15">15</option>
+                                    <option value="16">16</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Next Follow-up Date</label>
+                                <input type="date" id="prescription-followup" class="border rounded px-3 py-2 w-full bg-gray-100" readonly>
+                                <p class="text-xs text-gray-500 mt-1">Auto-calculated from active medicines</p>
                             </div>
                         </div>
                         
@@ -2392,23 +2783,19 @@ app.get('/', (c) => {
                         </div>
                         
                         <div class="mb-6">
-                            <div class="flex justify-between items-center mb-4">
-                                <h4 class="font-bold text-lg text-ayurveda-700"><i class="fas fa-capsules mr-2"></i>Courses & Medicines</h4>
-                                <button type="button" onclick="addCourse()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg text-sm">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-bold text-lg">Medicines</h4>
+                                <button type="button" onclick="addMedicineRow()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
                                     <i class="fas fa-plus mr-2"></i>Add Course
                                 </button>
                             </div>
-                            <div id="courses-container" class="space-y-4"></div>
+                            <div id="medicines-list"></div>
                         </div>
                         
                         <div class="border-t pt-6 mb-6">
                             <h4 class="font-bold text-lg mb-4 text-ayurveda-700">Overall Payment Summary</h4>
                             <div class="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
-                                <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
-                                    <div class="text-center">
-                                        <p class="text-sm text-gray-600 mb-1">Currency</p>
-                                        <p class="text-2xl font-bold text-gray-700" id="overall-currency">₹ INR</p>
-                                    </div>
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                                     <div class="text-center">
                                         <p class="text-sm text-gray-600 mb-1">Total Amount</p>
                                         <p class="text-3xl font-bold text-blue-600" id="overall-total-amount">₹0.00</p>
@@ -2422,18 +2809,22 @@ app.get('/', (c) => {
                                         <p class="text-3xl font-bold text-red-600" id="overall-balance-due">₹0.00</p>
                                     </div>
                                     <div class="text-center">
-                                        <p class="text-sm text-gray-600 mb-1">Total Medicines</p>
-                                        <p class="text-3xl font-bold text-purple-600" id="overall-medicine-count">0</p>
+                                        <p class="text-sm text-gray-600 mb-1">Active Courses</p>
+                                        <p class="text-3xl font-bold text-purple-600" id="overall-active-count">0</p>
                                     </div>
                                 </div>
                             </div>
-                            <p class="text-xs text-gray-500 mt-3 text-center"><i class="fas fa-info-circle mr-1"></i>Summary automatically calculated from individual medicine payments</p>
-                            </div>
+                            <p class="text-xs text-gray-500 mt-3 text-center"><i class="fas fa-info-circle mr-1"></i>Summary automatically calculated from individual course payments</p>
                         </div>
                         
-                        <div class="flex justify-end space-x-3">
-                            <button type="button" onclick="closeHerbsRoutesModal()" class="px-6 py-2 border rounded-lg hover:bg-gray-100">Cancel</button>
-                            <button type="submit" class="px-6 py-2 bg-ayurveda-600 hover:bg-ayurveda-700 text-white rounded-lg">Save Record</button>
+                        <!-- Action Buttons - Bottom Right Corner -->
+                        <div class="flex justify-end space-x-3 mt-6 pt-4 mb-2">
+                            <button type="button" onclick="closeHerbsRoutesModal()" class="px-8 py-3 border-2 border-gray-400 rounded-lg hover:bg-gray-100 text-gray-700 font-semibold">
+                                <i class="fas fa-times mr-2"></i>Cancel
+                            </button>
+                            <button type="submit" class="px-8 py-3 bg-ayurveda-600 hover:bg-ayurveda-700 text-white rounded-lg font-semibold shadow-lg">
+                                <i class="fas fa-save mr-2"></i>Save Record
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -2445,7 +2836,7 @@ app.get('/', (c) => {
             <div class="bg-white rounded-lg p-8 max-w-5xl w-full max-h-[90vh] overflow-y-auto">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-2xl font-bold text-ayurveda-700">
-                        <i class="fas fa-file-medical mr-2"></i>Prescription Summary
+                        <i class="fas fa-file-medical mr-2"></i>Treatment Summary
                     </h3>
                     <button onclick="closeSummaryModal()" class="text-gray-500 hover:text-gray-700">
                         <i class="fas fa-times text-2xl"></i>
@@ -2455,7 +2846,7 @@ app.get('/', (c) => {
                 <div id="summary-content" class="print-content">
                     <!-- Clinic Header -->
                     <div class="text-center mb-6 pb-4 border-b-2 border-ayurveda-600">
-                        <h1 class="text-3xl font-bold text-ayurveda-700">TPS DHANVANTRI AYURVEDA</h1>
+                        <h1 class="text-3xl font-bold text-ayurveda-700">TPS DHANVANTARI AYURVEDA</h1>
                         <p class="text-gray-600 mt-2">Ayurvedic Treatment & Wellness Center</p>
                         <p class="text-sm text-gray-500 mt-1" id="clinic-contact-info"></p>
                     </div>
@@ -2508,7 +2899,7 @@ app.get('/', (c) => {
                             <div><span class="font-semibold">Total Amount:</span> <span class="text-lg font-bold" id="summary-total-amount"></span></div>
                             <div><span class="font-semibold">Advance Paid:</span> <span id="summary-advance-paid"></span></div>
                             <div><span class="font-semibold">Balance Due:</span> <span class="text-lg font-bold text-red-600" id="summary-balance-due"></span></div>
-                            <div class="col-span-2 md:col-span-4"><span class="font-semibold">Notes:</span> <span id="summary-payment-notes"></span></div>
+                            <div id="summary-collections-info" class="col-span-2 md:col-span-4"></div>
                         </div>
                     </div>
 
@@ -2522,14 +2913,11 @@ app.get('/', (c) => {
 
                 <!-- Action Buttons -->
                 <div class="flex justify-end space-x-3 mt-6 no-print">
-                    <button onclick="printSummary()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                    <button onclick="window.print()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
                         <i class="fas fa-print mr-2"></i>Print
                     </button>
-                    <button onclick="confirmSaveHerbsRoutes()" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">
-                        <i class="fas fa-check mr-2"></i>Confirm & Save
-                    </button>
-                    <button onclick="closeSummaryModal()" class="px-6 py-2 border rounded-lg hover:bg-gray-100">
-                        <i class="fas fa-edit mr-2"></i>Edit
+                    <button onclick="closeSummaryModal()" class="px-6 py-2 bg-ayurveda-600 hover:bg-ayurveda-700 text-white rounded-lg">
+                        <i class="fas fa-times mr-2"></i>Close
                     </button>
                 </div>
             </div>
@@ -2544,7 +2932,7 @@ app.get('/', (c) => {
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/static/app.js"></script>
+        <script src="/static/app.js?v=2.3.0"></script>
     </body>
     </html>
   `)
