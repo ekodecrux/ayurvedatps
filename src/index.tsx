@@ -301,7 +301,7 @@ app.get('/api/patients/export', async (c) => {
       // CSV Export
       const headers = [
         'Patient ID', 'Name', 'Age', 'Gender', 'Country', 'Phone', 'Country Code',
-        'Email', 'Weight', 'Height', 'Complete Address', 'Diseases/Medicines', 'Additional Phones',
+        'Email', 'Weight', 'Height', 'Address', 'Complete Address', 'Diseases/Medicines', 'Additional Phones',
         'Referred By Name', 'Referred By Phone', 'Referred By Address', 'Medical History', 'Created At'
       ].join(',')
       
@@ -335,16 +335,19 @@ app.get('/api/patients/export', async (c) => {
           }
         }
         
-        // Combine all address fields into Complete Address
-        const addressParts = []
-        if (patient.address_hno) addressParts.push(patient.address_hno)
-        if (patient.address_street) addressParts.push(patient.address_street)
-        if (patient.address_apartment) addressParts.push(patient.address_apartment)
-        if (patient.address_area) addressParts.push(patient.address_area)
-        if (patient.address_district) addressParts.push(patient.address_district)
-        if (patient.address_state) addressParts.push(patient.address_state)
-        if (patient.address_pincode) addressParts.push(patient.address_pincode)
-        const completeAddress = addressParts.join(', ')
+        // Assemble address from individual fields
+        const assembledAddressParts = []
+        if (patient.address_hno) assembledAddressParts.push(patient.address_hno)
+        if (patient.address_street) assembledAddressParts.push(patient.address_street)
+        if (patient.address_apartment) assembledAddressParts.push(patient.address_apartment)
+        if (patient.address_area) assembledAddressParts.push(patient.address_area)
+        if (patient.address_district) assembledAddressParts.push(patient.address_district)
+        if (patient.address_state) assembledAddressParts.push(patient.address_state)
+        if (patient.address_pincode) assembledAddressParts.push(patient.address_pincode)
+        const assembledAddress = assembledAddressParts.join(', ')
+        
+        // Complete address from the text area field
+        const completeAddressField = patient.address || ''
         
         return [
           patient.patient_id || '',
@@ -357,7 +360,8 @@ app.get('/api/patients/export', async (c) => {
           patient.email || '',
           patient.weight || '',
           patient.height || '',
-          `"${completeAddress.replace(/"/g, '""')}"`,
+          `"${assembledAddress.replace(/"/g, '""')}"`,
+          `"${completeAddressField.replace(/"/g, '""')}"`,
           `"${diseasesText.replace(/"/g, '""')}"`,
           `"${phonesText.replace(/"/g, '""')}"`,
           patient.referred_by_name || '',
@@ -377,7 +381,7 @@ app.get('/api/patients/export', async (c) => {
     } else if (format === 'excel') {
       // Excel Export (using HTML table with Excel mime type)
       const headers = ['Patient ID', 'Name', 'Age', 'Gender', 'Country', 'Phone', 'Country Code',
-        'Email', 'Weight', 'Height', 'Complete Address', 'Diseases/Medicines', 'Additional Phones', 
+        'Email', 'Weight', 'Height', 'Address', 'Complete Address', 'Diseases/Medicines', 'Additional Phones', 
         'Referred By Name', 'Referred By Phone', 'Referred By Address', 'Medical History', 'Created At']
       
       const rows = results.map((patient: any) => {
@@ -410,16 +414,19 @@ app.get('/api/patients/export', async (c) => {
           }
         }
         
-        // Combine all address fields into Complete Address
-        const addressParts = []
-        if (patient.address_hno) addressParts.push(patient.address_hno)
-        if (patient.address_street) addressParts.push(patient.address_street)
-        if (patient.address_apartment) addressParts.push(patient.address_apartment)
-        if (patient.address_area) addressParts.push(patient.address_area)
-        if (patient.address_district) addressParts.push(patient.address_district)
-        if (patient.address_state) addressParts.push(patient.address_state)
-        if (patient.address_pincode) addressParts.push(patient.address_pincode)
-        const completeAddress = addressParts.join(', ')
+        // Assemble address from individual fields
+        const assembledAddressParts = []
+        if (patient.address_hno) assembledAddressParts.push(patient.address_hno)
+        if (patient.address_street) assembledAddressParts.push(patient.address_street)
+        if (patient.address_apartment) assembledAddressParts.push(patient.address_apartment)
+        if (patient.address_area) assembledAddressParts.push(patient.address_area)
+        if (patient.address_district) assembledAddressParts.push(patient.address_district)
+        if (patient.address_state) assembledAddressParts.push(patient.address_state)
+        if (patient.address_pincode) assembledAddressParts.push(patient.address_pincode)
+        const assembledAddress = assembledAddressParts.join(', ')
+        
+        // Complete address from the text area field
+        const completeAddressField = patient.address || ''
         
         return `<tr>
           <td>${patient.patient_id || ''}</td>
@@ -432,7 +439,8 @@ app.get('/api/patients/export', async (c) => {
           <td>${patient.email || ''}</td>
           <td>${patient.weight || ''}</td>
           <td>${patient.height || ''}</td>
-          <td>${completeAddress}</td>
+          <td>${assembledAddress}</td>
+          <td>${completeAddressField}</td>
           <td>${diseasesText}</td>
           <td>${phonesText}</td>
           <td>${patient.referred_by_name || ''}</td>
@@ -497,7 +505,7 @@ app.get('/api/patients/export', async (c) => {
           phonesText = '<div>N/A</div>'
         }
         
-        // Assemble complete address from individual fields
+        // Assemble address from individual fields
         const assembledAddress = [
           patient.address_hno,
           patient.address_street,
@@ -506,10 +514,10 @@ app.get('/api/patients/export', async (c) => {
           patient.address_district,
           patient.address_state,
           patient.address_pincode
-        ].filter(Boolean).join(', ')
+        ].filter(Boolean).join(', ') || 'N/A'
         
-        // Use the single address field if available, otherwise use assembled address
-        const fullAddress = patient.address || assembledAddress || 'N/A'
+        // Complete address from the text area field
+        const completeAddress = patient.address || 'N/A'
         
         return `
           <div class="patient-card">
@@ -528,7 +536,10 @@ app.get('/api/patients/export', async (c) => {
                 <strong>Weight/Height:</strong> ${patient.weight || 'N/A'} kg / ${patient.height || 'N/A'} ft
               </div>
               <div class="detail-row">
-                <strong>Address:</strong> ${fullAddress}
+                <strong>Address:</strong> ${assembledAddress}
+              </div>
+              <div class="detail-row">
+                <strong>Complete Address:</strong> ${completeAddress}
               </div>
               ${phonesText ? `<div class="detail-row"><strong>Additional Phones:</strong> ${phonesText}</div>` : ''}
               ${diseasesText ? `<div class="detail-row"><strong>Diseases/Medicines:</strong> ${diseasesText}</div>` : ''}
