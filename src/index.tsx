@@ -2049,15 +2049,71 @@ app.get('/', (c) => {
         </style>
     </head>
     <body class="bg-gray-50">
-        <!-- Navigation -->
+        <!-- Mobile Navigation Overlay -->
+        <div id="mobile-nav-overlay" class="mobile-nav-overlay" onclick="toggleMobileMenu()"></div>
+        
+        <!-- Mobile Side Navigation -->
+        <div id="mobile-nav" class="mobile-nav">
+            <div class="p-4 border-b border-ayurveda-500">
+                <div class="flex items-center space-x-3">
+                    <img src="/static/ayurveda-logo.png" alt="Logo" class="h-10 w-10 object-contain">
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold" id="mobile-user-name">Loading...</p>
+                        <p class="text-xs opacity-75" id="mobile-user-email"></p>
+                    </div>
+                    <button onclick="toggleMobileMenu()" class="text-white hover:bg-ayurveda-800 p-2 rounded">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <nav class="py-2">
+                <button onclick="showSection('dashboard'); toggleMobileMenu()" class="mobile-nav-item w-full text-left">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button onclick="showSection('patients'); toggleMobileMenu()" class="mobile-nav-item w-full text-left">
+                    <i class="fas fa-users"></i>
+                    <span>Patients</span>
+                </button>
+                <button onclick="showSection('appointments'); toggleMobileMenu()" class="mobile-nav-item w-full text-left">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Appointments</span>
+                </button>
+                <button onclick="showSection('prescriptions'); toggleMobileMenu()" class="mobile-nav-item w-full text-left">
+                    <i class="fas fa-leaf"></i>
+                    <span>Herbs & Roots</span>
+                </button>
+                <button onclick="showSection('reminders'); toggleMobileMenu()" class="mobile-nav-item w-full text-left">
+                    <i class="fas fa-bell"></i>
+                    <span>Reminders</span>
+                </button>
+                <button onclick="showSection('settings'); toggleMobileMenu()" class="mobile-nav-item w-full text-left">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </button>
+                <button onclick="logout()" class="mobile-nav-item w-full text-left border-t border-ayurveda-500">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </nav>
+        </div>
+        
+        <!-- Desktop & Mobile Header Navigation -->
         <nav class="bg-gradient-to-r from-ayurveda-700 to-ayurveda-600 text-white shadow-lg sticky top-0 z-50">
             <div class="container mx-auto px-4 py-3">
                 <div class="flex items-center justify-between">
+                    <!-- Logo and Brand (Mobile & Desktop) -->
                     <div class="flex items-center space-x-3">
+                        <button onclick="toggleMobileMenu()" class="mobile-menu-btn text-white hover:bg-ayurveda-800 px-3 py-2 rounded transition lg:hidden">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
                         <img src="/static/ayurveda-logo.png" alt="TPS Dhanvantri Ayurveda" class="h-10 w-10 object-contain">
-                        <span class="text-xl font-bold">TPS DHANVANTARI AYURVEDA</span>
+                        <span class="text-xl font-bold hidden sm:inline">TPS DHANVANTARI AYURVEDA</span>
+                        <span class="text-base font-bold sm:hidden">TPS AYURVEDA</span>
                     </div>
-                    <div class="flex items-center space-x-4">
+                    
+                    <!-- Desktop Navigation (Hidden on mobile/tablet) -->
+                    <div class="desktop-nav hidden lg:flex items-center space-x-4">
                         <button onclick="showSection('dashboard')" class="nav-btn hover:bg-ayurveda-800 px-3 py-2 rounded transition">
                             <i class="fas fa-home mr-2"></i>Dashboard
                         </button>
@@ -2076,6 +2132,8 @@ app.get('/', (c) => {
                         <button onclick="showSection('settings')" class="nav-btn hover:bg-ayurveda-800 px-3 py-2 rounded transition">
                             <i class="fas fa-cog mr-2"></i>Settings
                         </button>
+                        
+                        <!-- Desktop User Profile -->
                         <div class="border-l border-ayurveda-500 pl-4 ml-2">
                             <div class="flex items-center space-x-3">
                                 <div class="text-right">
@@ -2090,6 +2148,14 @@ app.get('/', (c) => {
                                     <i class="fas fa-sign-out-alt"></i>
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Mobile User Avatar (Visible on mobile/tablet only) -->
+                    <div class="user-profile-mobile lg:hidden flex items-center space-x-2">
+                        <img id="mobile-user-avatar" src="" alt="User" class="w-8 h-8 rounded-full border-2 border-white hidden">
+                        <div id="mobile-user-avatar-placeholder" class="w-8 h-8 rounded-full bg-ayurveda-500 flex items-center justify-center font-bold">
+                            <i class="fas fa-user text-sm"></i>
                         </div>
                     </div>
                 </div>

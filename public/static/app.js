@@ -83,19 +83,60 @@ async function checkAuth() {
   }
 }
 
-// Update user UI
+// Update user UI (both desktop and mobile)
 function updateUserUI() {
   if (currentUser) {
+    // Desktop user info
     document.getElementById('user-name').textContent = currentUser.name;
     document.getElementById('user-email').textContent = currentUser.email;
     
+    // Mobile user info
+    const mobileUserName = document.getElementById('mobile-user-name');
+    const mobileUserEmail = document.getElementById('mobile-user-email');
+    if (mobileUserName) mobileUserName.textContent = currentUser.name;
+    if (mobileUserEmail) mobileUserEmail.textContent = currentUser.email;
+    
+    // Desktop avatar
     if (currentUser.profile_picture) {
       document.getElementById('user-avatar').src = currentUser.profile_picture;
       document.getElementById('user-avatar').classList.remove('hidden');
       document.getElementById('user-avatar-placeholder').classList.add('hidden');
+      
+      // Mobile avatar
+      const mobileAvatar = document.getElementById('mobile-user-avatar');
+      const mobilePlaceholder = document.getElementById('mobile-user-avatar-placeholder');
+      if (mobileAvatar && mobilePlaceholder) {
+        mobileAvatar.src = currentUser.profile_picture;
+        mobileAvatar.classList.remove('hidden');
+        mobilePlaceholder.classList.add('hidden');
+      }
     } else {
       const initial = currentUser.name.charAt(0).toUpperCase();
       document.getElementById('user-avatar-placeholder').textContent = initial;
+      
+      // Mobile placeholder
+      const mobilePlaceholder = document.getElementById('mobile-user-avatar-placeholder');
+      if (mobilePlaceholder) {
+        mobilePlaceholder.textContent = initial;
+      }
+    }
+  }
+}
+
+// Toggle mobile navigation menu
+function toggleMobileMenu() {
+  const mobileNav = document.getElementById('mobile-nav');
+  const overlay = document.getElementById('mobile-nav-overlay');
+  
+  if (mobileNav && overlay) {
+    mobileNav.classList.toggle('active');
+    overlay.classList.toggle('active');
+    
+    // Prevent body scroll when menu is open
+    if (mobileNav.classList.contains('active')) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
     }
   }
 }
