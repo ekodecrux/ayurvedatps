@@ -2103,13 +2103,10 @@ app.get('/', (c) => {
             <div class="container mx-auto px-4 py-3">
                 <div class="flex items-center justify-between">
                     <!-- Logo and Brand (Mobile & Desktop) -->
-                    <div class="flex items-center space-x-3">
-                        <button onclick="toggleMobileMenu()" class="mobile-menu-btn text-white hover:bg-ayurveda-800 px-3 py-2 rounded transition lg:hidden">
-                            <i class="fas fa-bars text-xl"></i>
-                        </button>
+                    <div class="flex items-center space-x-2">
                         <img src="/static/ayurveda-logo.png" alt="TPS Dhanvantri Ayurveda" class="h-10 w-10 object-contain">
                         <span class="text-xl font-bold hidden sm:inline">TPS DHANVANTARI AYURVEDA</span>
-                        <span class="text-base font-bold sm:hidden">TPS AYURVEDA</span>
+                        <span class="text-sm font-bold sm:hidden">TPS AYURVEDA</span>
                     </div>
                     
                     <!-- Desktop Navigation (Hidden on mobile/tablet) -->
@@ -2151,12 +2148,15 @@ app.get('/', (c) => {
                         </div>
                     </div>
                     
-                    <!-- Mobile User Avatar (Visible on mobile/tablet only) -->
-                    <div class="user-profile-mobile lg:hidden flex items-center space-x-2">
+                    <!-- Mobile Menu (3-dot) and User Avatar -->
+                    <div class="user-profile-mobile lg:hidden flex items-center space-x-3">
                         <img id="mobile-user-avatar" src="" alt="User" class="w-8 h-8 rounded-full border-2 border-white hidden">
                         <div id="mobile-user-avatar-placeholder" class="w-8 h-8 rounded-full bg-ayurveda-500 flex items-center justify-center font-bold">
                             <i class="fas fa-user text-sm"></i>
                         </div>
+                        <button onclick="toggleMobileMenu()" class="mobile-menu-btn text-white hover:bg-ayurveda-800 rounded transition">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2229,21 +2229,23 @@ app.get('/', (c) => {
                 </div>
                 
                 <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <input type="text" id="patient-search" name="patient-search-filter" placeholder="Search by name, phone, ID..." class="border rounded px-3 py-2" onkeyup="loadPatients()" autocomplete="off">
-                        <select id="patient-filter-country" class="border rounded px-3 py-2" onchange="loadPatients()">
+                    <div class="mb-4">
+                        <input type="text" id="patient-search" name="patient-search-filter" placeholder="Search by name, phone, ID..." class="border rounded px-3 py-2 w-full mb-3" onkeyup="loadPatients()" autocomplete="off">
+                        <select id="patient-filter-country" class="border rounded px-3 py-2 w-full mb-3" onchange="loadPatients()">
                             <option value="">All Countries</option>
                             <!-- Options loaded dynamically from /api/patients/countries -->
                         </select>
-                        <button onclick="exportPatients('csv')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
-                            <i class="fas fa-file-csv mr-2"></i>CSV
-                        </button>
-                        <button onclick="exportPatients('excel')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-                            <i class="fas fa-file-excel mr-2"></i>Excel
-                        </button>
-                        <button onclick="exportPatients('pdf')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
-                            <i class="fas fa-file-pdf mr-2"></i>PDF
-                        </button>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="exportPatients('csv')" class="flex-1 min-w-[calc(33.333%-8px)] bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm">
+                                <i class="fas fa-file-csv mr-1"></i>CSV
+                            </button>
+                            <button onclick="exportPatients('excel')" class="flex-1 min-w-[calc(33.333%-8px)] bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm">
+                                <i class="fas fa-file-excel mr-1"></i>Excel
+                            </button>
+                            <button onclick="exportPatients('pdf')" class="flex-1 min-w-[calc(33.333%-8px)] bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm">
+                                <i class="fas fa-file-pdf mr-1"></i>PDF
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="overflow-x-auto">
