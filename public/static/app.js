@@ -377,9 +377,43 @@ function showLoading() { document.body.style.cursor = 'wait'; }
 function hideLoading() { document.body.style.cursor = 'default'; }
 
 function showSection(sectionName) {
-  document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
-  document.getElementById(`${sectionName}-section`)?.classList.remove('hidden');
+  // Hide all sections
+  document.querySelectorAll('.section').forEach(s => {
+    s.classList.remove('active');
+    s.classList.add('hidden');
+  });
   
+  // Show active section
+  const activeSection = document.getElementById(`${sectionName}-section`);
+  if (activeSection) {
+    activeSection.classList.remove('hidden');
+    activeSection.classList.add('active');
+  }
+  
+  // Update desktop sidebar active state
+  document.querySelectorAll('.sidebar-nav-item').forEach(item => {
+    item.classList.remove('active');
+    if (item.dataset.section === sectionName) {
+      item.classList.add('active');
+    }
+  });
+  
+  // Update page title on desktop
+  const pageTitleMap = {
+    'dashboard': '<i class="fas fa-home mr-2 text-ayurveda-600"></i>Dashboard',
+    'patients': '<i class="fas fa-users mr-2 text-ayurveda-600"></i>Patients',
+    'appointments': '<i class="fas fa-calendar-alt mr-2 text-ayurveda-600"></i>Appointments',
+    'prescriptions': '<i class="fas fa-leaf mr-2 text-ayurveda-600"></i>Herbs & Roots',
+    'reminders': '<i class="fas fa-bell mr-2 text-ayurveda-600"></i>Reminders',
+    'settings': '<i class="fas fa-cog mr-2 text-ayurveda-600"></i>Settings'
+  };
+  
+  const pageTitle = document.getElementById('page-title');
+  if (pageTitle && pageTitleMap[sectionName]) {
+    pageTitle.innerHTML = pageTitleMap[sectionName];
+  }
+  
+  // Load section data
   switch(sectionName) {
     case 'dashboard': loadDashboard(); break;
     case 'patients': 
