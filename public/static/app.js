@@ -651,27 +651,40 @@ let phoneFieldCounter = 0;
 function addPhoneField(label = '', number = '') {
   phoneFieldCounter++;
   const html = `
-    <div class="flex items-center gap-2 phone-field" data-id="${phoneFieldCounter}">
-      <input 
-        type="text" 
-        placeholder="Label (e.g., Home, Office)" 
-        value="${label}"
-        class="border rounded px-3 py-2 w-1/3 phone-label"
-      >
-      <span class="px-3 py-2 bg-gray-100 border rounded font-mono text-sm phone-display-code">${document.getElementById('patient-country-code').value || '+91'}</span>
-      <input 
-        type="text" 
-        placeholder="Phone number" 
-        value="${number}"
-        class="border rounded px-3 py-2 flex-1 phone-number"
-      >
-      <button 
-        type="button" 
-        onclick="removePhoneField(${phoneFieldCounter})" 
-        class="text-red-600 hover:text-red-800 px-2"
-      >
-        <i class="fas fa-times"></i>
-      </button>
+    <div class="phone-field border rounded p-2 bg-gray-50" data-id="${phoneFieldCounter}">
+      <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+        <div class="sm:col-span-3">
+          <label class="block text-xs mb-1 sm:hidden">Label</label>
+          <input 
+            type="text" 
+            placeholder="Label (e.g., Home, Office)" 
+            value="${label}"
+            class="border rounded px-3 py-2 w-full phone-label"
+          >
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-xs mb-1 sm:hidden">Code</label>
+          <span class="px-3 py-2 bg-gray-100 border rounded font-mono text-sm phone-display-code block">${document.getElementById('patient-country-code').value || '+91'}</span>
+        </div>
+        <div class="sm:col-span-5">
+          <label class="block text-xs mb-1 sm:hidden">Phone Number</label>
+          <input 
+            type="text" 
+            placeholder="Phone number" 
+            value="${number}"
+            class="border rounded px-3 py-2 w-full phone-number"
+          >
+        </div>
+        <div class="sm:col-span-2">
+          <button 
+            type="button" 
+            onclick="removePhoneField(${phoneFieldCounter})" 
+            class="w-full sm:w-auto text-red-600 hover:text-red-800 px-3 py-2 border border-red-300 rounded hover:bg-red-50"
+          >
+            <i class="fas fa-times mr-1"></i><span>Remove</span>
+          </button>
+        </div>
+      </div>
     </div>
   `;
   document.getElementById('additional-phones-container').insertAdjacentHTML('beforeend', html);
@@ -2070,16 +2083,16 @@ function addPaymentCollection(courseId, existingData = null) {
   
   const html = `
     <div class="payment-collection-item bg-green-50 border border-green-200 rounded p-2" data-collection="${collectionId}" data-course="${courseId}">
-      <div class="grid grid-cols-12 gap-2 items-center">
-        <div class="col-span-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-2 items-end">
+        <div class="sm:col-span-1 md:col-span-3">
           <label class="block text-xs mb-1">Date *</label>
           <input type="date" name="collection_date_${collectionId}" class="w-full border rounded px-2 py-1 text-xs" value="${existingData?.collection_date || ''}" required>
         </div>
-        <div class="col-span-3">
+        <div class="sm:col-span-1 md:col-span-3">
           <label class="block text-xs mb-1">Amount *</label>
           <input type="number" step="0.01" min="0.01" name="collection_amount_${collectionId}" class="w-full border rounded px-2 py-1 text-xs" placeholder="0.00" value="${existingData?.amount || ''}" oninput="validatePaymentAmount(this); updatePaymentSummary()" required>
         </div>
-        <div class="col-span-2">
+        <div class="sm:col-span-1 md:col-span-2">
           <label class="block text-xs mb-1">Method</label>
           <select name="collection_method_${collectionId}" class="w-full border rounded px-2 py-1 text-xs">
             <option value="Cash" ${existingData?.payment_method === 'Cash' ? 'selected' : ''}>Cash</option>
@@ -2088,13 +2101,13 @@ function addPaymentCollection(courseId, existingData = null) {
             <option value="Cheque" ${existingData?.payment_method === 'Cheque' ? 'selected' : ''}>Cheque</option>
           </select>
         </div>
-        <div class="col-span-3">
+        <div class="sm:col-span-1 md:col-span-3">
           <label class="block text-xs mb-1">Notes</label>
           <input type="text" name="collection_notes_${collectionId}" class="w-full border rounded px-2 py-1 text-xs" placeholder="Optional" value="${existingData?.notes || ''}">
         </div>
-        <div class="col-span-1 flex items-end">
-          <button type="button" onclick="removePaymentCollection('${collectionId}')" class="text-red-600 hover:text-red-800 text-xs p-1">
-            <i class="fas fa-times"></i>
+        <div class="sm:col-span-2 md:col-span-1 flex items-end justify-end sm:justify-start">
+          <button type="button" onclick="removePaymentCollection('${collectionId}')" class="text-red-600 hover:text-red-800 text-xs px-3 py-2 sm:p-1">
+            <i class="fas fa-times"></i> <span class="sm:hidden">Remove</span>
           </button>
         </div>
       </div>
