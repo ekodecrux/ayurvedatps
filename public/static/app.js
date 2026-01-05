@@ -52,15 +52,33 @@ function getAdditionalPhonesText(patient) {
     return '';
 }
 
-// Helper function to calculate balance correctly
+// Helper function to calculate balance correctly with overpayment detection
 function calculateBalance(totalAmount, totalCollected) {
     const amount = parseFloat(totalAmount || 0);
     const collected = parseFloat(totalCollected || 0);
     const balance = amount - collected;
+    
+    // Determine status with better threshold handling
+    let status = 'Due';
+    let statusClass = 'text-red-600';
+    
+    if (Math.abs(balance) < 0.01) {
+        // Essentially zero (paid in full)
+        status = 'Paid';
+        statusClass = 'text-green-600';
+    } else if (balance < 0) {
+        // Overpayment (credit balance)
+        status = 'Overpaid';
+        statusClass = 'text-blue-600';
+    }
+    
     return {
         balance: balance,
-        status: balance <= 0.01 ? 'Paid' : 'Due',
-        formattedBalance: Math.abs(balance).toFixed(2)
+        status: status,
+        statusClass: statusClass,
+        formattedBalance: Math.abs(balance).toFixed(2),
+        isOverpaid: balance < 0,
+        isPaid: Math.abs(balance) < 0.01
     };
 }
 
@@ -1628,11 +1646,11 @@ function addMedicineRow() {
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
           <div>
             <label class="block text-xs font-medium mb-1 course-amount-label">Amount</label>
-            <input type="number" step="0.01" name="payment_amount_${medicineCounter}" class="w-full border rounded px-3 py-2 text-sm medicine-payment-amount" placeholder="0.00" oninput="updatePaymentSummary()">
+            <input type="number" step="0.01" min="0" name="payment_amount_${medicineCounter}" class="w-full border rounded px-3 py-2 text-sm medicine-payment-amount" placeholder="0.00" oninput="validatePaymentAmount(this); updatePaymentSummary()">
           </div>
           <div>
             <label class="block text-xs font-medium mb-1 course-advance-label">Advance</label>
-            <input type="number" step="0.01" name="advance_payment_${medicineCounter}" class="w-full border rounded px-3 py-2 text-sm medicine-advance-payment" placeholder="0.00" oninput="updatePaymentSummary()">
+            <input type="number" step="0.01" min="0" name="advance_payment_${medicineCounter}" class="w-full border rounded px-3 py-2 text-sm medicine-advance-payment" placeholder="0.00" oninput="validatePaymentAmount(this); updatePaymentSummary()">
           </div>
           <div>
             <label class="block text-xs font-medium mb-1 course-balance-label">Balance</label>
@@ -1894,15 +1912,33 @@ function updatePaymentSummary() {
       });
     }
     
-    const balance = amount - advance - courseCollected;
+    // Calculate total paid (advance + collections)
+    const totalPaid = advance + courseCollected;
+    const balance = amount - totalPaid;
     
-    // Update individual balance display with correct currency
+    // Update individual balance display with correct currency and status
     const balanceDisplay = row.querySelector(`.course-balance-display[data-row="${rowNum}"]`);
     if (balanceDisplay) {
-      balanceDisplay.textContent = `${symbol}${balance.toFixed(2)}`;
-      balanceDisplay.className = balance > 0 ? 
-        'border rounded px-3 py-2 bg-gray-100 text-sm font-bold text-red-600 course-balance-display' : 
-        'border rounded px-3 py-2 bg-gray-100 text-sm font-bold text-green-600 course-balance-display';
+      // Determine color and label based on balance
+      let displayClass = 'border rounded px-3 py-2 bg-gray-100 text-sm font-bold course-balance-display';
+      let displayText = `${symbol}${Math.abs(balance).toFixed(2)}`;
+      
+      if (Math.abs(balance) < 0.01) {
+        // Paid in full
+        displayClass += ' text-green-600';
+        displayText = `${symbol}0.00 (Paid)`;
+      } else if (balance > 0) {
+        // Amount due
+        displayClass += ' text-red-600';
+        displayText = `${symbol}${balance.toFixed(2)} (Due)`;
+      } else {
+        // Overpaid/Credit
+        displayClass += ' text-blue-600';
+        displayText = `${symbol}${Math.abs(balance).toFixed(2)} (Credit)`;
+      }
+      
+      balanceDisplay.textContent = displayText;
+      balanceDisplay.className = displayClass;
     }
     
     // Sum totals (all medicines, not just active)
@@ -1921,10 +1957,26 @@ function updatePaymentSummary() {
   if (overallTotal) overallTotal.textContent = `${symbol}${totalAmount.toFixed(2)}`;
   if (overallAdvance) overallAdvance.textContent = `${symbol}${totalAdvance.toFixed(2)}`;
   if (overallBalance) {
-    overallBalance.textContent = `${symbol}${totalBalance.toFixed(2)}`;
-    overallBalance.className = totalBalance > 0 ?
-      'text-3xl font-bold text-red-600' :
-      'text-3xl font-bold text-green-600';
+    // Calculate total paid for display
+    const totalPaid = totalAdvance + totalCollected;
+    
+    // Determine status and color
+    let balanceClass = 'text-3xl font-bold';
+    let balanceText = '';
+    
+    if (Math.abs(totalBalance) < 0.01) {
+      balanceClass += ' text-green-600';
+      balanceText = `${symbol}0.00 (Paid)`;
+    } else if (totalBalance > 0) {
+      balanceClass += ' text-red-600';
+      balanceText = `${symbol}${totalBalance.toFixed(2)} (Due)`;
+    } else {
+      balanceClass += ' text-blue-600';
+      balanceText = `${symbol}${Math.abs(totalBalance).toFixed(2)} (Credit)`;
+    }
+    
+    overallBalance.textContent = balanceText;
+    overallBalance.className = balanceClass;
   }
   if (overallActive) overallActive.textContent = activeCount;
 }
@@ -1999,6 +2051,19 @@ function calculateSmartFollowUp() {
 // Payment Collection Functions
 let paymentCollectionCounter = 0;
 
+// Validate payment amount to prevent negative or zero values
+function validatePaymentAmount(input) {
+  const value = parseFloat(input.value);
+  if (isNaN(value) || value < 0) {
+    input.value = '';
+    input.classList.add('border-red-500');
+    setTimeout(() => input.classList.remove('border-red-500'), 2000);
+  } else if (value === 0) {
+    showToast('Payment amount must be greater than zero', 'warning');
+    input.value = '';
+  }
+}
+
 function addPaymentCollection(courseId, existingData = null) {
   paymentCollectionCounter++;
   const collectionId = `${courseId}_${paymentCollectionCounter}`;
@@ -2008,11 +2073,11 @@ function addPaymentCollection(courseId, existingData = null) {
       <div class="grid grid-cols-12 gap-2 items-center">
         <div class="col-span-3">
           <label class="block text-xs mb-1">Date *</label>
-          <input type="date" name="collection_date_${collectionId}" class="w-full border rounded px-2 py-1 text-xs" value="${existingData?.collection_date || ''}">
+          <input type="date" name="collection_date_${collectionId}" class="w-full border rounded px-2 py-1 text-xs" value="${existingData?.collection_date || ''}" required>
         </div>
         <div class="col-span-3">
           <label class="block text-xs mb-1">Amount *</label>
-          <input type="number" step="0.01" name="collection_amount_${collectionId}" class="w-full border rounded px-2 py-1 text-xs" placeholder="0.00" value="${existingData?.amount || ''}" oninput="updatePaymentSummary()">
+          <input type="number" step="0.01" min="0.01" name="collection_amount_${collectionId}" class="w-full border rounded px-2 py-1 text-xs" placeholder="0.00" value="${existingData?.amount || ''}" oninput="validatePaymentAmount(this); updatePaymentSummary()" required>
         </div>
         <div class="col-span-2">
           <label class="block text-xs mb-1">Method</label>
@@ -2337,11 +2402,11 @@ async function editHerbsRoutes(id) {
               <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
                 <div>
                   <label class="block text-xs font-medium mb-1 course-amount-label">Amount</label>
-                  <input type="number" step="0.01" name="payment_amount_${courseId}" class="w-full border rounded px-3 py-2 text-sm medicine-payment-amount" placeholder="0.00" value="${firstMed.payment_amount || ''}" oninput="updatePaymentSummary()">
+                  <input type="number" step="0.01" min="0" name="payment_amount_${courseId}" class="w-full border rounded px-3 py-2 text-sm medicine-payment-amount" placeholder="0.00" value="${firstMed.payment_amount || ''}" oninput="validatePaymentAmount(this); updatePaymentSummary()">
                 </div>
                 <div>
                   <label class="block text-xs font-medium mb-1 course-advance-label">Advance</label>
-                  <input type="number" step="0.01" name="advance_payment_${courseId}" class="w-full border rounded px-3 py-2 text-sm medicine-advance-payment" placeholder="0.00" value="${firstMed.advance_payment || ''}" oninput="updatePaymentSummary()">
+                  <input type="number" step="0.01" min="0" name="advance_payment_${courseId}" class="w-full border rounded px-3 py-2 text-sm medicine-advance-payment" placeholder="0.00" value="${firstMed.advance_payment || ''}" oninput="validatePaymentAmount(this); updatePaymentSummary()">
                 </div>
                 <div>
                   <label class="block text-xs font-medium mb-1 course-balance-label">Balance</label>
