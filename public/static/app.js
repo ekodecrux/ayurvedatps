@@ -444,6 +444,13 @@ function formatAmount(amount) {
   return num.toFixed(2);
 }
 
+// Helper function to truncate text to specified length
+function truncateText(text, maxLength = 30) {
+  if (!text) return 'N/A';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+}
+
 // ==================== DASHBOARD ====================
 async function loadDashboard() {
   try {
@@ -1046,7 +1053,7 @@ function renderAppointments() {
       <td class="px-6 py-4 border-b">${formatDateTime(apt.appointment_date)}</td>
       <td class="px-6 py-4 border-b font-medium">${apt.patient_name}</td>
       <td class="px-6 py-4 border-b">${apt.patient_phone}</td>
-      <td class="px-6 py-4 border-b">${apt.purpose || 'N/A'}</td>
+      <td class="px-6 py-4 border-b" title="${apt.purpose || 'N/A'}">${truncateText(apt.purpose, 30)}</td>
       <td class="px-6 py-4 border-b">
         <span class="px-3 py-1 rounded-full text-sm ${apt.status === 'completed' ? 'bg-green-100 text-green-800' : apt.status === 'confirmed' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}">${apt.status}</span>
       </td>
