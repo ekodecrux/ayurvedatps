@@ -2365,12 +2365,12 @@ app.get('/', (c) => {
                 </div>
                 
                 <div class="bg-white rounded-lg shadow-lg p-6">
-                    <div class="mb-4 flex gap-2 items-center">
+                    <div class="mb-4 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
                         <input type="text" id="prescription-search" name="herbs-search-filter" autocomplete="off" placeholder="Search by patient ID, name, or problem..." class="border rounded px-3 py-2 flex-1" onkeyup="loadHerbsRoutes()">
-                        <button onclick="exportToExcel()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                        <button onclick="exportToExcel()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center justify-center whitespace-nowrap">
                             <i class="fas fa-file-excel mr-2"></i>Export Excel
                         </button>
-                        <button onclick="exportToPDF()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                        <button onclick="exportToPDF()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 flex items-center justify-center whitespace-nowrap">
                             <i class="fas fa-file-pdf mr-2"></i>Export PDF
                         </button>
                     </div>

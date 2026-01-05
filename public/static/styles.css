@@ -346,6 +346,38 @@ textarea:focus {
         min-height: 44px;
         min-width: 44px;
     }
+    
+    /* Herbs & Roots export buttons - stack vertically on mobile */
+    #prescriptions-section .flex.gap-2 {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    #prescriptions-section .flex.gap-2 input {
+        width: 100%;
+    }
+    
+    #prescriptions-section .flex.gap-2 button {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* Action buttons in tables - horizontal layout */
+    table tbody td button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.5rem;
+    }
+    
+    table tbody td button:last-child {
+        margin-right: 0;
+    }
+    
+    /* Ensure action column has enough space */
+    table tbody td:last-child {
+        white-space: nowrap;
+    }
 }
 
 /* Smooth transitions */
