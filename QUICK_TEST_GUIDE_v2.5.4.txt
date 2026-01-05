@@ -1,0 +1,108 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║      🎯 AYURVEDATPS v2.5.4 - PATIENT EXPORT FIX - QUICK TEST GUIDE    ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+📅 Date: January 5, 2026
+🔖 Version: v2.5.4
+🎯 Issue: Export only filtered/searched patients (not all patients)
+
+═══════════════════════════════════════════════════════════════════════
+
+🌐 SANDBOX TEST URL:
+https://3000-ihxv4vi1p9irc79eqiick-a402f90a.sandbox.novita.ai
+
+🔑 LOGIN CREDENTIALS:
+Email: Shankaranherbaltreatment@gmail.com
+Password: 123456
+
+═══════════════════════════════════════════════════════════════════════
+
+✅ TEST 1: EXPORT FILTERED DATA (COUNTRY FILTER)
+─────────────────────────────────────────────────────────────────────
+1. Login to sandbox
+2. Navigate: Patients → Patient List
+3. Filter by Country: Select "IND" (India)
+4. Observe: Only Indian patients displayed
+5. Click: "Export to Excel" button
+6. Open downloaded CSV file
+7. ✅ VERIFY: CSV contains ONLY Indian patients
+
+═══════════════════════════════════════════════════════════════════════
+
+✅ TEST 2: EXPORT SEARCHED DATA (PATIENT ID)
+─────────────────────────────────────────────────────────────────────
+1. Navigate: Patients → Patient List
+2. Clear country filter (select "All Countries")
+3. Enter any patient ID in search box
+4. Observe: Only matching patient(s) displayed
+5. Click: "Export to PDF" button
+6. New window opens with PDF preview
+7. ✅ VERIFY: PDF contains ONLY the searched patient(s)
+
+═══════════════════════════════════════════════════════════════════════
+
+✅ TEST 3: EXPORT ALL DATA (NO FILTERS)
+─────────────────────────────────────────────────────────────────────
+1. Navigate: Patients → Patient List
+2. Clear all filters: "All Countries"
+3. Clear search box (empty)
+4. Observe: All patients displayed
+5. Click: "Export to CSV" button
+6. Open downloaded CSV file
+7. ✅ VERIFY: CSV contains ALL patients
+
+═══════════════════════════════════════════════════════════════════════
+
+✅ TEST 4: EXPORT EMPTY RESULTS
+─────────────────────────────────────────────────────────────────────
+1. Navigate: Patients → Patient List
+2. Search for non-existent ID: "NOTFOUND999"
+3. Observe: "No patients found" message
+4. Click: "Export to Excel" button
+5. ✅ VERIFY: Alert message appears: "No patients to export"
+
+═══════════════════════════════════════════════════════════════════════
+
+✅ TEST 5: ALL EXPORT FORMATS
+─────────────────────────────────────────────────────────────────────
+1. Filter by any country
+2. Test all three buttons:
+   - Export to CSV ✅
+   - Export to Excel ✅ (saves as .csv)
+   - Export to PDF ✅ (opens in new window)
+3. ✅ VERIFY: All formats work with filtered data
+
+═══════════════════════════════════════════════════════════════════════
+
+🚀 PRODUCTION DEPLOYMENT COMMAND:
+─────────────────────────────────────────────────────────────────────
+
+ssh root@88.222.244.84 "cd /var/www/ayurveda && mkdir -p backups && cp dist/static/app.js backups/app.js.backup-$(date +%Y%m%d-%H%M%S) && git pull origin main && npm run build && pm2 restart ayurveda-clinic && pm2 status && echo '' && echo '🎉 DEPLOYMENT COMPLETE - v2.5.4!' && echo '🌐 Test at: https://tpsdhanvantariayurveda.in/'"
+
+═══════════════════════════════════════════════════════════════════════
+
+📊 EXPECTED RESULTS SUMMARY:
+─────────────────────────────────────────────────────────────────────
+✅ Filtered exports contain only filtered patients
+✅ Search exports contain only searched patients
+✅ No-filter exports contain all patients
+✅ Empty results show "No patients to export" alert
+✅ All three formats (CSV, Excel, PDF) work correctly
+✅ No unwanted API calls to backend
+✅ Fast export performance
+
+═══════════════════════════════════════════════════════════════════════
+
+📦 RESOURCES:
+─────────────────────────────────────────────────────────────────────
+Sandbox:    https://3000-ihxv4vi1p9irc79eqiick-a402f90a.sandbox.novita.ai
+Production: https://tpsdhanvantariayurveda.in/
+Direct IP:  http://88.222.244.84:3001
+GitHub:     https://github.com/ekodecrux/ayurvedatps
+Commit:     5531fd4 (v2.5.4)
+
+═══════════════════════════════════════════════════════════════════════
+
+✅ ALL TESTS PASSED? → DEPLOY TO PRODUCTION!
+
+╚══════════════════════════════════════════════════════════════════════╝
