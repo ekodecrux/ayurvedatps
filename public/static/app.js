@@ -1088,20 +1088,73 @@ async function exportPatients(format = 'csv') {
 
 function exportPatientsToExcel(format = 'csv') {
   try {
-    // Create CSV from currently displayed patients
-    const headers = ['Patient ID', 'Name', 'Age', 'Gender', 'Phone', 'Country', 'Email', 'Address', 'Registered Date'];
+    // Create CSV from currently displayed patients with ALL fields
+    const headers = [
+      'Patient ID', 'Name', 'Age', 'Gender', 'Country', 'Phone', 'Country Code',
+      'Email', 'Weight', 'Height', 'Assembled Address', 'Complete Address', 'Diseases/Medicines', 'Additional Phones',
+      'Referred By Name', 'Referred By Phone', 'Referred By Address', 'Medical History', 'Created At'
+    ];
     const csvRows = [headers.join(',')];
     
     currentPatients.forEach(p => {
+      // Parse diseases JSON
+      let diseasesText = '';
+      if (p.diseases) {
+        try {
+          const diseases = typeof p.diseases === 'string' ? JSON.parse(p.diseases) : p.diseases;
+          diseasesText = diseases.map((d) => 
+            `${d.present_health_issue || ''} - ${d.present_medicine || ''} (${d.mg_value || ''}) - Duration: ${d.attacked_by || ''}`
+          ).join('; ');
+        } catch (e) {
+          if (p.present_health_issue) {
+            diseasesText = `${p.present_health_issue || ''} - ${p.present_medicine || ''} (${p.mg_value || ''}) - Duration: ${p.attacked_by || ''}`;
+          }
+        }
+      } else if (p.present_health_issue) {
+        diseasesText = `${p.present_health_issue || ''} - ${p.present_medicine || ''} (${p.mg_value || ''}) - Duration: ${p.attacked_by || ''}`;
+      }
+      
+      // Parse additional phones JSON
+      let phonesText = '';
+      if (p.additional_phones) {
+        try {
+          const phones = typeof p.additional_phones === 'string' ? JSON.parse(p.additional_phones) : p.additional_phones;
+          phonesText = phones.map((ph) => `${ph.label}: ${ph.number}`).join('; ');
+        } catch (e) {
+          phonesText = '';
+        }
+      }
+      
+      // Assemble address from individual fields
+      const assembledAddressParts = [];
+      if (p.address_hno) assembledAddressParts.push(p.address_hno);
+      if (p.address_street) assembledAddressParts.push(p.address_street);
+      if (p.address_apartment) assembledAddressParts.push(p.address_apartment);
+      if (p.address_area) assembledAddressParts.push(p.address_area);
+      if (p.address_district) assembledAddressParts.push(p.address_district);
+      if (p.address_state) assembledAddressParts.push(p.address_state);
+      if (p.address_pincode) assembledAddressParts.push(p.address_pincode);
+      const assembledAddress = assembledAddressParts.join(', ');
+      
       const row = [
-        `"${p.patient_id || 'N/A'}"`,
-        `"${p.name || 'N/A'}"`,
-        p.age || 'N/A',
-        `"${p.gender || 'N/A'}"`,
+        `"${p.patient_id || ''}"`,
+        `"${p.name || ''}"`,
+        p.age || '',
+        `"${p.gender || ''}"`,
+        `"${p.country || ''}"`,
         `"${p.country_code || ''} ${p.phone || ''}"`,
-        `"${p.country || 'N/A'}"`,
-        `"${p.email || 'N/A'}"`,
-        `"${getCompleteAddress(p)}"`,
+        `"${p.country_code || ''}"`,
+        `"${p.email || ''}"`,
+        p.weight || '',
+        p.height || '',
+        `"${assembledAddress}"`,
+        `"${p.address || ''}"`,
+        `"${diseasesText}"`,
+        `"${phonesText}"`,
+        `"${p.referred_by_name || ''}"`,
+        `"${p.referred_by_phone || ''}"`,
+        `"${p.referred_by_address || ''}"`,
+        `"${p.medical_history || ''}"`,
         `"${formatDate(p.created_at)}"`
       ];
       csvRows.push(row.join(','));
@@ -1125,18 +1178,63 @@ function exportPatientsToExcel(format = 'csv') {
 
 function exportPatientsToPDF() {
   try {
-    // Create printable HTML for PDF
+    // Create printable HTML for PDF with ALL patient details
     const printWindow = window.open('', '_blank');
     
     const tableRows = currentPatients.map(p => {
+      // Parse diseases JSON
+      let diseasesText = '';
+      if (p.diseases) {
+        try {
+          const diseases = typeof p.diseases === 'string' ? JSON.parse(p.diseases) : p.diseases;
+          diseasesText = diseases.map((d) => 
+            `${d.present_health_issue || 'N/A'}: ${d.present_medicine || 'N/A'} (${d.mg_value || ''}) - Duration: ${d.attacked_by || 'N/A'}`
+          ).join('<br>');
+        } catch (e) {
+          if (p.present_health_issue) {
+            diseasesText = `${p.present_health_issue || ''}: ${p.present_medicine || ''} (${p.mg_value || ''}) - Duration: ${p.attacked_by || ''}`;
+          }
+        }
+      } else if (p.present_health_issue) {
+        diseasesText = `${p.present_health_issue || ''}: ${p.present_medicine || ''} (${p.mg_value || ''}) - Duration: ${p.attacked_by || ''}`;
+      }
+      
+      // Parse additional phones JSON
+      let phonesText = '';
+      if (p.additional_phones) {
+        try {
+          const phones = typeof p.additional_phones === 'string' ? JSON.parse(p.additional_phones) : p.additional_phones;
+          phonesText = phones.map((ph) => `${ph.label}: ${ph.number}`).join('<br>');
+        } catch (e) {
+          phonesText = 'None';
+        }
+      }
+      
+      // Assemble address from individual fields
+      const assembledAddressParts = [];
+      if (p.address_hno) assembledAddressParts.push(p.address_hno);
+      if (p.address_street) assembledAddressParts.push(p.address_street);
+      if (p.address_apartment) assembledAddressParts.push(p.address_apartment);
+      if (p.address_area) assembledAddressParts.push(p.address_area);
+      if (p.address_district) assembledAddressParts.push(p.address_district);
+      if (p.address_state) assembledAddressParts.push(p.address_state);
+      if (p.address_pincode) assembledAddressParts.push(p.address_pincode);
+      const assembledAddress = assembledAddressParts.join(', ');
+      
       return `
         <tr>
           <td style="padding: 8px; border: 1px solid #ddd;">${p.patient_id || 'N/A'}</td>
           <td style="padding: 8px; border: 1px solid #ddd;">${p.name}</td>
           <td style="padding: 8px; border: 1px solid #ddd;">${p.age || 'N/A'} / ${p.gender || 'N/A'}</td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${p.country_code || ''} ${p.phone}</td>
           <td style="padding: 8px; border: 1px solid #ddd;">${p.country || 'N/A'}</td>
+          <td style="padding: 8px; border: 1px solid #ddd;">${p.country_code || ''} ${p.phone}</td>
           <td style="padding: 8px; border: 1px solid #ddd;">${p.email || 'N/A'}</td>
+          <td style="padding: 8px; border: 1px solid #ddd;">${p.weight || 'N/A'} kg / ${p.height || 'N/A'} cm</td>
+          <td style="padding: 8px; border: 1px solid #ddd; max-width: 200px;">${assembledAddress || p.address || 'N/A'}</td>
+          <td style="padding: 8px; border: 1px solid #ddd; max-width: 250px; font-size: 11px;">${diseasesText || 'N/A'}</td>
+          <td style="padding: 8px; border: 1px solid #ddd;">${phonesText || 'None'}</td>
+          <td style="padding: 8px; border: 1px solid #ddd;">${p.referred_by_name || 'N/A'}</td>
+          <td style="padding: 8px; border: 1px solid #ddd; max-width: 200px; font-size: 11px;">${p.medical_history || 'N/A'}</td>
           <td style="padding: 8px; border: 1px solid #ddd;">${formatDate(p.created_at)}</td>
         </tr>
       `;
@@ -1148,34 +1246,41 @@ function exportPatientsToPDF() {
       <head>
         <title>Patients Export - TPS DHANVANTARI</title>
         <style>
+          @page {
+            size: A3 landscape;
+            margin: 10mm;
+          }
           body {
             font-family: Arial, sans-serif;
             padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
+            margin: 0;
           }
           h1 {
             color: #2c5282;
             text-align: center;
             margin-bottom: 10px;
+            font-size: 24px;
           }
           .export-info {
             text-align: center;
             color: #666;
             margin-bottom: 20px;
-            font-size: 14px;
+            font-size: 12px;
           }
           table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            font-size: 10px;
           }
           th {
             background-color: #2c5282;
             color: white;
-            padding: 12px;
+            padding: 10px 8px;
             text-align: left;
             border: 1px solid #2c5282;
+            font-size: 11px;
+            white-space: nowrap;
           }
           tr:nth-child(even) {
             background-color: #f7fafc;
@@ -1193,24 +1298,31 @@ function exportPatientsToPDF() {
           }
           @media print {
             .print-btn { display: none; }
+            body { padding: 0; }
           }
         </style>
       </head>
       <body>
         <h1>TPS DHANVANTARI AYURVEDA</h1>
-        <h2 style="text-align: center; color: #2d3748;">Patients List</h2>
+        <h2 style="text-align: center; color: #2d3748; font-size: 18px;">Complete Patients Details Export</h2>
         <div class="export-info">
-          <p>Total Patients: ${currentPatients.length} | Export Date: ${new Date().toLocaleDateString()}</p>
+          <p><strong>Total Patients:</strong> ${currentPatients.length} | <strong>Export Date:</strong> ${new Date().toLocaleDateString()}</p>
         </div>
         <table>
           <thead>
             <tr>
               <th>Patient ID</th>
               <th>Name</th>
-              <th>Age / Gender</th>
-              <th>Phone</th>
+              <th>Age/Gender</th>
               <th>Country</th>
+              <th>Phone</th>
               <th>Email</th>
+              <th>Weight/Height</th>
+              <th>Address</th>
+              <th>Diseases/Medicines</th>
+              <th>Additional Phones</th>
+              <th>Referred By</th>
+              <th>Medical History</th>
               <th>Registered</th>
             </tr>
           </thead>
