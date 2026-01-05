@@ -1234,14 +1234,14 @@ function exportPatientsToPDF() {
           </div>
           <div class="patient-details">
             <div class="detail-row">
-              <strong>Age/Gender:</strong> ${p.age || 'N/A'} years / ${p.gender || 'N/A'}
-            </div>
-            <div class="detail-row">
               <strong>Phone:</strong> ${p.country_code || ''} ${p.phone || 'N/A'}
             </div>
             ${phonesText !== 'N/A' ? `<div class="detail-row"><strong>Additional Phones:</strong> ${phonesText}</div>` : ''}
             <div class="detail-row">
               <strong>Email:</strong> ${p.email || 'N/A'}
+            </div>
+            <div class="detail-row">
+              <strong>Age/Gender:</strong> ${p.age || 'N/A'} years / ${p.gender || 'N/A'}
             </div>
             <div class="detail-row">
               <strong>Weight/Height:</strong> ${p.weight || 'N/A'} kg / ${p.height || 'N/A'} ft
