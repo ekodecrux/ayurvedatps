@@ -86,9 +86,15 @@ async function checkAuth() {
 // Update user UI (both desktop and mobile)
 function updateUserUI() {
   if (currentUser) {
-    // Desktop user info
+    // Desktop header user info
     document.getElementById('user-name').textContent = currentUser.name;
     document.getElementById('user-email').textContent = currentUser.email;
+    
+    // Sidebar user info
+    const sidebarUserName = document.getElementById('sidebar-user-name');
+    const sidebarUserEmail = document.getElementById('sidebar-user-email');
+    if (sidebarUserName) sidebarUserName.textContent = currentUser.name;
+    if (sidebarUserEmail) sidebarUserEmail.textContent = currentUser.email;
     
     // Mobile user info
     const mobileUserName = document.getElementById('mobile-user-name');
@@ -96,11 +102,20 @@ function updateUserUI() {
     if (mobileUserName) mobileUserName.textContent = currentUser.name;
     if (mobileUserEmail) mobileUserEmail.textContent = currentUser.email;
     
-    // Desktop avatar
+    // Desktop header avatar
     if (currentUser.profile_picture) {
       document.getElementById('user-avatar').src = currentUser.profile_picture;
       document.getElementById('user-avatar').classList.remove('hidden');
       document.getElementById('user-avatar-placeholder').classList.add('hidden');
+      
+      // Sidebar avatar
+      const sidebarAvatar = document.getElementById('sidebar-user-avatar');
+      const sidebarPlaceholder = document.getElementById('sidebar-user-avatar-placeholder');
+      if (sidebarAvatar && sidebarPlaceholder) {
+        sidebarAvatar.src = currentUser.profile_picture;
+        sidebarAvatar.classList.remove('hidden');
+        sidebarPlaceholder.classList.add('hidden');
+      }
       
       // Mobile avatar
       const mobileAvatar = document.getElementById('mobile-user-avatar');
@@ -112,7 +127,15 @@ function updateUserUI() {
       }
     } else {
       const initial = currentUser.name.charAt(0).toUpperCase();
+      
+      // Desktop header placeholder
       document.getElementById('user-avatar-placeholder').textContent = initial;
+      
+      // Sidebar placeholder
+      const sidebarPlaceholder = document.getElementById('sidebar-user-avatar-placeholder');
+      if (sidebarPlaceholder) {
+        sidebarPlaceholder.textContent = initial;
+      }
       
       // Mobile placeholder
       const mobilePlaceholder = document.getElementById('mobile-user-avatar-placeholder');
