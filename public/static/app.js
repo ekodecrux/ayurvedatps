@@ -1646,9 +1646,9 @@ function addMedicineRow() {
         
         <!-- Payment Collections Section -->
         <div class="mt-4 pt-3 border-t border-gray-200">
-          <div class="flex justify-between items-center mb-2">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
             <h6 class="font-medium text-xs text-green-700"><i class="fas fa-receipt mr-1"></i>Payment Collections</h6>
-            <button type="button" onclick="addPaymentCollection(${medicineCounter})" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs">
+            <button type="button" onclick="addPaymentCollection(${medicineCounter})" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs whitespace-nowrap">
               <i class="fas fa-plus mr-1"></i>Collect Payment
             </button>
           </div>
@@ -2355,9 +2355,9 @@ async function editHerbsRoutes(id) {
               
               <!-- Payment Collections Section -->
               <div class="mt-4 pt-3 border-t border-gray-200">
-                <div class="flex justify-between items-center mb-2">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
                   <h6 class="font-medium text-xs text-green-700"><i class="fas fa-receipt mr-1"></i>Payment Collections</h6>
-                  <button type="button" onclick="addPaymentCollection(${courseId})" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs">
+                  <button type="button" onclick="addPaymentCollection(${courseId})" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs whitespace-nowrap">
                     <i class="fas fa-plus mr-1"></i>Collect Payment
                   </button>
                 </div>
