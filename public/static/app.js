@@ -2861,10 +2861,20 @@ async function viewHerbsRoutes(id) {
       }
     }
     
+    // FIX: Group medicines by course to avoid counting payment amounts multiple times
+    // When multiple medicines share the same course, they have the same payment amount
+    // We should only count each course's payment once, not per medicine
     if (hr.medicines && hr.medicines.length > 0) {
+      // Group medicines by course using same logic as display
+      const coursePaymentGroups = {};
       hr.medicines.forEach(med => {
-        totalAmount += parseFloat(med.payment_amount || 0);
-        totalAdvance += parseFloat(med.advance_payment || 0);
+        const courseKey = `${med.given_date}_${med.treatment_months}_${med.payment_amount}_${med.advance_payment}`;
+        if (!coursePaymentGroups[courseKey]) {
+          // Only add payment for the first medicine in each course group
+          coursePaymentGroups[courseKey] = true;
+          totalAmount += parseFloat(med.payment_amount || 0);
+          totalAdvance += parseFloat(med.advance_payment || 0);
+        }
       });
     }
     
