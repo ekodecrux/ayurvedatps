@@ -1178,25 +1178,25 @@ function exportPatientsToExcel(format = 'csv') {
 
 function exportPatientsToPDF() {
   try {
-    // Create printable HTML for PDF with ALL patient details
+    // Create printable HTML for PDF - ORIGINAL CARD FORMAT (as previously showing)
     const printWindow = window.open('', '_blank');
     
-    const tableRows = currentPatients.map(p => {
+    const patientCards = currentPatients.map(p => {
       // Parse diseases JSON
       let diseasesText = '';
       if (p.diseases) {
         try {
           const diseases = typeof p.diseases === 'string' ? JSON.parse(p.diseases) : p.diseases;
           diseasesText = diseases.map((d) => 
-            `${d.present_health_issue || 'N/A'}: ${d.present_medicine || 'N/A'} (${d.mg_value || ''}) - Duration: ${d.attacked_by || 'N/A'}`
-          ).join('<br>');
+            `<div style="margin-bottom: 5px;"><strong>${d.present_health_issue || 'N/A'}:</strong> ${d.present_medicine || 'N/A'} (${d.mg_value || ''}) - Duration: ${d.attacked_by || 'N/A'}</div>`
+          ).join('');
         } catch (e) {
           if (p.present_health_issue) {
-            diseasesText = `${p.present_health_issue || ''}: ${p.present_medicine || ''} (${p.mg_value || ''}) - Duration: ${p.attacked_by || ''}`;
+            diseasesText = `<div><strong>${p.present_health_issue}:</strong> ${p.present_medicine || 'N/A'} (${p.mg_value || ''}) - Duration: ${p.attacked_by || 'N/A'}</div>`;
           }
         }
       } else if (p.present_health_issue) {
-        diseasesText = `${p.present_health_issue || ''}: ${p.present_medicine || ''} (${p.mg_value || ''}) - Duration: ${p.attacked_by || ''}`;
+        diseasesText = `<div><strong>${p.present_health_issue}:</strong> ${p.present_medicine || 'N/A'} (${p.mg_value || ''}) - Duration: ${p.attacked_by || 'N/A'}</div>`;
       }
       
       // Parse additional phones JSON
@@ -1204,136 +1204,102 @@ function exportPatientsToPDF() {
       if (p.additional_phones) {
         try {
           const phones = typeof p.additional_phones === 'string' ? JSON.parse(p.additional_phones) : p.additional_phones;
-          phonesText = phones.map((ph) => `${ph.label}: ${ph.number}`).join('<br>');
+          phonesText = phones.map((ph) => `${ph.label}: ${ph.number}`).join(', ');
         } catch (e) {
-          phonesText = 'None';
+          phonesText = 'N/A';
         }
+      } else {
+        phonesText = 'N/A';
       }
       
       // Assemble address from individual fields
-      const assembledAddressParts = [];
-      if (p.address_hno) assembledAddressParts.push(p.address_hno);
-      if (p.address_street) assembledAddressParts.push(p.address_street);
-      if (p.address_apartment) assembledAddressParts.push(p.address_apartment);
-      if (p.address_area) assembledAddressParts.push(p.address_area);
-      if (p.address_district) assembledAddressParts.push(p.address_district);
-      if (p.address_state) assembledAddressParts.push(p.address_state);
-      if (p.address_pincode) assembledAddressParts.push(p.address_pincode);
-      const assembledAddress = assembledAddressParts.join(', ');
+      const assembledAddress = [
+        p.address_hno,
+        p.address_street,
+        p.address_apartment,
+        p.address_area,
+        p.address_district,
+        p.address_state,
+        p.address_pincode
+      ].filter(Boolean).join(', ') || 'N/A';
+      
+      // Complete address from the text area field
+      const completeAddress = p.address || 'N/A';
       
       return `
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;">${p.patient_id || 'N/A'}</td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${p.name}</td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${p.age || 'N/A'} / ${p.gender || 'N/A'}</td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${p.country || 'N/A'}</td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${p.country_code || ''} ${p.phone}</td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${p.email || 'N/A'}</td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${p.weight || 'N/A'} kg / ${p.height || 'N/A'} cm</td>
-          <td style="padding: 8px; border: 1px solid #ddd; max-width: 200px;">${assembledAddress || p.address || 'N/A'}</td>
-          <td style="padding: 8px; border: 1px solid #ddd; max-width: 250px; font-size: 11px;">${diseasesText || 'N/A'}</td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${phonesText || 'None'}</td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${p.referred_by_name || 'N/A'}</td>
-          <td style="padding: 8px; border: 1px solid #ddd; max-width: 200px; font-size: 11px;">${p.medical_history || 'N/A'}</td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${formatDate(p.created_at)}</td>
-        </tr>
+        <div class="patient-card">
+          <div class="patient-header">
+            <h3>${p.patient_id || 'N/A'} - ${p.name || 'N/A'}</h3>
+            <div class="patient-meta">${p.age || 'N/A'} years | ${p.gender || 'N/A'} | ${p.country || 'N/A'}</div>
+          </div>
+          <div class="patient-details">
+            <div class="detail-row">
+              <strong>Phone:</strong> ${p.country_code || ''} ${p.phone || 'N/A'}
+            </div>
+            ${phonesText !== 'N/A' ? `<div class="detail-row"><strong>Additional Phones:</strong> ${phonesText}</div>` : ''}
+            <div class="detail-row">
+              <strong>Email:</strong> ${p.email || 'N/A'}
+            </div>
+            <div class="detail-row">
+              <strong>Weight/Height:</strong> ${p.weight || 'N/A'} kg / ${p.height || 'N/A'} ft
+            </div>
+            <div class="detail-row">
+              <strong>Address:</strong> ${assembledAddress}
+            </div>
+            <div class="detail-row">
+              <strong>Complete Address:</strong> ${completeAddress}
+            </div>
+            ${diseasesText ? `<div class="detail-row"><strong>Diseases/Medicines:</strong> ${diseasesText}</div>` : ''}
+            ${p.medical_history ? `<div class="detail-row"><strong>Medical History:</strong> ${p.medical_history}</div>` : ''}
+            ${p.referred_by_name ? `<div class="detail-row"><strong>Referred By:</strong> ${p.referred_by_name} (${p.referred_by_phone || 'N/A'}) - ${p.referred_by_address || ''}</div>` : ''}
+            <div class="detail-row">
+              <strong>Added:</strong> ${p.created_at || 'N/A'}
+            </div>
+          </div>
+        </div>
       `;
-    }).join('');
+    }).join('\n');
     
+    const date = new Date().toISOString().split('T')[0];
     const html = `
       <!DOCTYPE html>
       <html>
-      <head>
-        <title>Patients Export - TPS DHANVANTARI</title>
-        <style>
-          @page {
-            size: A3 landscape;
-            margin: 10mm;
-          }
-          body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            margin: 0;
-          }
-          h1 {
-            color: #2c5282;
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 24px;
-          }
-          .export-info {
-            text-align: center;
-            color: #666;
-            margin-bottom: 20px;
-            font-size: 12px;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            font-size: 10px;
-          }
-          th {
-            background-color: #2c5282;
-            color: white;
-            padding: 10px 8px;
-            text-align: left;
-            border: 1px solid #2c5282;
-            font-size: 11px;
-            white-space: nowrap;
-          }
-          tr:nth-child(even) {
-            background-color: #f7fafc;
-          }
-          .print-btn {
-            display: block;
-            margin: 20px auto;
-            padding: 12px 24px;
-            background-color: #2c5282;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-          }
-          @media print {
-            .print-btn { display: none; }
-            body { padding: 0; }
-          }
-        </style>
-      </head>
-      <body>
-        <h1>TPS DHANVANTARI AYURVEDA</h1>
-        <h2 style="text-align: center; color: #2d3748; font-size: 18px;">Complete Patients Details Export</h2>
-        <div class="export-info">
-          <p><strong>Total Patients:</strong> ${currentPatients.length} | <strong>Export Date:</strong> ${new Date().toLocaleDateString()}</p>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Patient ID</th>
-              <th>Name</th>
-              <th>Age/Gender</th>
-              <th>Country</th>
-              <th>Phone</th>
-              <th>Email</th>
-              <th>Weight/Height</th>
-              <th>Address</th>
-              <th>Diseases/Medicines</th>
-              <th>Additional Phones</th>
-              <th>Referred By</th>
-              <th>Medical History</th>
-              <th>Registered</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${tableRows}
-          </tbody>
-        </table>
-        <button class="print-btn" onclick="window.print()">
-          Print / Save as PDF
-        </button>
-      </body>
+        <head>
+          <meta charset="UTF-8">
+          <title>Patients Export - ${date}</title>
+          <style>
+            @media print {
+              body { margin: 0; padding: 15px; }
+              .no-print { display: none; }
+              .patient-card { page-break-inside: avoid; }
+            }
+            body { font-family: Arial, sans-serif; font-size: 12px; }
+            h1 { text-align: center; color: #2c5f2d; margin-bottom: 5px; }
+            .export-info { text-align: center; color: #666; margin-bottom: 20px; font-size: 11px; }
+            .print-btn { margin: 15px auto; display: block; padding: 10px 30px; background: #4CAF50; color: white; border: none; cursor: pointer; font-size: 14px; border-radius: 5px; }
+            .patient-card { border: 1px solid #ddd; margin-bottom: 15px; padding: 12px; border-radius: 5px; background: #f9f9f9; }
+            .patient-header { border-bottom: 2px solid #4CAF50; padding-bottom: 8px; margin-bottom: 10px; }
+            .patient-header h3 { margin: 0; color: #2c5f2d; font-size: 14px; }
+            .patient-meta { color: #666; font-size: 11px; margin-top: 3px; }
+            .patient-details { }
+            .detail-row { margin: 6px 0; line-height: 1.4; }
+            .detail-row strong { color: #2c5f2d; display: inline-block; min-width: 140px; }
+          </style>
+          <script>
+            window.onload = function() {
+              const printBtn = document.getElementById('printBtn');
+              if (printBtn) {
+                printBtn.addEventListener('click', function() { window.print(); });
+              }
+            }
+          </script>
+        </head>
+        <body>
+          <h1>TPS DHANVANTARI AYURVEDA - Patients List</h1>
+          <div class="export-info">Export Date: ${date} | Total Patients: ${currentPatients.length}</div>
+          <button id="printBtn" class="print-btn no-print">Print / Save as PDF</button>
+          ${patientCards}
+        </body>
       </html>
     `;
     
