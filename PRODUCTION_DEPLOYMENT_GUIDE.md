@@ -1,184 +1,237 @@
-# 🚀 TPS DHANVANTARI AYURVEDA - Production Deployment Guide
+# 🚀 PRODUCTION DEPLOYMENT - v2.5.1 Critical Fix
 
-## ✅ Current Status
+## ✅ Pre-Deployment Checklist
 
-✅ **Application Code Deployed to Cloudflare Pages**
-- URL: https://ayurveda-clinic.pages.dev
-- Custom Domain: https://tpsdhanvantariayurveda.com
-- Latest Build: December 29, 2025 (All fixes included)
-
-⏳ **Database Setup Required** - Follow steps below
-
----
-
-## 📋 Step-by-Step Database Setup
-
-### Step 1: Create D1 Database via Dashboard
-
-1. **Go to Cloudflare Dashboard**: https://dash.cloudflare.com/
-2. Navigate to **Workers & Pages** → **D1 SQL Database**
-3. Click **"Create database"**
-4. Enter database name: `ayurveda-db`
-5. Click **"Create"**
-6. **IMPORTANT**: Copy the Database ID (format: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`)
-
-### Step 2: Bind Database to Pages Project
-
-1. In Cloudflare Dashboard, go to **Workers & Pages**
-2. Click on project: **ayurveda-clinic**
-3. Go to **Settings** tab
-4. Scroll down to **Functions** section
-5. Find **D1 database bindings**
-6. Click **"Add binding"**:
-   - **Variable name**: `DB`
-   - **D1 database**: Select `ayurveda-db`
-7. Click **"Save"**
-
-### Step 3: Run Database Migrations
-
-1. Go to your D1 database: **ayurveda-db**
-2. Click on **Console** tab
-3. Copy and paste the content from `complete_database_setup.sql` (provided below)
-4. Click **"Execute"**
-5. Verify tables are created
-
-### Step 4: Seed Initial Data
-
-1. In the same D1 Console
-2. Copy and paste the content from `seed.sql` (provided below)
-3. Click **"Execute"**
-4. Verify sample data is inserted
-
-### Step 5: Verify Deployment
-
-1. Visit: https://tpsdhanvantariayurveda.com
-2. Login with:
-   - **Email**: admin@tpsdhanvantari.com
-   - **Password**: admin123
-3. Test all features:
-   - View patients
-   - View herbs & routes
-   - Test edit function
-   - Test export functions
+- [x] Code fixed and tested
+- [x] Built successfully (dist/static/app.js ready)
+- [x] Committed to GitHub (commit: 78aceeb)
+- [x] Backup created
+- [x] Documentation complete
 
 ---
 
-## 📄 SQL Scripts to Execute
+## 🎯 DEPLOYMENT TO PRODUCTION
 
-### complete_database_setup.sql
+### **Method 1: Git Pull (RECOMMENDED)**
 
-See file: `/home/user/webapp/complete_database_setup.sql`
-
-This contains all database migrations in the correct order.
-
-### seed.sql
-
-See file: `/home/user/webapp/seed.sql`
-
-This contains:
-- Default admin user (email: admin@tpsdhanvantari.com, password: admin123)
-- Sample patients (3 patients with complete data)
-- Sample herbs & routes record
-- Sample medicines
-
----
-
-## 🔧 Alternative: CLI Method (If API Token Gets D1 Permissions)
-
-If you update your API token to include D1 permissions:
+This method pulls the latest code from GitHub and rebuilds on the server.
 
 ```bash
-# 1. List existing databases
-npx wrangler d1 list
+# Step 1: Connect to your VPS
+ssh root@88.222.244.84
 
-# 2. If ayurveda-db exists, get its ID
-# If not, create it:
-npx wrangler d1 create ayurveda-db
+# Step 2: Navigate to app directory
+cd /var/www/ayurveda
 
-# 3. Update wrangler.jsonc with the database ID
+# Step 3: Create backup (IMPORTANT!)
+mkdir -p backups
+cp dist/static/app.js backups/app.js.backup-$(date +%Y%m%d-%H%M%S)
 
-# 4. Apply migrations
-npx wrangler d1 migrations apply ayurveda-db --remote
+# Step 4: Pull latest changes from GitHub
+git pull origin main
 
-# 5. Seed data
-npx wrangler d1 execute ayurveda-db --remote --file=./seed.sql
-
-# 6. Deploy with database binding
+# Step 5: Rebuild the application
 npm run build
-npx wrangler pages deploy dist --project-name ayurveda-clinic
+
+# Step 6: Restart with zero downtime
+pm2 restart ayurveda-clinic
+
+# Step 7: Verify deployment
+pm2 status
+pm2 logs ayurveda-clinic --lines 20 --nostream
+
+# Step 8: Test the application
+curl http://localhost:3001
 ```
 
 ---
 
-## 🎯 API Token Permissions Needed
+### **Method 2: Direct File Transfer (ALTERNATIVE)**
 
-Your current token is missing D1 permissions. To create a new token with correct permissions:
+If git pull doesn't work, you can directly transfer the built file:
 
-1. Go to: https://dash.cloudflare.com/profile/api-tokens
-2. Click **"Create Token"** → **"Create Custom Token"**
-3. Set permissions:
-   - **Account Permissions**:
-     - D1: Edit ✅
-     - Account Settings: Read ✅
-   - **Zone Permissions**:
-     - Workers Scripts: Edit ✅
-     - Workers Routes: Edit ✅
-4. Include: All accounts
-5. Create and copy the token
+**From your local machine (if you have the sandbox files):**
 
----
+```bash
+# Download from backup
+wget https://www.genspark.ai/api/files/s/CgWYQnA7 -O ayurveda-v2.5.1.tar.gz
+tar -xzf ayurveda-v2.5.1.tar.gz
+cd webapp
 
-## ✨ What's Deployed
+# Transfer the built file
+scp dist/static/app.js root@88.222.244.84:/var/www/ayurveda/dist/static/app.js
 
-Your production deployment includes:
-
-✅ **All Bug Fixes**:
-- Edit Herbs & Routes working
-- Export CSV/Excel/PDF working
-- Address display fixed
-- Additional phones display fixed
-- Given date extraction fixed
-- Follow-up date display fixed
-
-✅ **Complete Features**:
-- Patient management with comprehensive fields
-- Herbs & Routes (prescriptions) with medicine tracking
-- Appointment scheduling
-- Reminder system
-- Dashboard with statistics
-- PWA support (installable)
-
-✅ **Security**:
-- Admin authentication
-- Session management
-- Password hashing (SHA-256)
+# Restart the service
+ssh root@88.222.244.84 "pm2 restart ayurveda-clinic"
+```
 
 ---
 
-## 📞 Support
+## ✅ POST-DEPLOYMENT VERIFICATION
 
-If you encounter any issues:
+After deployment, **IMMEDIATELY** test the fix:
 
-1. **Database connection errors**: Ensure D1 database is created and bound
-2. **Login not working**: Check if seed.sql was executed (creates admin user)
-3. **Blank pages**: Check browser console for errors
+### **Step 1: Test the Application**
+
+1. Open browser: **https://tpsdhanvantariayurveda.in/**
+2. Login with: `Shankaranherbaltreatment@gmail.com` / `123456`
+3. Go to: **Herbs & Roots** → **Add New**
+
+### **Step 2: Create Test Prescription**
+
+Create a prescription with these details:
+- **Patient:** Any test patient
+- **Course:** Single course
+- **Medicines:** Add **4 medicines** to the same course
+- **Payment Details:**
+  - Payment Amount: **₹10,000**
+  - Advance Payment: **₹2,000**
+
+### **Step 3: Verify the Fix**
+
+Click **"View"** or **"Print"** and verify:
+
+| Field | Expected Value | What to Check |
+|-------|----------------|---------------|
+| **Total Amount** | ₹10,000 | ✅ NOT ₹40,000 |
+| **Advance** | ₹2,000 | ✅ Correct |
+| **Balance** | ₹8,000 | ✅ (10,000 - 2,000) |
+| **Status** | "Due" | ✅ Since balance > 0 |
+
+### **Step 4: Test Multiple Scenarios**
+
+1. **Single Medicine:** Create course with 1 medicine, ₹10,000
+   - Verify: Total = ₹10,000 ✅
+
+2. **Two Courses:** Create 2 separate courses (₹10k and ₹15k)
+   - Verify: Total = ₹25,000 ✅
+
+3. **Four Medicines:** Create course with 4 medicines, ₹10,000
+   - Verify: Total = ₹10,000 (NOT ₹40,000) ✅
 
 ---
 
-## 🎉 Post-Deployment Checklist
+## 🔍 MONITORING AFTER DEPLOYMENT
 
-- [ ] D1 database created
-- [ ] Database bound to Pages project
-- [ ] Migrations executed
-- [ ] Seed data inserted
-- [ ] Can login at tpsdhanvantariayurveda.com
-- [ ] Can view patients
-- [ ] Can view herbs & routes
-- [ ] Can edit records
-- [ ] Can export data
-- [ ] Custom domain working
+### **Check PM2 Status**
+
+```bash
+ssh root@88.222.244.84 "pm2 status"
+```
+
+Expected output:
+```
+┌─────┬──────────────────┬─────────┬─────────┬──────────┐
+│ id  │ name             │ status  │ restart │ uptime   │
+├─────┼──────────────────┼─────────┼─────────┼──────────┤
+│ 0   │ ayurveda-clinic  │ online  │ X       │ Xs       │
+└─────┴──────────────────┴─────────┴─────────┴──────────┘
+```
+
+### **Check Application Logs**
+
+```bash
+ssh root@88.222.244.84 "pm2 logs ayurveda-clinic --lines 50 --nostream"
+```
+
+Look for:
+- ✅ No error messages
+- ✅ Server started successfully
+- ✅ Port 3001 listening
+
+### **Test API Endpoint**
+
+```bash
+curl http://88.222.244.84:3001
+```
+
+Should return the application HTML (not error message).
 
 ---
 
-**Last Updated**: January 2, 2026  
-**Version**: 2.1.0 - Production Ready
+## 🔄 ROLLBACK PROCEDURE (If Needed)
+
+If something goes wrong, you can quickly rollback:
+
+```bash
+# Step 1: Connect to VPS
+ssh root@88.222.244.84
+
+# Step 2: Navigate to app
+cd /var/www/ayurveda
+
+# Step 3: List available backups
+ls -lht backups/
+
+# Step 4: Restore the latest backup
+cp backups/app.js.backup-YYYYMMDD-HHMMSS dist/static/app.js
+
+# Step 5: Restart service
+pm2 restart ayurveda-clinic
+
+# Step 6: Verify rollback
+pm2 status
+curl http://localhost:3001
+```
+
+---
+
+## 📊 DEPLOYMENT METRICS
+
+| Metric | Value |
+|--------|-------|
+| **Version** | v2.5.1 |
+| **Priority** | 🔴 CRITICAL |
+| **Deployment Time** | < 2 minutes |
+| **Downtime** | < 5 seconds |
+| **Risk Level** | LOW |
+| **Files Changed** | 1 (app.js) |
+| **Rollback Time** | < 30 seconds |
+
+---
+
+## 🎯 SUCCESS INDICATORS
+
+Your deployment is successful if:
+
+- ✅ PM2 shows status "online"
+- ✅ No errors in logs
+- ✅ Application loads in browser
+- ✅ View/Print shows ₹10,000 (not ₹40,000) for 4 medicines
+- ✅ All other features work normally
+
+---
+
+## 📞 SUPPORT RESOURCES
+
+| Resource | Information |
+|----------|-------------|
+| **Production URL** | https://tpsdhanvantariayurveda.in/ |
+| **Direct IP** | http://88.222.244.84:3001 |
+| **GitHub Repo** | https://github.com/ekodecrux/ayurvedatps |
+| **Latest Commit** | 78aceeb (v2.5.1) |
+| **Backup Package** | https://www.genspark.ai/api/files/s/CgWYQnA7 |
+| **VPS Host** | 88.222.244.84 |
+| **App Path** | /var/www/ayurveda |
+| **PM2 App Name** | ayurveda-clinic |
+
+---
+
+## 🎉 DEPLOYMENT COMPLETE!
+
+Once all verification steps pass, your critical fix is live in production!
+
+**What was fixed:**
+- ✅ Payment summary no longer multiplies by medicine count
+- ✅ Correct per-course payment amounts in View/Print
+- ✅ Accurate financial calculations
+- ✅ Improved user trust and data integrity
+
+---
+
+**Date:** January 5, 2026  
+**Version:** v2.5.1  
+**Status:** READY FOR PRODUCTION DEPLOYMENT  
+**Priority:** CRITICAL
+
+🚀 **Go ahead and deploy with confidence!**
