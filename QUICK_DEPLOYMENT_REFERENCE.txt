@@ -1,0 +1,66 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                    QUICK DEPLOYMENT REFERENCE CARD                        ║
+║                   TPS DHANVANTARI AYURVEDA v2.5.0                        ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 1. CONNECT TO VPS                                                        │
+└─────────────────────────────────────────────────────────────────────────┘
+ssh root@88.222.244.84
+Password: Yourkpo@202526
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 2. NAVIGATE & BACKUP                                                     │
+└─────────────────────────────────────────────────────────────────────────┘
+cd /var/www/ayurveda
+mkdir -p backups
+cp dist/static/app.js backups/app.js.backup-$(date +%Y%m%d_%H%M%S)
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 3. PULL & BUILD                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+git pull origin main
+npm run build
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 4. RESTART SERVICE                                                       │
+└─────────────────────────────────────────────────────────────────────────┘
+pm2 restart ayurveda-clinic
+pm2 status
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 5. VERIFY                                                                │
+└─────────────────────────────────────────────────────────────────────────┘
+curl http://localhost:3001
+pm2 logs ayurveda-clinic --lines 20 --nostream
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║ QUICK ACCESS INFO                                                         ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+Application: http://88.222.244.84:3001 | https://tpsdhanvantariayurveda.in/
+GitHub: https://github.com/ekodecrux/ayurvedatps
+Backup: https://www.genspark.ai/api/files/s/viiJAfUq
+Login: Shankaranherbaltreatment@gmail.com / 123456
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║ WHAT WAS FIXED                                                            ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+✓ Balance calculation with overpayment detection
+✓ Status labels: (Paid), (Due), (Credit)
+✓ Negative/zero amount validation
+✓ Required field validation
+✓ Clearer payment calculations
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║ ROLLBACK (if needed)                                                      ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+ls -lth backups/ | head -5
+cp backups/app.js.backup-YYYYMMDD_HHMMSS dist/static/app.js
+pm2 restart ayurveda-clinic
+
+═══════════════════════════════════════════════════════════════════════════
+Version: 2.5.0 | Status: Ready | Risk: Low | Time: < 5 min
+═══════════════════════════════════════════════════════════════════════════
