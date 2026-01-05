@@ -3016,12 +3016,13 @@ app.get('/', (c) => {
                         </h4>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                             <div><span class="font-semibold">Patient ID:</span> <span id="summary-patient-id"></span></div>
+                            <div class="col-span-2"><span class="font-semibold">Patient Name:</span> <span id="summary-patient-name"></span></div>
                             <div><span class="font-semibold">Age/Gender:</span> <span id="summary-patient-age-gender"></span></div>
+                            <div class="col-span-2"><span class="font-semibold">Weight/Height:</span> <span id="summary-patient-weight-height"></span></div>
                             <div><span class="font-semibold">Country:</span> <span id="summary-patient-country"></span></div>
                             <div><span class="font-semibold">Phone:</span> <span id="summary-patient-phone"></span></div>
                             <div class="col-span-2"><span class="font-semibold">Additional Phones:</span> <span id="summary-patient-additional-phones"></span></div>
                             <div class="col-span-2 md:col-span-3"><span class="font-semibold">Email:</span> <span id="summary-patient-email"></span></div>
-                            <div class="col-span-2 md:col-span-3"><span class="font-semibold">Weight/Height:</span> <span id="summary-patient-weight-height"></span></div>
                             <div class="col-span-2 md:col-span-3"><span class="font-semibold">Address:</span> <span id="summary-patient-address"></span></div>
                             <div class="col-span-2 md:col-span-3"><span class="font-semibold">Complete Address:</span> <span id="summary-patient-complete-address"></span></div>
                             <div class="col-span-2 md:col-span-3"><span class="font-semibold">Present Health Issue:</span> <span class="text-red-600" id="summary-patient-health-issue"></span></div>
