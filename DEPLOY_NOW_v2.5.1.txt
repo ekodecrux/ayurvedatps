@@ -1,0 +1,72 @@
+╔══════════════════════════════════════════════════════════════╗
+║  🚨 CRITICAL FIX v2.5.1 - READY FOR DEPLOYMENT 🚨           ║
+╚══════════════════════════════════════════════════════════════╝
+
+📋 ISSUE FIXED:
+   View/Print in Herbs & Roots showing WRONG total amount
+   (multiplied by number of medicines)
+
+   Example: 4 medicines × ₹10,000 = ₹40,000 ❌
+   Fixed to show: ₹10,000 ✅
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 DEPLOYMENT STEPS (Copy & Paste):
+
+ssh root@88.222.244.84
+
+cd /var/www/ayurveda
+
+mkdir -p backups && cp dist/static/app.js backups/app.js.backup-$(date +%Y%m%d-%H%M%S)
+
+git pull origin main
+
+npm run build
+
+pm2 restart ayurveda-clinic
+
+pm2 status
+
+curl http://localhost:3001
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ VERIFICATION (After deployment):
+
+1. Open: https://tpsdhanvantariayurveda.in/
+2. Go to: Herbs & Roots
+3. Add: 4 medicines in ONE course
+4. Set: Payment Amount = ₹10,000
+5. Click: View or Print
+6. Check: Total should show ₹10,000 (NOT ₹40,000)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 STATUS:
+   ✅ Code Fixed
+   ✅ Built Successfully
+   ✅ Committed to GitHub
+   ✅ Ready for Production
+
+⏱️  DOWNTIME: < 5 seconds (PM2 restart only)
+🎯  PRIORITY: CRITICAL
+📅  DATE: January 5, 2026
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔄 ROLLBACK (If needed):
+
+cd /var/www/ayurveda
+ls -lt backups/  # Find latest backup
+cp backups/app.js.backup-YYYYMMDD-HHMMSS dist/static/app.js
+pm2 restart ayurveda-clinic
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📱 SUPPORT:
+   GitHub: https://github.com/ekodecrux/ayurvedatps
+   Commit: 317a450 (CRITICAL FIX v2.5.1)
+   App: http://88.222.244.84:3001
+   Domain: https://tpsdhanvantariayurveda.in/
+
+╚══════════════════════════════════════════════════════════════╝
