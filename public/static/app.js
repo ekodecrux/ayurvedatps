@@ -1069,14 +1069,167 @@ async function viewPatient(id) {
 
 async function exportPatients(format = 'csv') {
   try {
-    const country = document.getElementById('patient-filter-country')?.value || '';
-    let url = `${API_BASE}/patients/export?format=${format}`;
-    if (country) url += `&country=${country}`;
+    // Export only currently displayed/filtered patients
+    if (currentPatients.length === 0) {
+      alert('No patients to export');
+      return;
+    }
     
-    window.open(url, '_blank');
+    if (format === 'csv' || format === 'excel') {
+      exportPatientsToExcel(format);
+    } else if (format === 'pdf') {
+      exportPatientsToPDF();
+    }
   } catch (error) {
     console.error('Export error:', error);
     alert(`Error exporting patients to ${format.toUpperCase()}`);
+  }
+}
+
+function exportPatientsToExcel(format = 'csv') {
+  try {
+    // Create CSV from currently displayed patients
+    const headers = ['Patient ID', 'Name', 'Age', 'Gender', 'Phone', 'Country', 'Email', 'Address', 'Registered Date'];
+    const csvRows = [headers.join(',')];
+    
+    currentPatients.forEach(p => {
+      const row = [
+        `"${p.patient_id || 'N/A'}"`,
+        `"${p.name || 'N/A'}"`,
+        p.age || 'N/A',
+        `"${p.gender || 'N/A'}"`,
+        `"${p.country_code || ''} ${p.phone || ''}"`,
+        `"${p.country || 'N/A'}"`,
+        `"${p.email || 'N/A'}"`,
+        `"${getCompleteAddress(p)}"`,
+        `"${formatDate(p.created_at)}"`
+      ];
+      csvRows.push(row.join(','));
+    });
+    
+    const csv = csvRows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `patients_export_${new Date().toISOString().split('T')[0]}.${format === 'excel' ? 'csv' : format}`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error('Export to Excel error:', error);
+    alert('Error exporting patients: ' + error.message);
+  }
+}
+
+function exportPatientsToPDF() {
+  try {
+    // Create printable HTML for PDF
+    const printWindow = window.open('', '_blank');
+    
+    const tableRows = currentPatients.map(p => {
+      return `
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;">${p.patient_id || 'N/A'}</td>
+          <td style="padding: 8px; border: 1px solid #ddd;">${p.name}</td>
+          <td style="padding: 8px; border: 1px solid #ddd;">${p.age || 'N/A'} / ${p.gender || 'N/A'}</td>
+          <td style="padding: 8px; border: 1px solid #ddd;">${p.country_code || ''} ${p.phone}</td>
+          <td style="padding: 8px; border: 1px solid #ddd;">${p.country || 'N/A'}</td>
+          <td style="padding: 8px; border: 1px solid #ddd;">${p.email || 'N/A'}</td>
+          <td style="padding: 8px; border: 1px solid #ddd;">${formatDate(p.created_at)}</td>
+        </tr>
+      `;
+    }).join('');
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Patients Export - TPS DHANVANTARI</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+          }
+          h1 {
+            color: #2c5282;
+            text-align: center;
+            margin-bottom: 10px;
+          }
+          .export-info {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+          th {
+            background-color: #2c5282;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #2c5282;
+          }
+          tr:nth-child(even) {
+            background-color: #f7fafc;
+          }
+          .print-btn {
+            display: block;
+            margin: 20px auto;
+            padding: 12px 24px;
+            background-color: #2c5282;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+          }
+          @media print {
+            .print-btn { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>TPS DHANVANTARI AYURVEDA</h1>
+        <h2 style="text-align: center; color: #2d3748;">Patients List</h2>
+        <div class="export-info">
+          <p>Total Patients: ${currentPatients.length} | Export Date: ${new Date().toLocaleDateString()}</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Patient ID</th>
+              <th>Name</th>
+              <th>Age / Gender</th>
+              <th>Phone</th>
+              <th>Country</th>
+              <th>Email</th>
+              <th>Registered</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+        <button class="print-btn" onclick="window.print()">
+          Print / Save as PDF
+        </button>
+      </body>
+      </html>
+    `;
+    
+    printWindow.document.write(html);
+    printWindow.document.close();
+  } catch (error) {
+    console.error('Export to PDF error:', error);
+    alert('Error exporting to PDF: ' + error.message);
   }
 }
 
