@@ -334,6 +334,25 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Cloudflare Workers platform
 - Tailwind CSS team
 
+## 🔧 Troubleshooting
+
+### Port Conflict Issue (MySchool vs Ayurveda)
+
+If you see **MySchool AI Assistant chatbot** instead of **TPS Dhanvantari Ayurveda** on your domain, this is a port conflict issue. 
+
+**Quick Fix**:
+```bash
+ssh root@88.222.244.84 'cd /var/www/ayurveda && pm2 stop all && fuser -k 3001/tcp 2>/dev/null; PORT=3001 pm2 start server.js --name ayurveda-clinic --update-env && sed -i.bak "s|proxy_pass http://127.0.0.1:[0-9]*|proxy_pass http://127.0.0.1:3001|g" /etc/nginx/sites-available/tpsdhanvantariayurveda && nginx -t && systemctl reload nginx && echo "✅ Fix applied!"'
+```
+
+**Detailed Guides**:
+- `FIX_SUMMARY.md` - Executive summary and solutions
+- `PORT_CONFLICT_FIX_GUIDE.md` - Step-by-step manual fix
+- `VISUAL_DIAGRAM.md` - Visual explanation of the issue
+- `fix_port_conflict_automated.sh` - Automated fix script
+
+**After Fix**: Clear browser cache (Ctrl+Shift+R) and reload the page.
+
 ## 📞 Support
 
 For issues, questions, or contributions:
