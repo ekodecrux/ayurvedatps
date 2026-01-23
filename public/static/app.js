@@ -772,6 +772,22 @@ function toggleDosageQuantity(checkbox, quantitySelectId) {
       quantitySelect.classList.add('bg-gray-100', 'cursor-not-allowed');
       quantitySelect.classList.remove('bg-white');
     }
+    
+    // Update summary if schedule is currently hidden
+    // Extract scheduleId from checkbox id (format: morning_before_1_1)
+    const checkboxId = checkbox.id;
+    const parts = checkboxId.split('_');
+    if (parts.length >= 4) {
+      const courseId = parts[parts.length - 2];
+      const medId = parts[parts.length - 1];
+      const scheduleId = `schedule_${courseId}_${medId}`;
+      const scheduleContent = document.getElementById(scheduleId);
+      
+      // Only update summary if schedule is hidden
+      if (scheduleContent && scheduleContent.classList.contains('hidden')) {
+        updateScheduleSummary(scheduleId);
+      }
+    }
   }
 }
 
@@ -2112,7 +2128,15 @@ function addMedicineToRow(courseId) {
             <span class="schedule-text">Show Details</span>
           </button>
         </div>
-        <p class="text-xs text-gray-600 mb-3">Configure time slots and quantities for each medicine</p>
+        
+        <!-- Schedule Summary (shown when collapsed) -->
+        <div id="schedule_summary_${courseId}_${medId}" class="schedule-summary text-xs text-gray-600 mb-3 p-3 bg-blue-50 border border-blue-200 rounded hidden">
+          <div class="flex flex-wrap gap-2">
+            <span class="text-gray-500 italic">No schedule selected yet</span>
+          </div>
+        </div>
+        
+        <p class="text-xs text-gray-600 mb-3 schedule-instruction">Configure time slots and quantities for each medicine</p>
         
         <!-- Two Column Layout: Before and After side-by-side (matching design) -->
         <div id="schedule_${courseId}_${medId}" class="schedule-content hidden grid-cols-1 md:grid-cols-2 gap-6">
@@ -2125,7 +2149,7 @@ function addMedicineToRow(courseId) {
                   <input type="checkbox" id="morning_before_${courseId}_${medId}" name="morning_before_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'morning_before_qty_${courseId}_${medId}')">
                   <span class="text-sm">Morning - Before</span>
                 </label>
-                <select id="morning_before_qty_${courseId}_${medId}" name="morning_before_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled>
+                <select id="morning_before_qty_${courseId}_${medId}" name="morning_before_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled onchange="updateScheduleSummaryOnChange(this, '${courseId}', '${medId}')">
                   <option value="1">1</option>
                   <option value="2">2</option>
                   <option value="3">3</option>
@@ -2138,7 +2162,7 @@ function addMedicineToRow(courseId) {
                   <input type="checkbox" id="afternoon_before_${courseId}_${medId}" name="afternoon_before_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'afternoon_before_qty_${courseId}_${medId}')">
                   <span class="text-sm">Afternoon - Before</span>
                 </label>
-                <select id="afternoon_before_qty_${courseId}_${medId}" name="afternoon_before_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled>
+                <select id="afternoon_before_qty_${courseId}_${medId}" name="afternoon_before_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled onchange="updateScheduleSummaryOnChange(this, '${courseId}', '${medId}')">
                   <option value="1">1</option>
                   <option value="2">2</option>
                   <option value="3">3</option>
@@ -2151,7 +2175,7 @@ function addMedicineToRow(courseId) {
                   <input type="checkbox" id="evening_before_${courseId}_${medId}" name="evening_before_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'evening_before_qty_${courseId}_${medId}')">
                   <span class="text-sm">Evening - Before</span>
                 </label>
-                <select id="evening_before_qty_${courseId}_${medId}" name="evening_before_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled>
+                <select id="evening_before_qty_${courseId}_${medId}" name="evening_before_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled onchange="updateScheduleSummaryOnChange(this, '${courseId}', '${medId}')">
                   <option value="1">1</option>
                   <option value="2">2</option>
                   <option value="3">3</option>
@@ -2164,7 +2188,7 @@ function addMedicineToRow(courseId) {
                   <input type="checkbox" id="night_before_${courseId}_${medId}" name="night_before_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'night_before_qty_${courseId}_${medId}')">
                   <span class="text-sm">Night - Before</span>
                 </label>
-                <select id="night_before_qty_${courseId}_${medId}" name="night_before_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled>
+                <select id="night_before_qty_${courseId}_${medId}" name="night_before_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled onchange="updateScheduleSummaryOnChange(this, '${courseId}', '${medId}')">
                   <option value="1">1</option>
                   <option value="2">2</option>
                   <option value="3">3</option>
@@ -2184,7 +2208,7 @@ function addMedicineToRow(courseId) {
                   <input type="checkbox" id="morning_after_${courseId}_${medId}" name="morning_after_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'morning_after_qty_${courseId}_${medId}')">
                   <span class="text-sm">Morning - After</span>
                 </label>
-                <select id="morning_after_qty_${courseId}_${medId}" name="morning_after_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled>
+                <select id="morning_after_qty_${courseId}_${medId}" name="morning_after_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled onchange="updateScheduleSummaryOnChange(this, '${courseId}', '${medId}')">
                   <option value="1">1</option>
                   <option value="2">2</option>
                   <option value="3">3</option>
@@ -2197,7 +2221,7 @@ function addMedicineToRow(courseId) {
                   <input type="checkbox" id="afternoon_after_${courseId}_${medId}" name="afternoon_after_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'afternoon_after_qty_${courseId}_${medId}')">
                   <span class="text-sm">Afternoon - After</span>
                 </label>
-                <select id="afternoon_after_qty_${courseId}_${medId}" name="afternoon_after_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled>
+                <select id="afternoon_after_qty_${courseId}_${medId}" name="afternoon_after_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled onchange="updateScheduleSummaryOnChange(this, '${courseId}', '${medId}')">
                   <option value="1">1</option>
                   <option value="2">2</option>
                   <option value="3">3</option>
@@ -2210,7 +2234,7 @@ function addMedicineToRow(courseId) {
                   <input type="checkbox" id="evening_after_${courseId}_${medId}" name="evening_after_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'evening_after_qty_${courseId}_${medId}')">
                   <span class="text-sm">Evening - After</span>
                 </label>
-                <select id="evening_after_qty_${courseId}_${medId}" name="evening_after_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled>
+                <select id="evening_after_qty_${courseId}_${medId}" name="evening_after_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled onchange="updateScheduleSummaryOnChange(this, '${courseId}', '${medId}')">
                   <option value="1">1</option>
                   <option value="2">2</option>
                   <option value="3">3</option>
@@ -2223,7 +2247,7 @@ function addMedicineToRow(courseId) {
                   <input type="checkbox" id="night_after_${courseId}_${medId}" name="night_after_${courseId}_${medId}" class="mr-2 w-4 h-4 dosage-checkbox" onchange="toggleDosageQuantity(this, 'night_after_qty_${courseId}_${medId}')">
                   <span class="text-sm">Night - After</span>
                 </label>
-                <select id="night_after_qty_${courseId}_${medId}" name="night_after_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled>
+                <select id="night_after_qty_${courseId}_${medId}" name="night_after_qty_${courseId}_${medId}" class="border rounded px-3 py-1.5 text-sm w-16 dosage-quantity bg-gray-100 cursor-not-allowed" disabled onchange="updateScheduleSummaryOnChange(this, '${courseId}', '${medId}')">
                   <option value="1">1</option>
                   <option value="2">2</option>
                   <option value="3">3</option>
@@ -2252,24 +2276,86 @@ function removeMedicineFromRow(courseId, medId) {
 // Toggle medicine schedule visibility
 function toggleMedicineSchedule(scheduleId) {
   const scheduleContent = document.getElementById(scheduleId);
+  const scheduleSummary = document.getElementById(scheduleId.replace('schedule_', 'schedule_summary_'));
   const button = event.currentTarget;
   const icon = button.querySelector('.schedule-icon');
   const text = button.querySelector('.schedule-text');
+  const instructionText = button.closest('div').parentElement.querySelector('.schedule-instruction');
   
   if (scheduleContent.classList.contains('hidden')) {
-    // Show schedule
+    // Show full schedule details
     scheduleContent.classList.remove('hidden');
     scheduleContent.classList.add('grid');
+    scheduleSummary.classList.add('hidden');
+    if (instructionText) instructionText.classList.remove('hidden');
     icon.classList.remove('fa-chevron-down');
     icon.classList.add('fa-chevron-up');
     text.textContent = 'Hide Details';
   } else {
-    // Hide schedule
+    // Hide schedule and show summary
     scheduleContent.classList.add('hidden');
     scheduleContent.classList.remove('grid');
+    updateScheduleSummary(scheduleId);
+    scheduleSummary.classList.remove('hidden');
+    if (instructionText) instructionText.classList.add('hidden');
     icon.classList.remove('fa-chevron-up');
     icon.classList.add('fa-chevron-down');
     text.textContent = 'Show Details';
+  }
+}
+
+// Update schedule summary when hiding details
+function updateScheduleSummary(scheduleId) {
+  const summaryDiv = document.getElementById(scheduleId.replace('schedule_', 'schedule_summary_'));
+  if (!summaryDiv) return;
+  
+  // Extract courseId and medId from scheduleId (format: schedule_1_1)
+  const parts = scheduleId.split('_');
+  const courseId = parts[1];
+  const medId = parts[2];
+  
+  const scheduleItems = [];
+  
+  // Check all schedule checkboxes and build summary
+  const times = ['morning', 'afternoon', 'evening', 'night'];
+  const periods = ['before', 'after'];
+  const timeLabels = { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening', night: 'Night' };
+  const periodLabels = { before: 'Before', after: 'After' };
+  
+  times.forEach(time => {
+    periods.forEach(period => {
+      const checkboxId = `${time}_${period}_${courseId}_${medId}`;
+      const qtyId = `${time}_${period}_qty_${courseId}_${medId}`;
+      const checkbox = document.getElementById(checkboxId);
+      const qtySelect = document.getElementById(qtyId);
+      
+      if (checkbox && checkbox.checked) {
+        const qty = qtySelect ? qtySelect.value : '1';
+        const colorClass = time === 'morning' ? 'bg-blue-100 text-blue-800' : 
+                          time === 'afternoon' ? 'bg-green-100 text-green-800' :
+                          time === 'evening' ? 'bg-orange-100 text-orange-800' : 
+                          'bg-purple-100 text-purple-800';
+        scheduleItems.push(`<span class="px-2 py-1 ${colorClass} rounded text-xs whitespace-nowrap">${timeLabels[time]} (${periodLabels[period]}) - Qty: ${qty}</span>`);
+      }
+    });
+  });
+  
+  // Update summary display
+  if (scheduleItems.length > 0) {
+    summaryDiv.innerHTML = `<div class="flex flex-wrap gap-2">${scheduleItems.join('')}</div>`;
+  } else {
+    summaryDiv.innerHTML = '<div class="flex flex-wrap gap-2"><span class="text-gray-500 italic">No schedule selected yet</span></div>';
+  }
+}
+
+// Helper function to update summary when quantity changes
+function updateScheduleSummaryOnChange(selectElement, courseId, medId) {
+  const scheduleId = `schedule_${courseId}_${medId}`;
+  const scheduleContent = document.getElementById(scheduleId);
+  
+  // Only update summary if schedule is currently hidden
+  if (scheduleContent && scheduleContent.classList.contains('hidden')) {
+    updateScheduleSummary(scheduleId);
   }
 }
 
@@ -2905,7 +2991,15 @@ async function editHerbsRoutes(id) {
                     <span class="schedule-text">Show Details</span>
                   </button>
                 </div>
-                <p class="text-xs text-gray-600 mb-3">Configure time slots and quantities for each medicine</p>
+                
+                <!-- Schedule Summary (shown when collapsed) -->
+                <div id="schedule_summary_${courseId}_${medId}" class="schedule-summary text-xs text-gray-600 mb-3 p-3 bg-blue-50 border border-blue-200 rounded hidden">
+                  <div class="flex flex-wrap gap-2">
+                    <span class="text-gray-500 italic">No schedule selected yet</span>
+                  </div>
+                </div>
+                
+                <p class="text-xs text-gray-600 mb-3 schedule-instruction">Configure time slots and quantities for each medicine</p>
                 
                 <div id="schedule_${courseId}_${medId}" class="schedule-content hidden grid-cols-1 md:grid-cols-2 gap-6">
                   <!-- Before Column -->
