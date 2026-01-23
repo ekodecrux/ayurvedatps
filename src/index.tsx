@@ -2885,8 +2885,8 @@ app.get('/', (c) => {
                                     <span id="display-patient-age-gender" class="ml-2"></span>
                                 </div>
                                 <div>
-                                    <span class="font-semibold">Country:</span>
-                                    <span id="display-patient-country" class="ml-2"></span>
+                                    <span class="font-semibold">Weight/Height:</span>
+                                    <span id="display-patient-weight-height" class="ml-2"></span>
                                 </div>
                                 <div>
                                     <span class="font-semibold">Phone:</span>
@@ -2900,10 +2900,6 @@ app.get('/', (c) => {
                                     <span class="font-semibold">Email:</span>
                                     <span id="display-patient-email" class="ml-2"></span>
                                 </div>
-                                <div>
-                                    <span class="font-semibold">Weight/Height:</span>
-                                    <span id="display-patient-weight-height" class="ml-2"></span>
-                                </div>
                                 <div class="md:col-span-3">
                                     <span class="font-semibold">Address:</span>
                                     <span id="display-patient-address" class="ml-2"></span>
@@ -2911,6 +2907,10 @@ app.get('/', (c) => {
                                 <div class="md:col-span-3">
                                     <span class="font-semibold">Complete Address:</span>
                                     <span id="display-patient-complete-address" class="ml-2"></span>
+                                </div>
+                                <div class="md:col-span-3">
+                                    <span class="font-semibold">Country:</span>
+                                    <span id="display-patient-country" class="ml-2"></span>
                                 </div>
                                 <div class="md:col-span-3">
                                     <span class="font-semibold">Present Health Issue:</span>
