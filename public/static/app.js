@@ -2105,11 +2105,17 @@ function addMedicineToRow(courseId) {
       
       <div>
       <div>
-        <label class="block text-sm font-medium mb-2 text-ayurveda-700">Medicine Schedule</label>
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-ayurveda-700">Medicine Schedule</label>
+          <button type="button" class="schedule-toggle-btn flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-ayurveda-600 bg-ayurveda-50 hover:bg-ayurveda-100 rounded-lg border border-ayurveda-300 transition-colors" onclick="toggleMedicineSchedule('schedule_${courseId}_${medId}')">
+            <i class="fas fa-chevron-down schedule-icon"></i>
+            <span class="schedule-text">Show Details</span>
+          </button>
+        </div>
         <p class="text-xs text-gray-600 mb-3">Configure time slots and quantities for each medicine</p>
         
         <!-- Two Column Layout: Before and After side-by-side (matching design) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div id="schedule_${courseId}_${medId}" class="schedule-content hidden grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Before Column -->
           <div>
             <h6 class="text-base font-semibold text-ayurveda-600 mb-3 pb-2 border-b">Before</h6>
@@ -2240,6 +2246,30 @@ function removeMedicineFromRow(courseId, medId) {
   const medicine = document.querySelector(`.medicine-item[data-course="${courseId}"][data-medicine="${medId}"]`);
   if (medicine) {
     medicine.remove();
+  }
+}
+
+// Toggle medicine schedule visibility
+function toggleMedicineSchedule(scheduleId) {
+  const scheduleContent = document.getElementById(scheduleId);
+  const button = event.currentTarget;
+  const icon = button.querySelector('.schedule-icon');
+  const text = button.querySelector('.schedule-text');
+  
+  if (scheduleContent.classList.contains('hidden')) {
+    // Show schedule
+    scheduleContent.classList.remove('hidden');
+    scheduleContent.classList.add('grid');
+    icon.classList.remove('fa-chevron-down');
+    icon.classList.add('fa-chevron-up');
+    text.textContent = 'Hide Details';
+  } else {
+    // Hide schedule
+    scheduleContent.classList.add('hidden');
+    scheduleContent.classList.remove('grid');
+    icon.classList.remove('fa-chevron-up');
+    icon.classList.add('fa-chevron-down');
+    text.textContent = 'Show Details';
   }
 }
 
@@ -2868,10 +2898,16 @@ async function editHerbsRoutes(id) {
               </div>
               
               <div>
-                <label class="block text-sm font-medium mb-2 text-ayurveda-700">Medicine Schedule</label>
+                <div class="flex items-center justify-between mb-2">
+                  <label class="block text-sm font-medium text-ayurveda-700">Medicine Schedule</label>
+                  <button type="button" class="schedule-toggle-btn flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-ayurveda-600 bg-ayurveda-50 hover:bg-ayurveda-100 rounded-lg border border-ayurveda-300 transition-colors" onclick="toggleMedicineSchedule('schedule_${courseId}_${medId}')">
+                    <i class="fas fa-chevron-down schedule-icon"></i>
+                    <span class="schedule-text">Show Details</span>
+                  </button>
+                </div>
                 <p class="text-xs text-gray-600 mb-3">Configure time slots and quantities for each medicine</p>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div id="schedule_${courseId}_${medId}" class="schedule-content hidden grid-cols-1 md:grid-cols-2 gap-6">
                   <!-- Before Column -->
                   <div>
                     <h6 class="text-base font-semibold text-ayurveda-600 mb-3 pb-2 border-b">Before</h6>
@@ -3160,6 +3196,11 @@ async function viewHerbsRoutes(id) {
           if (med.night_before) dosages.push(`<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">Night (Before) - Qty: ${med.night_before_qty || 1}</span>`);
           if (med.night_after) dosages.push(`<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">Night (After) - Qty: ${med.night_after_qty || 1}</span>`);
           
+          // Build frequency display
+          const frequencyBadges = [];
+          if (med.is_daily) frequencyBadges.push(`<span class="px-2 py-1 bg-indigo-100 text-indigo-800 rounded text-xs"><i class="fas fa-calendar-day mr-1"></i>Daily</span>`);
+          if (med.is_alternate_day) frequencyBadges.push(`<span class="px-2 py-1 bg-teal-100 text-teal-800 rounded text-xs"><i class="fas fa-calendar-week mr-1"></i>Alternate-day</span>`);
+          
           return `
             <div class="p-3 border border-blue-200 rounded-lg bg-blue-50 mb-2">
               <div class="flex justify-between items-start mb-2">
@@ -3172,6 +3213,8 @@ async function viewHerbsRoutes(id) {
                   ${med.is_active ? 'Active' : 'Inactive'}
                 </span>
               </div>
+              ${med.medicine_note ? `<div class="mb-2 text-xs text-gray-700 italic bg-yellow-50 p-2 rounded border border-yellow-200"><i class="fas fa-sticky-note mr-1 text-yellow-600"></i><strong>Note:</strong> ${med.medicine_note}</div>` : ''}
+              ${frequencyBadges.length > 0 ? `<div class="flex flex-wrap gap-1 mb-2">${frequencyBadges.join('')}</div>` : ''}
               <div class="flex flex-wrap gap-1 mb-2">
                 ${dosages.join('') || '<span class="text-gray-500 text-xs">No dosage schedule specified</span>'}
               </div>
