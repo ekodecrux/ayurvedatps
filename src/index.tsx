@@ -1152,17 +1152,21 @@ app.post('/api/prescriptions', async (c) => {
       for (const med of body.medicines) {
         await c.env.DB.prepare(`
           INSERT INTO medicines_tracking (
-            herbs_route_id, roman_id, medicine_name, given_date, treatment_months,
+            herbs_route_id, roman_id, medicine_name, medicine_note, is_daily, is_alternate_day,
+            given_date, treatment_months,
             is_active, payment_amount, advance_payment, balance_due, payment_notes,
             morning_before, morning_after, afternoon_before, afternoon_after,
             evening_before, evening_after, night_before, night_after,
             morning_before_qty, morning_after_qty, afternoon_before_qty, afternoon_after_qty,
             evening_before_qty, evening_after_qty, night_before_qty, night_after_qty
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           herbsRouteId,
           med.roman_id,
           med.medicine_name,
+          med.medicine_note || null,
+          med.is_daily !== undefined ? med.is_daily : 1,
+          med.is_alternate_day !== undefined ? med.is_alternate_day : 0,
           med.given_date,
           med.treatment_months,
           med.is_active ? 1 : 0,
@@ -1262,17 +1266,21 @@ app.put('/api/prescriptions/:id', async (c) => {
       for (const med of body.medicines) {
         await c.env.DB.prepare(`
           INSERT INTO medicines_tracking (
-            herbs_route_id, roman_id, medicine_name, given_date, treatment_months,
+            herbs_route_id, roman_id, medicine_name, medicine_note, is_daily, is_alternate_day,
+            given_date, treatment_months,
             is_active, payment_amount, advance_payment, balance_due, payment_notes,
             morning_before, morning_after, afternoon_before, afternoon_after,
             evening_before, evening_after, night_before, night_after,
             morning_before_qty, morning_after_qty, afternoon_before_qty, afternoon_after_qty,
             evening_before_qty, evening_after_qty, night_before_qty, night_after_qty
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           id,
           med.roman_id,
           med.medicine_name,
+          med.medicine_note || null,
+          med.is_daily !== undefined ? med.is_daily : 1,
+          med.is_alternate_day !== undefined ? med.is_alternate_day : 0,
           med.given_date,
           med.treatment_months,
           med.is_active ? 1 : 0,

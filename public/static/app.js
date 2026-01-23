@@ -2056,6 +2056,27 @@ function addMedicineToRow(courseId) {
         </div>
       </div>
       
+      <!-- Note/Remark Field -->
+      <div class="mb-3">
+        <label class="block text-xs font-medium mb-1">Note/Remark</label>
+        <textarea name="medicine_note_${courseId}_${medId}" class="w-full border rounded px-2 py-2 text-sm" rows="2" placeholder="Enter any special notes or remarks for this medicine"></textarea>
+      </div>
+      
+      <!-- Frequency Selection -->
+      <div class="mb-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg">
+        <label class="block text-xs font-medium mb-2 text-purple-700">Frequency</label>
+        <div class="flex flex-wrap gap-4">
+          <label class="flex items-center cursor-pointer">
+            <input type="checkbox" name="is_daily_${courseId}_${medId}" class="mr-2 w-4 h-4 text-purple-600" checked>
+            <span class="text-sm font-medium text-purple-700">Daily</span>
+          </label>
+          <label class="flex items-center cursor-pointer">
+            <input type="checkbox" name="is_alternate_day_${courseId}_${medId}" class="mr-2 w-4 h-4 text-pink-600">
+            <span class="text-sm font-medium text-pink-700">Alternate-day</span>
+          </label>
+        </div>
+      </div>
+      
       <div>
       <div>
         <label class="block text-sm font-medium mb-2 text-ayurveda-700">Medicine Schedule</label>
@@ -2479,10 +2500,16 @@ async function saveHerbsRoutes() {
         if (!medicineName) return; // Skip empty medicine items
         
         const romanIdValue = medItem.querySelector(`[name="roman_id_${medCourse}_${medId}"]`)?.value;
+        const medicineNote = medItem.querySelector(`[name="medicine_note_${medCourse}_${medId}"]`)?.value;
+        const isDaily = medItem.querySelector(`[name="is_daily_${medCourse}_${medId}"]`)?.checked ? 1 : 0;
+        const isAlternateDay = medItem.querySelector(`[name="is_alternate_day_${medCourse}_${medId}"]`)?.checked ? 1 : 0;
         
         medicines.push({
           roman_id: romanIdValue || romanNumerals[medicines.length] || `#${medicines.length + 1}`,
           medicine_name: medicineName,
+          medicine_note: medicineNote || null,
+          is_daily: isDaily,
+          is_alternate_day: isAlternateDay,
           given_date: givenDate,
           treatment_months: treatmentMonths,
           is_active: isActive,
@@ -2790,6 +2817,27 @@ async function editHerbsRoutes(id) {
                 <div>
                   <label class="block text-xs font-medium mb-1">Medicine Name *</label>
                   <input type="text" name="medicine_name_${courseId}_${medId}" class="w-full border rounded px-2 py-2 text-sm" required value="${med.medicine_name || ''}">
+                </div>
+              </div>
+              
+              <!-- Note/Remark Field -->
+              <div class="mb-3">
+                <label class="block text-xs font-medium mb-1">Note/Remark</label>
+                <textarea name="medicine_note_${courseId}_${medId}" class="w-full border rounded px-2 py-2 text-sm" rows="2" placeholder="Enter any special notes or remarks for this medicine">${med.medicine_note || ''}</textarea>
+              </div>
+              
+              <!-- Frequency Selection -->
+              <div class="mb-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg">
+                <label class="block text-xs font-medium mb-2 text-purple-700">Frequency</label>
+                <div class="flex flex-wrap gap-4">
+                  <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" name="is_daily_${courseId}_${medId}" class="mr-2 w-4 h-4 text-purple-600" ${med.is_daily ? 'checked' : ''}>
+                    <span class="text-sm font-medium text-purple-700">Daily</span>
+                  </label>
+                  <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" name="is_alternate_day_${courseId}_${medId}" class="mr-2 w-4 h-4 text-pink-600" ${med.is_alternate_day ? 'checked' : ''}>
+                    <span class="text-sm font-medium text-pink-700">Alternate-day</span>
+                  </label>
                 </div>
               </div>
               
