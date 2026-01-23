@@ -1169,7 +1169,7 @@ function exportPatientsToExcel(format = 'csv') {
     const headers = [
       'Patient ID', 'Name', 'Age', 'Gender', 'Country', 'Phone', 'Country Code',
       'Email', 'Weight', 'Height', 'Assembled Address', 'Complete Address', 'Diseases/Medicines', 'Additional Phones',
-      'Referred By Name', 'Referred By Phone', 'Referred By Address', 'Medical History', 'Created At'
+      'Referred By Name', 'Referred By Relation', 'Referred By Phone', 'Referred By Additional Phones', 'Referred By Address', 'Medical History', 'Problem/Diagnosis', 'Created At'
     ];
     const csvRows = [headers.join(',')];
     
@@ -1202,6 +1202,17 @@ function exportPatientsToExcel(format = 'csv') {
         }
       }
       
+      // Parse referred by additional phones JSON
+      let referredByPhonesText = '';
+      if (p.referred_by_additional_phones) {
+        try {
+          const refPhones = typeof p.referred_by_additional_phones === 'string' ? JSON.parse(p.referred_by_additional_phones) : p.referred_by_additional_phones;
+          referredByPhonesText = refPhones.map((ph) => `${ph.label}: ${ph.number}`).join('; ');
+        } catch (e) {
+          referredByPhonesText = '';
+        }
+      }
+      
       // Assemble address from individual fields
       const assembledAddressParts = [];
       if (p.address_hno) assembledAddressParts.push(p.address_hno);
@@ -1229,9 +1240,12 @@ function exportPatientsToExcel(format = 'csv') {
         `"${diseasesText}"`,
         `"${phonesText}"`,
         `"${p.referred_by_name || ''}"`,
+        `"${p.referred_by_relation || ''}"`,
         `"${p.referred_by_phone || ''}"`,
+        `"${referredByPhonesText}"`,
         `"${p.referred_by_address || ''}"`,
         `"${p.medical_history || ''}"`,
+        `"${p.problem_diagnosis || ''}"`,
         `"${formatDate(p.created_at)}"`
       ];
       csvRows.push(row.join(','));
@@ -1289,6 +1303,17 @@ function exportPatientsToPDF() {
         phonesText = 'N/A';
       }
       
+      // Parse referred by additional phones JSON
+      let referredByPhonesText = '';
+      if (p.referred_by_additional_phones) {
+        try {
+          const refPhones = typeof p.referred_by_additional_phones === 'string' ? JSON.parse(p.referred_by_additional_phones) : p.referred_by_additional_phones;
+          referredByPhonesText = refPhones.map((ph) => `${ph.label}: ${ph.number}`).join(', ');
+        } catch (e) {
+          referredByPhonesText = '';
+        }
+      }
+      
       // Assemble address from individual fields
       const assembledAddress = [
         p.address_hno,
@@ -1331,7 +1356,8 @@ function exportPatientsToPDF() {
             </div>
             ${diseasesText ? `<div class="detail-row"><strong>Diseases/Medicines:</strong> ${diseasesText}</div>` : ''}
             ${p.medical_history ? `<div class="detail-row"><strong>Medical History:</strong> ${p.medical_history}</div>` : ''}
-            ${p.referred_by_name ? `<div class="detail-row"><strong>Referred By:</strong> ${p.referred_by_name} (${p.referred_by_phone || 'N/A'}) - ${p.referred_by_address || ''}</div>` : ''}
+            ${p.problem_diagnosis ? `<div class="detail-row"><strong>Problem/Diagnosis:</strong> ${p.problem_diagnosis}</div>` : ''}
+            ${p.referred_by_name ? `<div class="detail-row"><strong>Referred By:</strong> ${p.referred_by_name}${p.referred_by_relation ? ` (${p.referred_by_relation})` : ''} - ${p.referred_by_phone || 'N/A'}${referredByPhonesText ? ` | ${referredByPhonesText}` : ''} - ${p.referred_by_address || ''}</div>` : ''}
             <div class="detail-row">
               <strong>Added:</strong> ${p.created_at || 'N/A'}
             </div>
