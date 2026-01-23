@@ -650,13 +650,13 @@ app.post('/api/patients', async (c) => {
       INSERT INTO patients (
         patient_id, name, age, gender, phone, email, address, medical_history,
         country, country_code, country_iso3, weight, height,
-        referred_by_name, referred_by_phone, referred_by_address,
+        referred_by_name, referred_by_phone, referred_by_address, referred_by_additional_phones,
         address_hno, address_street, address_apartment, address_area, 
         address_district, address_state, address_pincode,
         address_latitude, address_longitude,
         photo_url, present_health_issue, present_medicine, mg_value,
         additional_phones, diseases
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       patientId,
       body.name || null,
@@ -674,6 +674,7 @@ app.post('/api/patients', async (c) => {
       body.referred_by_name || null,
       body.referred_by_phone || null,
       body.referred_by_address || null,
+      body.referred_by_additional_phones || null,
       body.address_hno || null,
       body.address_street || null,
       body.address_apartment || null,
@@ -707,7 +708,7 @@ app.put('/api/patients/:id', async (c) => {
       UPDATE patients SET 
         name = ?, age = ?, gender = ?, phone = ?, email = ?, address = ?, medical_history = ?,
         country = ?, country_code = ?, country_iso3 = ?, weight = ?, height = ?,
-        referred_by_name = ?, referred_by_phone = ?, referred_by_address = ?,
+        referred_by_name = ?, referred_by_phone = ?, referred_by_address = ?, referred_by_additional_phones = ?,
         address_hno = ?, address_street = ?, address_apartment = ?, address_area = ?,
         address_district = ?, address_state = ?, address_pincode = ?,
         address_latitude = ?, address_longitude = ?,
@@ -731,6 +732,7 @@ app.put('/api/patients/:id', async (c) => {
       body.referred_by_name || null,
       body.referred_by_phone || null,
       body.referred_by_address || null,
+      body.referred_by_additional_phones || null,
       body.address_hno || null,
       body.address_street || null,
       body.address_apartment || null,
@@ -2738,7 +2740,7 @@ app.get('/', (c) => {
                         </div>
                         
                         <h4 class="font-bold text-lg mb-3 text-ayurveda-700">Referred By</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                             <div>
                                 <label class="block text-sm font-medium mb-1">Name</label>
                                 <input type="text" id="patient-referred-by" class="border rounded px-3 py-2 w-full">
@@ -2751,6 +2753,15 @@ app.get('/', (c) => {
                                 <label class="block text-sm font-medium mb-1">Address</label>
                                 <input type="text" id="patient-referred-by-address" class="border rounded px-3 py-2 w-full">
                             </div>
+                        </div>
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium mb-1">Additional Phone Numbers (Referred By)</label>
+                            <div id="referred-by-phones-container" class="space-y-2">
+                                <!-- Dynamic phone fields for referred by added here -->
+                            </div>
+                            <button type="button" onclick="addReferredByPhoneField()" class="mt-2 text-sm text-ayurveda-600 hover:text-ayurveda-700 font-medium">
+                                <i class="fas fa-plus-circle mr-1"></i> Add Phone Number
+                            </button>
                         </div>
                         
                         <h4 class="font-bold text-lg mb-3 text-ayurveda-700">Medical Information</h4>

@@ -701,6 +701,51 @@ function updateAllPhoneCodeDisplays() {
   });
 }
 
+// Referred By Additional Phone Fields Management
+let referredByPhoneCounter = 0;
+
+function addReferredByPhoneField(label = '', number = '') {
+  referredByPhoneCounter++;
+  const html = `
+    <div class="referred-by-phone-field border rounded p-2 bg-gray-50" data-id="${referredByPhoneCounter}">
+      <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+        <div class="sm:col-span-3">
+          <label class="block text-xs mb-1 sm:hidden">Label</label>
+          <input 
+            type="text" 
+            placeholder="Label (e.g., Home, Office)" 
+            value="${label}"
+            class="border rounded px-3 py-2 w-full referred-by-phone-label"
+          >
+        </div>
+        <div class="sm:col-span-7">
+          <label class="block text-xs mb-1 sm:hidden">Phone Number</label>
+          <input 
+            type="text" 
+            placeholder="Phone number" 
+            value="${number}"
+            class="border rounded px-3 py-2 w-full referred-by-phone-number"
+          >
+        </div>
+        <div class="sm:col-span-2">
+          <button 
+            type="button" 
+            onclick="removeReferredByPhoneField(${referredByPhoneCounter})" 
+            class="w-full sm:w-auto text-red-600 hover:text-red-800 px-3 py-2 border border-red-300 rounded hover:bg-red-50"
+          >
+            <i class="fas fa-times mr-1"></i><span>Remove</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('referred-by-phones-container').insertAdjacentHTML('beforeend', html);
+}
+
+function removeReferredByPhoneField(id) {
+  document.querySelector(`.referred-by-phone-field[data-id="${id}"]`)?.remove();
+}
+
 // Helper function to update country code based on country selection
 function updateCountryCode() {
   const countryMap = {
@@ -803,6 +848,10 @@ function showPatientModal(patient = null, viewMode = false) {
   document.getElementById('additional-phones-container').innerHTML = '';
   phoneFieldCounter = 0;
   
+  // Clear referred by additional phones
+  document.getElementById('referred-by-phones-container').innerHTML = '';
+  referredByPhoneCounter = 0;
+  
   // Initialize country dropdown
   initCountryDropdown();
   
@@ -853,6 +902,20 @@ function showPatientModal(patient = null, viewMode = false) {
     document.getElementById('patient-referred-by').value = patient.referred_by_name || '';
     document.getElementById('patient-referred-by-phone').value = patient.referred_by_phone || '';
     document.getElementById('patient-referred-by-address').value = patient.referred_by_address || '';
+    
+    // Load referred by additional phones
+    if (patient.referred_by_additional_phones) {
+      try {
+        const referredPhones = JSON.parse(patient.referred_by_additional_phones);
+        referredPhones.forEach(p => {
+          if (p.label && p.number) {
+            addReferredByPhoneField(p.label, p.number);
+          }
+        });
+      } catch (e) {
+        console.log('No additional referred by phones');
+      }
+    }
     
     // Load diseases from JSON array
     if (patient.diseases) {
@@ -960,6 +1023,12 @@ async function savePatient() {
       number: field.querySelector('.phone-number').value
     })).filter(p => p.label && p.number);
     
+    // Collect referred by additional phones with labels
+    const referredByAdditionalPhones = Array.from(document.querySelectorAll('.referred-by-phone-field')).map(field => ({
+      label: field.querySelector('.referred-by-phone-label').value,
+      number: field.querySelector('.referred-by-phone-number').value
+    })).filter(p => p.label && p.number);
+    
     // Collect diseases with all 4 fields
     const diseases = Array.from(document.querySelectorAll('.disease-row')).map(row => ({
       present_health_issue: row.querySelector('.disease-health-issue').value,
@@ -994,6 +1063,7 @@ async function savePatient() {
       referred_by_name: document.getElementById('patient-referred-by').value || null,
       referred_by_phone: document.getElementById('patient-referred-by-phone').value || null,
       referred_by_address: document.getElementById('patient-referred-by-address').value || null,
+      referred_by_additional_phones: referredByAdditionalPhones.length > 0 ? JSON.stringify(referredByAdditionalPhones) : null,
       
       // Medical history
       medical_history: document.getElementById('patient-medical-history').value || null,
