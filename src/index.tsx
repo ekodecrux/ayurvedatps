@@ -650,13 +650,13 @@ app.post('/api/patients', async (c) => {
       INSERT INTO patients (
         patient_id, name, age, gender, phone, email, address, medical_history,
         country, country_code, country_iso3, weight, height,
-        referred_by_name, referred_by_phone, referred_by_address, referred_by_additional_phones,
+        referred_by_name, referred_by_relation, referred_by_phone, referred_by_address, referred_by_additional_phones,
         address_hno, address_street, address_apartment, address_area, 
         address_district, address_state, address_pincode,
         address_latitude, address_longitude,
         photo_url, present_health_issue, present_medicine, mg_value,
-        additional_phones, diseases
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        additional_phones, diseases, problem_diagnosis
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       patientId,
       body.name || null,
@@ -672,64 +672,7 @@ app.post('/api/patients', async (c) => {
       body.weight !== undefined && body.weight !== '' ? body.weight : null,
       body.height !== undefined && body.height !== '' ? body.height : null,
       body.referred_by_name || null,
-      body.referred_by_phone || null,
-      body.referred_by_address || null,
-      body.referred_by_additional_phones || null,
-      body.address_hno || null,
-      body.address_street || null,
-      body.address_apartment || null,
-      body.address_area || null,
-      body.address_district || null,
-      body.address_state || null,
-      body.address_pincode || null,
-      body.address_latitude || null,
-      body.address_longitude || null,
-      body.photo_url || null,
-      body.present_health_issue || null,
-      body.present_medicine || null,
-      body.mg_value || null,
-      body.additional_phones || null,
-      body.diseases || null
-    ).run()
-    
-    return c.json({ success: true, data: { id: result.meta.last_row_id, patient_id: patientId } }, 201)
-  } catch (error: any) {
-    return c.json({ success: false, error: error.message }, 500)
-  }
-})
-
-// Update patient
-app.put('/api/patients/:id', async (c) => {
-  try {
-    const id = c.req.param('id')
-    const body = await c.req.json()
-    
-    await c.env.DB.prepare(`
-      UPDATE patients SET 
-        name = ?, age = ?, gender = ?, phone = ?, email = ?, address = ?, medical_history = ?,
-        country = ?, country_code = ?, country_iso3 = ?, weight = ?, height = ?,
-        referred_by_name = ?, referred_by_phone = ?, referred_by_address = ?, referred_by_additional_phones = ?,
-        address_hno = ?, address_street = ?, address_apartment = ?, address_area = ?,
-        address_district = ?, address_state = ?, address_pincode = ?,
-        address_latitude = ?, address_longitude = ?,
-        photo_url = ?, present_health_issue = ?, present_medicine = ?, mg_value = ?,
-        additional_phones = ?, diseases = ?,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(
-      body.name || null,
-      body.age !== undefined && body.age !== '' ? body.age : null,
-      body.gender || null,
-      body.phone || null,
-      body.email || null,
-      body.address || null,
-      body.medical_history || null,
-      body.country || null,
-      body.country_code || null,
-      body.country_iso3 || null,
-      body.weight !== undefined && body.weight !== '' ? body.weight : null,
-      body.height !== undefined && body.height !== '' ? body.height : null,
-      body.referred_by_name || null,
+      body.referred_by_relation || null,
       body.referred_by_phone || null,
       body.referred_by_address || null,
       body.referred_by_additional_phones || null,
@@ -748,6 +691,67 @@ app.put('/api/patients/:id', async (c) => {
       body.mg_value || null,
       body.additional_phones || null,
       body.diseases || null,
+      body.problem_diagnosis || null
+    ).run()
+    
+    return c.json({ success: true, data: { id: result.meta.last_row_id, patient_id: patientId } }, 201)
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Update patient
+app.put('/api/patients/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const body = await c.req.json()
+    
+    await c.env.DB.prepare(`
+      UPDATE patients SET 
+        name = ?, age = ?, gender = ?, phone = ?, email = ?, address = ?, medical_history = ?,
+        country = ?, country_code = ?, country_iso3 = ?, weight = ?, height = ?,
+        referred_by_name = ?, referred_by_relation = ?, referred_by_phone = ?, referred_by_address = ?, referred_by_additional_phones = ?,
+        address_hno = ?, address_street = ?, address_apartment = ?, address_area = ?,
+        address_district = ?, address_state = ?, address_pincode = ?,
+        address_latitude = ?, address_longitude = ?,
+        photo_url = ?, present_health_issue = ?, present_medicine = ?, mg_value = ?,
+        additional_phones = ?, diseases = ?, problem_diagnosis = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(
+      body.name || null,
+      body.age !== undefined && body.age !== '' ? body.age : null,
+      body.gender || null,
+      body.phone || null,
+      body.email || null,
+      body.address || null,
+      body.medical_history || null,
+      body.country || null,
+      body.country_code || null,
+      body.country_iso3 || null,
+      body.weight !== undefined && body.weight !== '' ? body.weight : null,
+      body.height !== undefined && body.height !== '' ? body.height : null,
+      body.referred_by_name || null,
+      body.referred_by_relation || null,
+      body.referred_by_phone || null,
+      body.referred_by_address || null,
+      body.referred_by_additional_phones || null,
+      body.address_hno || null,
+      body.address_street || null,
+      body.address_apartment || null,
+      body.address_area || null,
+      body.address_district || null,
+      body.address_state || null,
+      body.address_pincode || null,
+      body.address_latitude || null,
+      body.address_longitude || null,
+      body.photo_url || null,
+      body.present_health_issue || null,
+      body.present_medicine || null,
+      body.mg_value || null,
+      body.additional_phones || null,
+      body.diseases || null,
+      body.problem_diagnosis || null,
       id
     ).run()
     
@@ -2740,10 +2744,14 @@ app.get('/', (c) => {
                         </div>
                         
                         <h4 class="font-bold text-lg mb-3 text-ayurveda-700">Referred By</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                             <div>
                                 <label class="block text-sm font-medium mb-1">Name</label>
                                 <input type="text" id="patient-referred-by" class="border rounded px-3 py-2 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Relation</label>
+                                <input type="text" id="patient-referred-by-relation" class="border rounded px-3 py-2 w-full" placeholder="e.g., Friend, Relative, Doctor">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">Phone</label>
@@ -2780,6 +2788,11 @@ app.get('/', (c) => {
                         <div class="mb-6">
                             <label class="block text-sm font-medium mb-1">Medical History</label>
                             <textarea id="patient-medical-history" class="border rounded px-3 py-2 w-full" rows="3" placeholder="Previous medical conditions, allergies, surgeries, etc."></textarea>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium mb-1">Problem/Diagnosis</label>
+                            <textarea id="patient-problem-diagnosis" class="border rounded px-3 py-2 w-full" rows="3" placeholder="Current health problem or diagnosis"></textarea>
                         </div>
                         
                         <div class="mt-6 flex justify-end space-x-3">
@@ -2907,6 +2920,10 @@ app.get('/', (c) => {
                                     <span class="font-semibold">Medical History:</span>
                                     <span id="display-patient-medical-history" class="ml-2"></span>
                                 </div>
+                                <div class="md:col-span-3">
+                                    <span class="font-semibold">Problem/Diagnosis:</span>
+                                    <span id="display-patient-problem-diagnosis" class="ml-2 text-orange-600"></span>
+                                </div>
                             </div>
                         </div>
                         
@@ -2944,11 +2961,6 @@ app.get('/', (c) => {
                                 <input type="date" id="prescription-followup" class="border rounded px-3 py-2 w-full bg-gray-100" readonly>
                                 <p class="text-xs text-gray-500 mt-1">Auto-calculated from active medicines</p>
                             </div>
-                        </div>
-                        
-                        <div class="mb-6">
-                            <label class="block text-sm font-medium mb-1">Problem/Diagnosis</label>
-                            <textarea id="prescription-problem" class="border rounded px-3 py-2 w-full" rows="2" placeholder="Enter diagnosis or problem details"></textarea>
                         </div>
                         
                         <div class="mb-6">

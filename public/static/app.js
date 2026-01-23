@@ -5,6 +5,7 @@ let currentAppointments = [];
 let currentHerbsRoutes = [];
 let currentReminders = [];
 let currentUser = null;
+let currentSelectedPatient = null; // Store currently selected patient for prescription
 
 // Helper function to format complete address from 8 fields
 function getCompleteAddress(patient) {
@@ -900,6 +901,7 @@ function showPatientModal(patient = null, viewMode = false) {
     document.getElementById('patient-address').value = patient.address || '';
     
     document.getElementById('patient-referred-by').value = patient.referred_by_name || '';
+    document.getElementById('patient-referred-by-relation').value = patient.referred_by_relation || '';
     document.getElementById('patient-referred-by-phone').value = patient.referred_by_phone || '';
     document.getElementById('patient-referred-by-address').value = patient.referred_by_address || '';
     
@@ -952,6 +954,7 @@ function showPatientModal(patient = null, viewMode = false) {
     }
     
     document.getElementById('patient-medical-history').value = patient.medical_history || '';
+    document.getElementById('patient-problem-diagnosis').value = patient.problem_diagnosis || '';
   } else {
     form.reset();
     document.getElementById('patient-id').value = '';
@@ -1061,12 +1064,16 @@ async function savePatient() {
       
       // Referred by
       referred_by_name: document.getElementById('patient-referred-by').value || null,
+      referred_by_relation: document.getElementById('patient-referred-by-relation').value || null,
       referred_by_phone: document.getElementById('patient-referred-by-phone').value || null,
       referred_by_address: document.getElementById('patient-referred-by-address').value || null,
       referred_by_additional_phones: referredByAdditionalPhones.length > 0 ? JSON.stringify(referredByAdditionalPhones) : null,
       
       // Medical history
       medical_history: document.getElementById('patient-medical-history').value || null,
+      
+      // Problem/Diagnosis
+      problem_diagnosis: document.getElementById('patient-problem-diagnosis').value || null,
       
       // Additional phones as JSON
       additional_phones: additionalPhones.length > 0 ? JSON.stringify(additionalPhones) : null,
@@ -1824,6 +1831,9 @@ async function displayPatientInfo() {
     const res = await axios.get(`${API_BASE}/patients/${patientId}`);
     const patient = res.data.data;
     
+    // Store patient for later use (e.g., when saving prescription)
+    currentSelectedPatient = patient;
+    
     // Display patient information
     document.getElementById('display-patient-id').textContent = patient.patient_id || 'N/A';
     document.getElementById('display-patient-age-gender').textContent = `${patient.age || 'N/A'} / ${patient.gender || 'N/A'}`;
@@ -1871,6 +1881,7 @@ async function displayPatientInfo() {
     
     document.getElementById('display-patient-health-issue').textContent = diseasesText;
     document.getElementById('display-patient-medical-history').textContent = patient.medical_history || 'N/A';
+    document.getElementById('display-patient-problem-diagnosis').textContent = patient.problem_diagnosis || 'N/A';
     
     display.classList.remove('hidden');
   } catch (error) {
@@ -2540,7 +2551,7 @@ async function saveHerbsRoutes() {
     const data = {
       patient_id: patientId,
       follow_up_date: followUpDate || null,
-      diagnosis: document.getElementById('prescription-problem').value || 'Not specified',
+      diagnosis: currentSelectedPatient?.problem_diagnosis || 'Not specified',
       notes: '',
       course: parseInt(document.getElementById('prescription-course').value) || null,
       currency: currency,
@@ -2638,7 +2649,6 @@ async function editHerbsRoutes(id) {
     document.getElementById('prescription-currency').value = hr.currency || 'INR';
     document.getElementById('prescription-course').value = hr.course || 1;
     document.getElementById('prescription-followup').value = hr.follow_up_date || '';
-    document.getElementById('prescription-problem').value = hr.diagnosis || '';
     
     // Set patient - hr.patient_db_id is the FK (database ID)
     const patientSelect = document.getElementById('prescription-patient');
