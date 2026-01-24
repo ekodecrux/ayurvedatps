@@ -2684,6 +2684,41 @@ app.get('/', (c) => {
                         </div>
                     </div>
                     
+                    <!-- Backup & Restore Management -->
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold text-blue-700">
+                                <i class="fas fa-database mr-2"></i>Backup & Restore
+                            </h3>
+                            <button 
+                                onclick="createManualBackup()" 
+                                class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold shadow-md transition">
+                                <i class="fas fa-plus mr-2"></i>Create Backup Now
+                            </button>
+                        </div>
+                        
+                        <!-- Info Box -->
+                        <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                            <p class="font-semibold text-blue-800">
+                                <i class="fas fa-info-circle mr-2"></i>Automated Daily Backups
+                            </p>
+                            <p class="text-sm text-blue-700 mt-2">
+                                Backups run automatically every day at 2:00 AM. All backups are kept for 30 days. 
+                                You can restore to any backup point with one click.
+                            </p>
+                        </div>
+                        
+                        <!-- Backup List Container -->
+                        <div id="backup-list-container">
+                            <div class="flex items-center justify-center py-12">
+                                <div class="text-center">
+                                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto mb-4"></div>
+                                    <p class="text-gray-600">Loading backups...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Save Button -->
                     <div class="bg-white rounded-lg shadow-lg p-6">
                         <button onclick="saveSettings()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-8 py-3 rounded-lg text-lg font-semibold">

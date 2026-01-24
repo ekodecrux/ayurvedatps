@@ -3675,6 +3675,9 @@ async function loadSettings() {
     if (smsEnabled) {
       smsEnabled.checked = settingsMap['sms_enabled'] === 'true';
     }
+    
+    // Load backup list
+    loadBackupList();
   } catch (error) {
     console.error('Load settings error:', error);
   } finally {
@@ -3851,6 +3854,285 @@ function removeProfilePicture() {
   // Reset preview to default icon
   const previewDiv = document.getElementById('profile-picture-preview');
   previewDiv.innerHTML = '<i class="fas fa-user text-4xl text-gray-400"></i>';
+}
+
+// ==================== BACKUP & RESTORE FUNCTIONS ====================
+
+// Backup API configuration - UPDATE THIS URL FOR PRODUCTION!
+const BACKUP_API = window.location.hostname === 'localhost' 
+  ? 'http://localhost:5000/api' 
+  : 'https://tpsdhanvantariayurveda.in/backup-api';
+
+// Load backup list automatically
+async function loadBackupList() {
+    try {
+        const container = document.getElementById('backup-list-container');
+        if (!container) return;
+        
+        container.innerHTML = '<div class="flex items-center justify-center py-8"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div></div>';
+        
+        const response = await axios.get(`${BACKUP_API}/backups/list`);
+        const backups = response.data.data || [];
+        
+        let html = `
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Backup Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Patients</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Prescriptions</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Medicines</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Size</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+        `;
+        
+        if (backups.length === 0) {
+            html += '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No backups available yet. First backup will run at 2:00 AM or click "Create Backup Now".</td></tr>';
+        } else {
+            backups.forEach((backup, index) => {
+                const sizeMB = (backup.size / (1024 * 1024)).toFixed(2);
+                const displaySize = backup.size > 1024 * 1024 ? `${sizeMB} MB` : `${(backup.size / 1024).toFixed(2)} KB`;
+                const dateStr = backup.timestamp ? new Date(backup.timestamp).toLocaleString() : backup.date;
+                
+                html += `
+                    <tr class="${index === 0 ? 'bg-green-50' : ''}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${dateStr}</div>
+                            ${index === 0 ? '<span class="text-xs bg-green-500 text-white px-2 py-1 rounded ml-2">Latest</span>' : ''}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900">${backup.patients}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">${backup.prescriptions}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">${backup.medicines}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${displaySize}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="confirmRestoreBackup('${backup.name}')" class="text-blue-600 hover:text-blue-900 mr-3">
+                                <i class="fas fa-undo mr-1"></i>Restore
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Load backups error:', error);
+        const container = document.getElementById('backup-list-container');
+        if (container) {
+            container.innerHTML = `
+                <div class="p-4 bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800">
+                    <p class="font-semibold"><i class="fas fa-exclamation-triangle mr-2"></i>Backup API Not Available</p>
+                    <p class="text-sm mt-1">The backup system needs to be installed on the production server.</p>
+                    <p class="text-sm mt-2"><strong>Installation:</strong> Run <code class="bg-yellow-100 px-2 py-1 rounded">./setup_automated_backup.sh</code> on the server.</p>
+                </div>
+            `;
+        }
+    }
+}
+
+// AUTOMATED backup creation - NO MANUAL STEPS!
+async function createManualBackup() {
+    if (!confirm('Create a manual backup now?\n\nThis will backup all current data including patients, prescriptions, medicines, and payments.\n\nEstimated time: 30-60 seconds.')) {
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        const response = await axios.post(`${BACKUP_API}/backups/create`);
+        
+        if (response.data.success) {
+            alert(`✅ Backup Created Successfully!\n\n` +
+                  `📊 Backed Up:\n` +
+                  `• Patients: ${response.data.patients}\n` +
+                  `• Prescriptions: ${response.data.prescriptions}\n` +
+                  `• Medicines: ${response.data.medicines}\n\n` +
+                  `📁 Backup: ${response.data.backup_name}`);
+            
+            // Reload backup list
+            await loadBackupList();
+        } else {
+            throw new Error(response.data.error || 'Backup creation failed');
+        }
+        
+    } catch (error) {
+        console.error('Create backup error:', error);
+        alert('❌ Error Creating Backup\n\n' + (error.response?.data?.error || error.message));
+    } finally {
+        hideLoading();
+    }
+}
+
+// Show critical warning before restore
+function confirmRestoreBackup(backupName) {
+    const modal = `
+        <div id="restore-warning-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+            <div class="relative p-8 border-4 border-red-500 w-full max-w-3xl shadow-2xl rounded-2xl bg-white">
+                <div class="text-center">
+                    <!-- Warning Icon -->
+                    <div class="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-red-100 mb-6 animate-pulse">
+                        <i class="fas fa-exclamation-triangle text-5xl text-red-600"></i>
+                    </div>
+                    
+                    <!-- Header -->
+                    <h3 class="text-4xl font-bold text-red-600 mb-6">
+                        ⚠️ CRITICAL WARNING ⚠️
+                    </h3>
+                    
+                    <!-- Main Warning Box -->
+                    <div class="text-left bg-red-50 border-4 border-red-400 rounded-xl p-6 mb-6">
+                        <p class="text-2xl font-bold text-red-900 mb-4">
+                            🚨 This action will PERMANENTLY DELETE all current data!
+                        </p>
+                        
+                        <div class="space-y-3 text-lg text-red-800 font-semibold">
+                            <p><i class="fas fa-times-circle text-red-600 mr-3"></i>All current patients will be DELETED</p>
+                            <p><i class="fas fa-times-circle text-red-600 mr-3"></i>All current prescriptions will be DELETED</p>
+                            <p><i class="fas fa-times-circle text-red-600 mr-3"></i>All current medicines will be DELETED</p>
+                            <p><i class="fas fa-times-circle text-red-600 mr-3"></i>All current payments will be DELETED</p>
+                            <p><i class="fas fa-times-circle text-red-600 mr-3"></i>All data entered after backup date will be DELETED</p>
+                        </div>
+                        
+                        <p class="text-2xl font-bold text-red-900 mt-6 text-center">
+                            ❌ THIS CANNOT BE UNDONE! ❌
+                        </p>
+                    </div>
+                    
+                    <!-- Backup Info -->
+                    <div class="bg-blue-50 border-2 border-blue-400 rounded-lg p-5 mb-6">
+                        <p class="font-bold text-blue-900 mb-3 text-lg">
+                            <i class="fas fa-info-circle mr-2"></i>Restore Information:
+                        </p>
+                        <div class="text-base text-blue-800 text-left space-y-2">
+                            <p><strong>Backup:</strong> ${backupName}</p>
+                            <p><strong>Action:</strong> Replace ALL current data with this backup</p>
+                            <p><strong>Downtime:</strong> 30-60 seconds (application will restart automatically)</p>
+                            <p><strong>Process:</strong> Fully automated - you just need to confirm</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Confirmation Checkbox -->
+                    <div class="mb-8 p-6 bg-gray-100 rounded-xl border-2 border-gray-400">
+                        <label class="flex items-start cursor-pointer">
+                            <input type="checkbox" id="restore-confirm-checkbox" class="mt-1 mr-4 w-7 h-7 text-red-600">
+                            <span class="text-lg font-bold text-gray-900 text-left">
+                                I UNDERSTAND this will <span class="text-red-600">DELETE ALL CURRENT DATA</span> and 
+                                <span class="text-red-600">CANNOT BE UNDONE</span>. I want to proceed with the restoration 
+                                and accept all consequences.
+                            </span>
+                        </label>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex justify-center space-x-4">
+                        <button 
+                            onclick="closeRestoreModal()" 
+                            class="px-10 py-4 bg-gray-500 text-white text-xl font-bold rounded-xl hover:bg-gray-600 transition shadow-lg">
+                            <i class="fas fa-times mr-2"></i>Cancel - Keep Current Data
+                        </button>
+                        <button 
+                            onclick="executeRestoreBackup('${backupName}')" 
+                            id="restore-confirm-button"
+                            disabled
+                            class="px-10 py-4 bg-red-600 text-white text-xl font-bold rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>Yes, DELETE and RESTORE
+                        </button>
+                    </div>
+                    
+                    <p class="text-sm text-gray-600 mt-4">
+                        <i class="fas fa-lock mr-1"></i>This action requires explicit confirmation to prevent accidental data loss
+                    </p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modal);
+    
+    // Enable button when checkbox checked
+    document.getElementById('restore-confirm-checkbox').addEventListener('change', function() {
+        document.getElementById('restore-confirm-button').disabled = !this.checked;
+    });
+}
+
+function closeRestoreModal() {
+    const modal = document.getElementById('restore-warning-modal');
+    if (modal) modal.remove();
+}
+
+// FULLY AUTOMATED restore - NO MANUAL STEPS!
+async function executeRestoreBackup(backupName) {
+    const checkbox = document.getElementById('restore-confirm-checkbox');
+    if (!checkbox || !checkbox.checked) {
+        alert('⚠️ Please confirm that you understand the consequences by checking the checkbox.');
+        return;
+    }
+    
+    closeRestoreModal();
+    
+    // Final confirmation
+    if (!confirm(`⚠️ FINAL CONFIRMATION ⚠️\n\nYou are about to DELETE ALL CURRENT DATA and restore from backup.\n\nBackup: ${backupName}\n\nAre you absolutely sure?`)) {
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        // Show progress message
+        const loadingDiv = document.querySelector('.loading-overlay');
+        if (loadingDiv) {
+            loadingDiv.innerHTML = `
+                <div class="text-center">
+                    <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-pink-600 mx-auto mb-4"></div>
+                    <p class="text-xl font-bold text-gray-800">Restoring Backup...</p>
+                    <p class="text-gray-600 mt-2">This will take 30-60 seconds</p>
+                    <p class="text-gray-600">Please wait...</p>
+                </div>
+            `;
+        }
+        
+        const response = await axios.post(`${BACKUP_API}/backups/restore`, {
+            backup_name: backupName,
+            confirmed: true
+        });
+        
+        if (response.data.success) {
+            const restored = response.data.restored;
+            
+            hideLoading();
+            
+            alert(`✅ RESTORE COMPLETED SUCCESSFULLY!\n\n` +
+                  `📊 Restored Data:\n` +
+                  `• Patients: ${restored.patients}\n` +
+                  `• Prescriptions: ${restored.prescriptions}\n` +
+                  `• Medicines: ${restored.medicines}\n` +
+                  `• Payments: ${restored.payments}\n\n` +
+                  `✅ Application has been restarted\n` +
+                  `🔄 Page will reload in 2 seconds to show restored data`);
+            
+            // Reload page to show restored data
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        } else {
+            throw new Error(response.data.error || 'Restore operation failed');
+        }
+        
+    } catch (error) {
+        console.error('Restore error:', error);
+        hideLoading();
+        
+        alert(`❌ RESTORE FAILED!\n\n` +
+              `Error: ${error.response?.data?.error || error.message}\n\n` +
+              `⚠️ The application may need to be restarted.\n` +
+              `Please contact administrator if the system is not responding.`);
+    }
 }
 
 // Initialize on page load
