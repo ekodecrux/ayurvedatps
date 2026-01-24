@@ -3858,10 +3858,10 @@ function removeProfilePicture() {
 
 // ==================== BACKUP & RESTORE FUNCTIONS ====================
 
-// Backup API configuration - UPDATE THIS URL FOR PRODUCTION!
+// Backup API configuration - Uses Hono proxy to localhost:5000
 const BACKUP_API = window.location.hostname === 'localhost' 
-  ? 'http://localhost:5000/api' 
-  : 'https://tpsdhanvantariayurveda.in/backup-api';
+  ? 'http://localhost:3000/api' 
+  : 'https://tpsdhanvantariayurveda.in/api';
 
 // Load backup list automatically
 async function loadBackupList() {
