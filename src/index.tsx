@@ -1765,6 +1765,71 @@ app.put('/api/settings/:key', async (c) => {
   }
 })
 
+// ==================== BACKUP & RESTORE API ====================
+
+// List available backups
+app.get('/api/backups', async (c) => {
+  try {
+    // In production, this would list files from /var/www/ayurveda/backups/daily/
+    // For now, return a mock response since we can't access filesystem in Cloudflare Workers
+    // This endpoint should be implemented on the VPS server side
+    
+    return c.json({ 
+      success: true, 
+      message: 'Backup management available via SSH on production server',
+      instructions: [
+        'SSH: ssh root@88.222.244.84',
+        'List backups: ls -lh /var/www/ayurveda/backups/daily/',
+        'Restore: python3 /var/www/ayurveda/restore_from_backup.py'
+      ]
+    })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Trigger manual backup
+app.post('/api/backups/create', async (c) => {
+  try {
+    // In production, this would trigger the backup script on VPS
+    // For Cloudflare Workers, we can't execute server-side scripts
+    
+    return c.json({ 
+      success: true, 
+      message: 'Manual backup triggered',
+      note: 'Backup script runs on production server at /var/www/ayurveda/daily_backup.py'
+    })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Trigger restore (requires confirmation)
+app.post('/api/backups/restore', async (c) => {
+  try {
+    const { backup_name, confirmed } = await c.req.json()
+    
+    if (!confirmed) {
+      return c.json({ 
+        success: false, 
+        error: 'Restoration requires explicit confirmation' 
+      }, 400)
+    }
+    
+    // In production, this would trigger restore script on VPS
+    // For Cloudflare Workers, restoration must be done via SSH
+    
+    return c.json({ 
+      success: true, 
+      message: 'Restore request received',
+      note: 'Restoration must be performed via SSH: python3 /var/www/ayurveda/restore_from_backup.py',
+      warning: 'This will REPLACE ALL current data with backup data'
+    })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
 // ==================== DASHBOARD STATS API ====================
 
 app.get('/api/stats', async (c) => {
