@@ -3225,7 +3225,7 @@ app.get('/', (c) => {
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/static/app.js?v=2.3.0"></script>
+        <script src="/static/app.js?v=3.1.0"></script>
     </body>
     </html>
   `)
