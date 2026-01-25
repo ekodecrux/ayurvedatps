@@ -1,0 +1,26 @@
+=== COMPREHENSIVE MEDICINE DATA SEARCH ===
+Generated: Sun Jan 25 04:31:44 UTC 2026
+
+1. LOCAL DATABASE - MEDICINES_TRACKING TABLE
+=============================================
+
+Total medicines found: 0
+
+2. CHECKING OLD MEDICINE TABLES
+================================
+Checking 'medicines' table...
+  Count: 0
+
+Checking 'prescription_medicines' table...
+  Count: 0
+
+3. CHECKING ALL PRESCRIPTIONS FOR MEDICINE FIELDS
+==================================================
+prescription_id  patient_name   identifier  diagnosis      notes  created_at           updated_at           medicine_count
+---------------  -------------  ----------  -------------  -----  -------------------  -------------------  --------------
+5                Karnaka Reddy  IND00003    Not specified         2026-01-20 07:14:24  2026-01-24 12:36:20  0             
+4                Jeevika reddy  IND00002    Not specified         2026-01-20 06:54:08  2026-01-24 12:38:36  0             
+2                Prasad Bojja   IND00001    Not specified         2026-01-07 12:09:39  2026-01-24 14:22:02  0             
+
+4. SEARCHING PRODUCTION API FOR MEDICINE DATA
+==============================================
