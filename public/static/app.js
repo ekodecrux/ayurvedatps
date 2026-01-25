@@ -3863,18 +3863,53 @@ const BACKUP_API = window.location.hostname === 'localhost'
   ? 'http://localhost:3000/api' 
   : 'https://tpsdhanvantariayurveda.in/api';
 
-// Load backup list automatically
-async function loadBackupList() {
+// Global backup data
+let allBackupsData = [];
+
+// Load backup list - show only 2 most recent by default
+async function loadBackupList(dateFilter = 'recent') {
     try {
         const container = document.getElementById('backup-list-container');
         if (!container) return;
         
         container.innerHTML = '<div class="flex items-center justify-center py-8"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div></div>';
         
-        const response = await axios.get(`${BACKUP_API}/backups/list`);
-        const backups = response.data.data || [];
+        // Fetch all backups only once
+        if (allBackupsData.length === 0) {
+            const response = await axios.get(`${BACKUP_API}/backups/list`);
+            allBackupsData = response.data.data || [];
+        }
+        
+        // Filter backups based on selection
+        let displayBackups = [];
+        if (dateFilter === 'recent') {
+            // Show only 2 most recent
+            displayBackups = allBackupsData.slice(0, 2);
+        } else {
+            // Apply date filter
+            displayBackups = filterBackupsByDate(allBackupsData, dateFilter);
+        }
+        
+        // Generate date filter options
+        const filterOptions = generateDateFilterOptions(allBackupsData);
         
         let html = `
+            <!-- Date Filter -->
+            <div class="mb-4">
+                <label class="text-sm font-medium text-gray-700 mr-2">
+                    <i class="fas fa-filter mr-1"></i>Show:
+                </label>
+                <select onchange="loadBackupList(this.value)" 
+                        class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500">
+                    <option value="recent" ${dateFilter === 'recent' ? 'selected' : ''}>Recent 2 Backups</option>
+                    ${filterOptions}
+                </select>
+                <span class="ml-3 text-sm text-gray-500">
+                    (${displayBackups.length} of ${allBackupsData.length} backups)
+                </span>
+            </div>
+            
+            <!-- Backup Table -->
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
@@ -3890,26 +3925,35 @@ async function loadBackupList() {
                     <tbody class="bg-white divide-y divide-gray-200">
         `;
         
-        if (backups.length === 0) {
-            html += '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No backups available yet. First backup will run at 2:00 AM or click "Create Backup Now".</td></tr>';
+        if (displayBackups.length === 0) {
+            html += `
+                <tr>
+                    <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                        ${allBackupsData.length === 0 
+                            ? 'No backups available yet. First backup will run at 2:00 AM or click "Create Backup Now".' 
+                            : 'No backups found for the selected date range.'}
+                    </td>
+                </tr>
+            `;
         } else {
-            backups.forEach((backup, index) => {
+            displayBackups.forEach((backup, index) => {
                 const sizeMB = (backup.size / (1024 * 1024)).toFixed(2);
                 const displaySize = backup.size > 1024 * 1024 ? `${sizeMB} MB` : `${(backup.size / 1024).toFixed(2)} KB`;
                 const dateStr = backup.timestamp ? new Date(backup.timestamp).toLocaleString() : backup.date;
+                const isLatest = allBackupsData[0] === backup;
                 
                 html += `
-                    <tr class="${index === 0 ? 'bg-green-50' : ''}">
+                    <tr class="${isLatest ? 'bg-green-50' : ''}">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm font-medium text-gray-900">${dateStr}</div>
-                            ${index === 0 ? '<span class="text-xs bg-green-500 text-white px-2 py-1 rounded ml-2">Latest</span>' : ''}
+                            ${isLatest ? '<span class="text-xs bg-green-500 text-white px-2 py-1 rounded ml-2">Latest</span>' : ''}
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-900">${backup.patients}</td>
                         <td class="px-6 py-4 text-sm text-gray-900">${backup.prescriptions}</td>
                         <td class="px-6 py-4 text-sm text-gray-900">${backup.medicines}</td>
                         <td class="px-6 py-4 text-sm text-gray-500">${displaySize}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button onclick="confirmRestoreBackup('${backup.name}')" class="text-blue-600 hover:text-blue-900 mr-3">
+                            <button onclick="confirmRestoreBackup('${backup.name}')" class="text-blue-600 hover:text-blue-900">
                                 <i class="fas fa-undo mr-1"></i>Restore
                             </button>
                         </td>
@@ -3927,13 +3971,60 @@ async function loadBackupList() {
         if (container) {
             container.innerHTML = `
                 <div class="p-4 bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800">
-                    <p class="font-semibold"><i class="fas fa-exclamation-triangle mr-2"></i>Backup API Not Available</p>
-                    <p class="text-sm mt-1">The backup system needs to be installed on the production server.</p>
-                    <p class="text-sm mt-2"><strong>Installation:</strong> Run <code class="bg-yellow-100 px-2 py-1 rounded">./setup_automated_backup.sh</code> on the server.</p>
+                    <p class="font-semibold"><i class="fas fa-exclamation-triangle mr-2"></i>Unable to load backups</p>
+                    <p class="text-sm mt-1">Please refresh the page or contact support if the issue persists.</p>
                 </div>
             `;
         }
     }
+}
+
+// Filter backups by date range
+function filterBackupsByDate(backups, filter) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    return backups.filter(backup => {
+        const backupDate = backup.timestamp ? new Date(backup.timestamp) : new Date(backup.date);
+        const backupDay = new Date(backupDate.getFullYear(), backupDate.getMonth(), backupDate.getDate());
+        const diffDays = Math.floor((today - backupDay) / (1000 * 60 * 60 * 24));
+        
+        switch(filter) {
+            case 'today': return diffDays === 0;
+            case 'yesterday': return diffDays === 1;
+            case 'last7days': return diffDays <= 7;
+            case 'last30days': return diffDays <= 30;
+            case 'all': return true;
+            default: return false;
+        }
+    });
+}
+
+// Generate date filter options with counts
+function generateDateFilterOptions(backups) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    const counts = { today: 0, yesterday: 0, last7days: 0, last30days: 0, all: backups.length };
+    
+    backups.forEach(backup => {
+        const backupDate = backup.timestamp ? new Date(backup.timestamp) : new Date(backup.date);
+        const backupDay = new Date(backupDate.getFullYear(), backupDate.getMonth(), backupDate.getDate());
+        const diffDays = Math.floor((today - backupDay) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 0) counts.today++;
+        if (diffDays === 1) counts.yesterday++;
+        if (diffDays <= 7) counts.last7days++;
+        if (diffDays <= 30) counts.last30days++;
+    });
+    
+    return `
+        <option value="today">Today (${counts.today})</option>
+        <option value="yesterday">Yesterday (${counts.yesterday})</option>
+        <option value="last7days">Last 7 Days (${counts.last7days})</option>
+        <option value="last30days">Last 30 Days (${counts.last30days})</option>
+        <option value="all">All Backups (${counts.all})</option>
+    `;
 }
 
 // AUTOMATED backup creation - NO MANUAL STEPS!
@@ -3955,8 +4046,9 @@ async function createManualBackup() {
                   `• Medicines: ${response.data.medicines}\n\n` +
                   `📁 Backup: ${response.data.backup_name}`);
             
-            // Reload backup list
-            await loadBackupList();
+            // Reset cache and reload backup list
+            allBackupsData = [];
+            await loadBackupList('recent');
         } else {
             throw new Error(response.data.error || 'Backup creation failed');
         }
