@@ -27,4 +27,4 @@ CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
 
 -- Insert default admin user (you can change this email)
 INSERT OR IGNORE INTO users (email, name, role) 
-VALUES ('admin@tpsdhanvantri.com', 'Admin User', 'admin');
+VALUES ('Shankaranherbaltreatment@gmail.com', 'Admin User', 'admin');
