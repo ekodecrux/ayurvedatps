@@ -802,7 +802,16 @@ function addDiseaseRow(healthIssue = '', medicine = '', mgValue = '', attackedBy
   ).join('');
   
   const html = `
-    <div class="border rounded-lg p-4 disease-row" data-id="${diseaseCounter}">
+    <div class="border rounded-lg p-4 disease-row bg-gradient-to-r from-blue-50 to-purple-50" data-id="${diseaseCounter}">
+      <div class="flex justify-between items-center mb-3">
+        <h5 class="font-semibold text-sm text-purple-700">
+          <i class="fas fa-disease mr-2"></i>Disease ${diseaseCounter}
+        </h5>
+        <button type="button" onclick="removeDiseaseRow(${diseaseCounter})" 
+                class="text-red-600 hover:text-red-800 text-sm">
+          <i class="fas fa-trash mr-1"></i>Remove Disease
+        </button>
+      </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
         <div>
           <label class="block text-xs font-medium mb-1 text-gray-600">Present Health Issue *</label>
@@ -827,10 +836,6 @@ function addDiseaseRow(healthIssue = '', medicine = '', mgValue = '', attackedBy
                  class="disease-attacked-by border rounded px-3 py-2 w-full" />
         </div>
       </div>
-      <button type="button" onclick="removeDiseaseRow(${diseaseCounter})" 
-              class="text-red-600 hover:text-red-800 text-sm">
-        <i class="fas fa-trash mr-1"></i>Remove Disease
-      </button>
     </div>
   `;
   document.getElementById('diseases-container').insertAdjacentHTML('beforeend', html);
