@@ -3993,12 +3993,44 @@ async function loadBackupList(dateFilter = 'recent') {
         console.error('Load backups error:', error);
         const container = document.getElementById('backup-list-container');
         if (container) {
-            container.innerHTML = `
-                <div class="p-4 bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800">
-                    <p class="font-semibold"><i class="fas fa-exclamation-triangle mr-2"></i>Unable to load backups</p>
-                    <p class="text-sm mt-1">Please refresh the page or contact support if the issue persists.</p>
-                </div>
-            `;
+            // Check if it's a network error (backup API not running)
+            const isNetworkError = error.message?.includes('Network') || 
+                                   error.response?.data?.error?.includes('unavailable') ||
+                                   !error.response;
+            
+            if (isNetworkError) {
+                container.innerHTML = `
+                    <div class="p-6 bg-blue-50 border-l-4 border-blue-500 text-blue-800">
+                        <p class="font-semibold text-lg mb-2">
+                            <i class="fas fa-info-circle mr-2"></i>Backup Service Information
+                        </p>
+                        <p class="text-sm mb-3">
+                            The backup service is currently not running in the sandbox environment.
+                        </p>
+                        <div class="bg-white p-4 rounded-lg border border-blue-200 text-sm">
+                            <p class="font-semibold mb-2">For Production Environment:</p>
+                            <ul class="list-disc list-inside space-y-1 text-gray-700">
+                                <li>Backups run automatically daily at 2:00 AM</li>
+                                <li>All backups are kept for 30 days</li>
+                                <li>You can restore any backup with one click</li>
+                                <li>Backup API runs on port 5000</li>
+                            </ul>
+                            <p class="mt-3 text-gray-600">
+                                <strong>To enable in production:</strong><br>
+                                Run: <code class="bg-gray-100 px-2 py-1 rounded">pm2 start backup_api_server.py --name backup-api</code>
+                            </p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="p-4 bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800">
+                        <p class="font-semibold"><i class="fas fa-exclamation-triangle mr-2"></i>Unable to load backups</p>
+                        <p class="text-sm mt-1">Error: ${error.message || 'Unknown error'}</p>
+                        <p class="text-sm mt-1">Please refresh the page or contact support if the issue persists.</p>
+                    </div>
+                `;
+            }
         }
     }
 }
@@ -4079,7 +4111,23 @@ async function createManualBackup() {
         
     } catch (error) {
         console.error('Create backup error:', error);
-        alert('❌ Error Creating Backup\n\n' + (error.response?.data?.error || error.message));
+        
+        // Check if it's a network error (backup API not running)
+        const isNetworkError = error.message?.includes('Network') || 
+                               error.response?.data?.error?.includes('unavailable') ||
+                               !error.response;
+        
+        if (isNetworkError) {
+            alert('ℹ️ Backup Service Not Available\n\n' +
+                  'The backup service is not running in this environment.\n\n' +
+                  '📝 For Production:\n' +
+                  '• Backups run automatically daily at 2:00 AM\n' +
+                  '• Start backup service: pm2 start backup_api_server.py --name backup-api\n' +
+                  '• Backups are stored for 30 days\n\n' +
+                  '💡 This feature works fully in production environment.');
+        } else {
+            alert('❌ Error Creating Backup\n\n' + (error.response?.data?.error || error.message));
+        }
     } finally {
         hideLoading();
     }
