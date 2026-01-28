@@ -3915,7 +3915,7 @@ async function loadBackupList(dateFilter = 'recent') {
         }
         
         // Generate date filter options
-        const filterOptions = generateDateFilterOptions(allBackupsData);
+        const filterOptions = generateDateFilterOptions(allBackupsData, dateFilter);
         
         let html = `
             <!-- Date Filter -->
@@ -4057,7 +4057,7 @@ function filterBackupsByDate(backups, filter) {
 }
 
 // Generate date filter options with counts
-function generateDateFilterOptions(backups) {
+function generateDateFilterOptions(backups, currentFilter = '') {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
@@ -4075,11 +4075,11 @@ function generateDateFilterOptions(backups) {
     });
     
     return `
-        <option value="today">Today (${counts.today})</option>
-        <option value="yesterday">Yesterday (${counts.yesterday})</option>
-        <option value="last7days">Last 7 Days (${counts.last7days})</option>
-        <option value="last30days">Last 30 Days (${counts.last30days})</option>
-        <option value="all">All Backups (${counts.all})</option>
+        <option value="today" ${currentFilter === 'today' ? 'selected' : ''}>Today (${counts.today})</option>
+        <option value="yesterday" ${currentFilter === 'yesterday' ? 'selected' : ''}>Yesterday (${counts.yesterday})</option>
+        <option value="last7days" ${currentFilter === 'last7days' ? 'selected' : ''}>Last 7 Days (${counts.last7days})</option>
+        <option value="last30days" ${currentFilter === 'last30days' ? 'selected' : ''}>Last 30 Days (${counts.last30days})</option>
+        <option value="all" ${currentFilter === 'all' ? 'selected' : ''}>All Backups (${counts.all})</option>
     `;
 }
 
