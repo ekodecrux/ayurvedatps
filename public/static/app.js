@@ -3701,7 +3701,7 @@ async function loadSettings() {
     }
     
     // Load backup list
-    loadBackupList();
+    await loadBackupList();
   } catch (error) {
     console.error('Load settings error:', error);
   } finally {
@@ -3892,10 +3892,13 @@ let allBackupsData = [];
 
 // Load backup list - show only 2 most recent by default
 async function loadBackupList(dateFilter = 'recent') {
+    const container = document.getElementById('backup-list-container');
+    if (!container) {
+        console.error('Backup container not found');
+        return;
+    }
+    
     try {
-        const container = document.getElementById('backup-list-container');
-        if (!container) return;
-        
         container.innerHTML = '<div class="flex items-center justify-center py-8"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div></div>';
         
         // Fetch all backups only once
