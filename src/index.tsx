@@ -3023,27 +3023,17 @@ app.get('/', (c) => {
                         <h4 class="font-bold text-lg mb-3 text-ayurveda-700">Medical Information</h4>
                         <div class="mb-4">
                             <label class="block text-sm font-medium mb-2">
-                                Present Health Issue <span class="text-xs text-gray-500">(Select from diseases list)</span>
-                            </label>
-                            <select id="patient-present-health-issue" class="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-ayurveda-500">
-                                <option value="">Select Disease</option>
-                                <!-- Options loaded dynamically from /api/diseases -->
-                            </select>
-                            <p class="text-xs text-gray-500 mt-1">
-                                <i class="fas fa-info-circle"></i> Can't find the disease? Click "Diseases" button to add new ones.
-                            </p>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium mb-2">
-                                Diseases <span class="text-xs text-gray-500">(Click "Add Disease" to add multiple diseases)</span>
+                                Diseases <span class="text-xs text-gray-500">(Click "Add Disease" to select from dropdown)</span>
                             </label>
                             <div id="diseases-container" class="space-y-3 mb-3">
-                                <!-- Disease rows will be added here dynamically -->
+                                <!-- Disease rows with dropdowns will be added here -->
                             </div>
                             <button type="button" onclick="addDiseaseRow()" class="text-ayurveda-600 hover:text-ayurveda-700 text-sm font-medium">
                                 <i class="fas fa-plus mr-1"></i>Add Disease
                             </button>
+                            <p class="text-xs text-gray-500 mt-2">
+                                <i class="fas fa-info-circle"></i> Can't find a disease? Click "Diseases" button (top right) to add new ones.
+                            </p>
                         </div>
                         
                         <div class="mb-6">

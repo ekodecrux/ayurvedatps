@@ -795,13 +795,21 @@ function toggleDosageQuantity(checkbox, quantitySelectId) {
 let diseaseCounter = 0;
 function addDiseaseRow(healthIssue = '', medicine = '', mgValue = '', attackedBy = '') {
   diseaseCounter++;
+  
+  // Generate disease dropdown options
+  const diseaseOptions = allDiseases.map(d => 
+    `<option value="${d.name}" ${d.name === healthIssue ? 'selected' : ''}>${d.name}</option>`
+  ).join('');
+  
   const html = `
     <div class="border rounded-lg p-4 disease-row" data-id="${diseaseCounter}">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
         <div>
-          <label class="block text-xs font-medium mb-1 text-gray-600">Present Health Issue</label>
-          <input type="text" placeholder="Enter health issue" value="${healthIssue}" 
-                 class="disease-health-issue border rounded px-3 py-2 w-full" />
+          <label class="block text-xs font-medium mb-1 text-gray-600">Present Health Issue *</label>
+          <select class="disease-health-issue border rounded px-3 py-2 w-full focus:ring-2 focus:ring-ayurveda-500">
+            <option value="">Select Disease</option>
+            ${diseaseOptions}
+          </select>
         </div>
         <div>
           <label class="block text-xs font-medium mb-1 text-gray-600">Present Medication</label>
@@ -4254,7 +4262,6 @@ async function loadDiseases() {
         const res = await axios.get(`${API_BASE}/diseases`);
         allDiseases = res.data.data || [];
         renderDiseaseList(allDiseases);
-        updatePatientDiseaseDropdown();
     } catch (error) {
         console.error('Load diseases error:', error);
         document.getElementById('disease-list').innerHTML = 
@@ -4388,17 +4395,6 @@ function resetDiseaseForm() {
     document.getElementById('disease-form').reset();
     document.getElementById('disease-id').value = '';
     document.getElementById('disease-btn-text').textContent = 'Add Disease';
-}
-
-// Update patient form disease dropdown
-function updatePatientDiseaseDropdown() {
-    const dropdown = document.getElementById('patient-present-health-issue');
-    if (!dropdown) return;
-    
-    const options = '<option value="">Select Disease</option>' +
-        allDiseases.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
-    
-    dropdown.innerHTML = options;
 }
 
 // Initialize on page load
