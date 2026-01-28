@@ -857,6 +857,9 @@ function showPatientModal(patient = null, viewMode = false) {
     saveBtn.style.display = viewMode ? 'none' : '';
   }
   
+  // Load diseases for dropdown
+  loadDiseases().catch(err => console.error('Error loading diseases:', err));
+  
   // Clear diseases container
   document.getElementById('diseases-container').innerHTML = '';
   diseaseCounter = 0;
@@ -4225,6 +4228,177 @@ async function executeRestoreBackup(backupName) {
               `⚠️ The application may need to be restarted.\n` +
               `Please contact administrator if the system is not responding.`);
     }
+}
+
+// ==================== DISEASE MANAGEMENT ====================
+
+let allDiseases = [];
+let currentDiseaseId = null;
+
+// Show disease management modal
+async function showDiseaseModal() {
+    document.getElementById('disease-modal').classList.remove('hidden');
+    resetDiseaseForm();
+    await loadDiseases();
+}
+
+// Close disease management modal
+function closeDiseaseModal() {
+    document.getElementById('disease-modal').classList.add('hidden');
+    resetDiseaseForm();
+}
+
+// Load all diseases
+async function loadDiseases() {
+    try {
+        const res = await axios.get(`${API_BASE}/diseases`);
+        allDiseases = res.data.data || [];
+        renderDiseaseList(allDiseases);
+        updatePatientDiseaseDropdown();
+    } catch (error) {
+        console.error('Load diseases error:', error);
+        document.getElementById('disease-list').innerHTML = 
+            '<p class="text-center text-red-500 py-4">Error loading diseases</p>';
+    }
+}
+
+// Render disease list in modal
+function renderDiseaseList(diseases) {
+    const container = document.getElementById('disease-list');
+    
+    if (diseases.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-500 py-4">No diseases found. Add your first disease!</p>';
+        return;
+    }
+    
+    const html = diseases.map(disease => `
+        <div class="border rounded-lg p-3 hover:bg-gray-50 flex justify-between items-start disease-item" data-disease-name="${disease.name.toLowerCase()}">
+            <div class="flex-1">
+                <h5 class="font-semibold text-gray-800">${disease.name}</h5>
+                ${disease.description ? `<p class="text-sm text-gray-600 mt-1">${disease.description}</p>` : ''}
+            </div>
+            <div class="flex gap-2 ml-3">
+                <button onclick="editDisease(${disease.id})" class="text-blue-600 hover:text-blue-800 p-2" title="Edit">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteDisease(${disease.id}, '${disease.name.replace(/'/g, "\\'")}')" class="text-red-600 hover:text-red-800 p-2" title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = html;
+}
+
+// Filter disease list
+function filterDiseaseList() {
+    const search = document.getElementById('disease-search').value.toLowerCase();
+    const items = document.querySelectorAll('.disease-item');
+    
+    items.forEach(item => {
+        const diseaseName = item.dataset.diseaseName;
+        if (diseaseName.includes(search)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Save disease (create or update)
+async function saveDisease(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('disease-id').value;
+    const name = document.getElementById('disease-name').value.trim();
+    const description = document.getElementById('disease-description').value.trim();
+    
+    if (!name) {
+        alert('Disease name is required');
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        if (id) {
+            // Update existing
+            await axios.put(`${API_BASE}/diseases/${id}`, { name, description });
+            alert('✅ Disease updated successfully!');
+        } else {
+            // Create new
+            await axios.post(`${API_BASE}/diseases`, { name, description });
+            alert('✅ Disease added successfully!');
+        }
+        
+        resetDiseaseForm();
+        await loadDiseases();
+    } catch (error) {
+        console.error('Save disease error:', error);
+        alert(`❌ Error: ${error.response?.data?.error || error.message}`);
+    } finally {
+        hideLoading();
+    }
+}
+
+// Edit disease
+async function editDisease(id) {
+    try {
+        showLoading();
+        const res = await axios.get(`${API_BASE}/diseases/${id}`);
+        const disease = res.data.data;
+        
+        document.getElementById('disease-id').value = disease.id;
+        document.getElementById('disease-name').value = disease.name;
+        document.getElementById('disease-description').value = disease.description || '';
+        document.getElementById('disease-btn-text').textContent = 'Update Disease';
+        
+        // Scroll to form
+        document.querySelector('#disease-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (error) {
+        console.error('Load disease error:', error);
+        alert('Error loading disease details');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Delete disease
+async function deleteDisease(id, name) {
+    if (!confirm(`Are you sure you want to delete "${name}"?\n\nThis action cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        showLoading();
+        await axios.delete(`${API_BASE}/diseases/${id}`);
+        alert('✅ Disease deleted successfully!');
+        await loadDiseases();
+    } catch (error) {
+        console.error('Delete disease error:', error);
+        alert(`❌ Error: ${error.response?.data?.error || error.message}`);
+    } finally {
+        hideLoading();
+    }
+}
+
+// Reset disease form
+function resetDiseaseForm() {
+    document.getElementById('disease-form').reset();
+    document.getElementById('disease-id').value = '';
+    document.getElementById('disease-btn-text').textContent = 'Add Disease';
+}
+
+// Update patient form disease dropdown
+function updatePatientDiseaseDropdown() {
+    const dropdown = document.getElementById('patient-present-health-issue');
+    if (!dropdown) return;
+    
+    const options = '<option value="">Select Disease</option>' +
+        allDiseases.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+    
+    dropdown.innerHTML = options;
 }
 
 // Initialize on page load

@@ -1765,6 +1765,141 @@ app.put('/api/settings/:key', async (c) => {
   }
 })
 
+// ==================== DISEASES MANAGEMENT API ====================
+
+// Get all diseases
+app.get('/api/diseases', async (c) => {
+  try {
+    const diseases = await c.env.DB.prepare(
+      'SELECT * FROM diseases ORDER BY name ASC'
+    ).all()
+    
+    return c.json({ 
+      success: true, 
+      data: diseases.results || [] 
+    })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Get single disease
+app.get('/api/diseases/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const disease = await c.env.DB.prepare(
+      'SELECT * FROM diseases WHERE id = ?'
+    ).bind(id).first()
+    
+    if (!disease) {
+      return c.json({ success: false, error: 'Disease not found' }, 404)
+    }
+    
+    return c.json({ success: true, data: disease })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Create disease
+app.post('/api/diseases', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { name, description } = body
+    
+    if (!name || name.trim() === '') {
+      return c.json({ success: false, error: 'Disease name is required' }, 400)
+    }
+    
+    // Check if disease already exists
+    const existing = await c.env.DB.prepare(
+      'SELECT id FROM diseases WHERE LOWER(name) = LOWER(?)'
+    ).bind(name.trim()).first()
+    
+    if (existing) {
+      return c.json({ success: false, error: 'Disease already exists' }, 400)
+    }
+    
+    const result = await c.env.DB.prepare(
+      'INSERT INTO diseases (name, description) VALUES (?, ?)'
+    ).bind(name.trim(), description || null).run()
+    
+    return c.json({ 
+      success: true, 
+      data: { 
+        id: result.meta.last_row_id,
+        name: name.trim(),
+        description: description || null
+      }
+    })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Update disease
+app.put('/api/diseases/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const body = await c.req.json()
+    const { name, description } = body
+    
+    if (!name || name.trim() === '') {
+      return c.json({ success: false, error: 'Disease name is required' }, 400)
+    }
+    
+    // Check if disease exists
+    const disease = await c.env.DB.prepare(
+      'SELECT id FROM diseases WHERE id = ?'
+    ).bind(id).first()
+    
+    if (!disease) {
+      return c.json({ success: false, error: 'Disease not found' }, 404)
+    }
+    
+    // Check if new name conflicts with another disease
+    const existing = await c.env.DB.prepare(
+      'SELECT id FROM diseases WHERE LOWER(name) = LOWER(?) AND id != ?'
+    ).bind(name.trim(), id).first()
+    
+    if (existing) {
+      return c.json({ success: false, error: 'Disease name already exists' }, 400)
+    }
+    
+    await c.env.DB.prepare(
+      'UPDATE diseases SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(name.trim(), description || null, id).run()
+    
+    return c.json({ success: true })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Delete disease
+app.delete('/api/diseases/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    
+    // Check if disease exists
+    const disease = await c.env.DB.prepare(
+      'SELECT id FROM diseases WHERE id = ?'
+    ).bind(id).first()
+    
+    if (!disease) {
+      return c.json({ success: false, error: 'Disease not found' }, 404)
+    }
+    
+    await c.env.DB.prepare(
+      'DELETE FROM diseases WHERE id = ?'
+    ).bind(id).run()
+    
+    return c.json({ success: true })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
 // ==================== BACKUP & RESTORE API (PROXY TO LOCALHOST:5000) ====================
 
 // List available backups
@@ -2347,9 +2482,14 @@ app.get('/', (c) => {
                         <i class="fas fa-users text-ayurveda-600 mr-3"></i>
                         Patients Management
                     </h2>
-                    <button onclick="showPatientModal()" class="btn-primary flex items-center whitespace-nowrap">
-                        <i class="fas fa-plus mr-2"></i>Add Patient
-                    </button>
+                    <div class="flex gap-3">
+                        <button onclick="showDiseaseModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center whitespace-nowrap">
+                            <i class="fas fa-disease mr-2"></i>Diseases
+                        </button>
+                        <button onclick="showPatientModal()" class="btn-primary flex items-center whitespace-nowrap">
+                            <i class="fas fa-plus mr-2"></i>Add Patient
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-6">
@@ -2883,6 +3023,19 @@ app.get('/', (c) => {
                         <h4 class="font-bold text-lg mb-3 text-ayurveda-700">Medical Information</h4>
                         <div class="mb-4">
                             <label class="block text-sm font-medium mb-2">
+                                Present Health Issue <span class="text-xs text-gray-500">(Select from diseases list)</span>
+                            </label>
+                            <select id="patient-present-health-issue" class="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-ayurveda-500">
+                                <option value="">Select Disease</option>
+                                <!-- Options loaded dynamically from /api/diseases -->
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">
+                                <i class="fas fa-info-circle"></i> Can't find the disease? Click "Diseases" button to add new ones.
+                            </p>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-2">
                                 Diseases <span class="text-xs text-gray-500">(Click "Add Disease" to add multiple diseases)</span>
                             </label>
                             <div id="diseases-container" class="space-y-3 mb-3">
@@ -2957,6 +3110,74 @@ app.get('/', (c) => {
                             <button type="submit" class="px-6 py-2 bg-ayurveda-600 hover:bg-ayurveda-700 text-white rounded-lg">Save</button>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- DISEASE MANAGEMENT MODAL -->
+            <div id="disease-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg p-6 max-w-6xl w-full max-h-[90vh] overflow-y-auto mx-4">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold"><i class="fas fa-disease mr-2 text-purple-600"></i>Disease Management</h3>
+                        <button onclick="closeDiseaseModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Left Side: Add Disease Form -->
+                        <div class="border rounded-lg p-4 bg-gray-50">
+                            <h4 class="text-lg font-semibold mb-4 text-gray-700">
+                                <i class="fas fa-plus-circle mr-2 text-purple-600"></i>Add New Disease
+                            </h4>
+                            
+                            <form id="disease-form" onsubmit="saveDisease(event)">
+                                <input type="hidden" id="disease-id" value="">
+                                
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-medium mb-2">Disease Name *</label>
+                                    <input type="text" id="disease-name" required 
+                                           class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-purple-500" 
+                                           placeholder="Enter disease name">
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-medium mb-2">Description (Optional)</label>
+                                    <textarea id="disease-description" rows="3" 
+                                              class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-purple-500" 
+                                              placeholder="Enter description"></textarea>
+                                </div>
+                                
+                                <div class="flex gap-2">
+                                    <button type="submit" id="disease-submit-btn" 
+                                            class="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
+                                        <i class="fas fa-save mr-2"></i><span id="disease-btn-text">Add Disease</span>
+                                    </button>
+                                    <button type="button" onclick="resetDiseaseForm()" 
+                                            class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100">
+                                        <i class="fas fa-undo"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Right Side: Disease List -->
+                        <div class="border rounded-lg p-4 bg-white">
+                            <h4 class="text-lg font-semibold mb-4 text-gray-700">
+                                <i class="fas fa-list mr-2 text-purple-600"></i>Existing Diseases
+                            </h4>
+                            
+                            <div class="mb-3">
+                                <input type="text" id="disease-search" 
+                                       placeholder="Search diseases..." 
+                                       onkeyup="filterDiseaseList()"
+                                       class="w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            
+                            <div id="disease-list" class="space-y-2 max-h-96 overflow-y-auto">
+                                <p class="text-center text-gray-500 py-4">Loading diseases...</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
