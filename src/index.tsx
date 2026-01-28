@@ -1900,6 +1900,142 @@ app.delete('/api/diseases/:id', async (c) => {
   }
 })
 
+// ==================== MEDICINES MASTER API ====================
+
+// Get all medicines
+app.get('/api/medicines', async (c) => {
+  try {
+    const medicines = await c.env.DB.prepare(
+      'SELECT * FROM medicines_master ORDER BY name ASC'
+    ).all()
+    
+    return c.json({ 
+      success: true, 
+      data: medicines.results || [] 
+    })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Get single medicine
+app.get('/api/medicines/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const medicine = await c.env.DB.prepare(
+      'SELECT * FROM medicines_master WHERE id = ?'
+    ).bind(id).first()
+    
+    if (!medicine) {
+      return c.json({ success: false, error: 'Medicine not found' }, 404)
+    }
+    
+    return c.json({ success: true, data: medicine })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Create medicine
+app.post('/api/medicines', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { name, description, category } = body
+    
+    if (!name || name.trim() === '') {
+      return c.json({ success: false, error: 'Medicine name is required' }, 400)
+    }
+    
+    // Check if medicine already exists
+    const existing = await c.env.DB.prepare(
+      'SELECT id FROM medicines_master WHERE LOWER(name) = LOWER(?)'
+    ).bind(name.trim()).first()
+    
+    if (existing) {
+      return c.json({ success: false, error: 'Medicine already exists' }, 400)
+    }
+    
+    const result = await c.env.DB.prepare(
+      'INSERT INTO medicines_master (name, description, category) VALUES (?, ?, ?)'
+    ).bind(name.trim(), description || null, category || null).run()
+    
+    return c.json({ 
+      success: true, 
+      data: { 
+        id: result.meta.last_row_id,
+        name: name.trim(),
+        description: description || null,
+        category: category || null
+      }
+    })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Update medicine
+app.put('/api/medicines/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const body = await c.req.json()
+    const { name, description, category } = body
+    
+    if (!name || name.trim() === '') {
+      return c.json({ success: false, error: 'Medicine name is required' }, 400)
+    }
+    
+    // Check if medicine exists
+    const medicine = await c.env.DB.prepare(
+      'SELECT id FROM medicines_master WHERE id = ?'
+    ).bind(id).first()
+    
+    if (!medicine) {
+      return c.json({ success: false, error: 'Medicine not found' }, 404)
+    }
+    
+    // Check if new name conflicts with another medicine
+    const existing = await c.env.DB.prepare(
+      'SELECT id FROM medicines_master WHERE LOWER(name) = LOWER(?) AND id != ?'
+    ).bind(name.trim(), id).first()
+    
+    if (existing) {
+      return c.json({ success: false, error: 'Medicine name already exists' }, 400)
+    }
+    
+    await c.env.DB.prepare(
+      'UPDATE medicines_master SET name = ?, description = ?, category = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(name.trim(), description || null, category || null, id).run()
+    
+    return c.json({ success: true })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Delete medicine
+app.delete('/api/medicines/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    
+    // Check if medicine exists
+    const medicine = await c.env.DB.prepare(
+      'SELECT id FROM medicines_master WHERE id = ?'
+    ).bind(id).first()
+    
+    if (!medicine) {
+      return c.json({ success: false, error: 'Medicine not found' }, 404)
+    }
+    
+    await c.env.DB.prepare(
+      'DELETE FROM medicines_master WHERE id = ?'
+    ).bind(id).run()
+    
+    return c.json({ success: true })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
 // ==================== BACKUP & RESTORE API (PROXY TO LOCALHOST:5000) ====================
 
 // List available backups
@@ -2578,9 +2714,14 @@ app.get('/', (c) => {
             <div id="prescriptions-section" class="section hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-leaf mr-2 text-ayurveda-600"></i>Herbs & Roots</h2>
-                    <button onclick="showHerbsRoutesModal()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg">
-                        <i class="fas fa-plus mr-2"></i>New Record
-                    </button>
+                    <div class="flex gap-2">
+                        <button onclick="showMedicineModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center">
+                            <i class="fas fa-pills mr-2"></i>Medicines
+                        </button>
+                        <button onclick="showHerbsRoutesModal()" class="bg-ayurveda-600 hover:bg-ayurveda-700 text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-plus mr-2"></i>New Record
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="bg-white rounded-lg shadow-lg p-6">
@@ -3165,6 +3306,81 @@ app.get('/', (c) => {
                             
                             <div id="disease-list" class="space-y-2 max-h-96 overflow-y-auto">
                                 <p class="text-center text-gray-500 py-4">Loading diseases...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MEDICINE MANAGEMENT MODAL -->
+            <div id="medicine-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg p-6 max-w-6xl w-full max-h-[90vh] overflow-y-auto mx-4">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold"><i class="fas fa-pills mr-2 text-green-600"></i>Medicine Management</h3>
+                        <button onclick="closeMedicineModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Left Side: Add Medicine Form -->
+                        <div class="border rounded-lg p-4 bg-gray-50">
+                            <h4 class="text-lg font-semibold mb-4 text-gray-700">
+                                <i class="fas fa-plus-circle mr-2 text-green-600"></i>Add New Medicine
+                            </h4>
+                            
+                            <form id="medicine-form" onsubmit="saveMedicine(event)">
+                                <input type="hidden" id="medicine-id" value="">
+                                
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-medium mb-2">Medicine Name *</label>
+                                    <input type="text" id="medicine-name" required 
+                                           class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-green-500" 
+                                           placeholder="Enter medicine name">
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-medium mb-2">Category (Optional)</label>
+                                    <input type="text" id="medicine-category" 
+                                           class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-green-500" 
+                                           placeholder="e.g., Churna, Capsule, Syrup">
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-medium mb-2">Description (Optional)</label>
+                                    <textarea id="medicine-description" rows="3" 
+                                              class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-green-500" 
+                                              placeholder="Enter description"></textarea>
+                                </div>
+                                
+                                <div class="flex gap-2">
+                                    <button type="submit" id="medicine-submit-btn" 
+                                            class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                                        <i class="fas fa-save mr-2"></i><span id="medicine-btn-text">Add Medicine</span>
+                                    </button>
+                                    <button type="button" onclick="resetMedicineForm()" 
+                                            class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100">
+                                        <i class="fas fa-undo"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Right Side: Medicine List -->
+                        <div class="border rounded-lg p-4 bg-white">
+                            <h4 class="text-lg font-semibold mb-4 text-gray-700">
+                                <i class="fas fa-list mr-2 text-green-600"></i>Existing Medicines
+                            </h4>
+                            
+                            <div class="mb-3">
+                                <input type="text" id="medicine-search" 
+                                       placeholder="Search medicines..." 
+                                       onkeyup="filterMedicineList()"
+                                       class="w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-green-500">
+                            </div>
+                            
+                            <div id="medicine-list" class="space-y-2 max-h-96 overflow-y-auto">
+                                <p class="text-center text-gray-500 py-4">Loading medicines...</p>
                             </div>
                         </div>
                     </div>

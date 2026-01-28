@@ -1813,7 +1813,7 @@ function renderHerbsRoutes() {
   document.getElementById('prescriptions-table-body').innerHTML = html;
 }
 
-function showHerbsRoutesModal() {
+async function showHerbsRoutesModal() {
   const modal = document.getElementById('prescription-modal');
   document.getElementById('prescription-modal-title').textContent = 'New Herbs & Roots Record';
   document.getElementById('prescription-form').reset();
@@ -1821,6 +1821,9 @@ function showHerbsRoutesModal() {
   document.getElementById('medicines-list').innerHTML = '';
   medicineCounter = 0;
   courseToMedicineMap = {};
+  
+  // Load medicines for dropdown
+  await loadMedicines().catch(err => console.error('Error loading medicines:', err));
   
   // Reset currency to INR
   const currencySelect = document.getElementById('prescription-currency');
@@ -2105,7 +2108,9 @@ function addMedicineToRow(courseId) {
         
         <div>
           <label class="block text-xs font-medium mb-1">Medicine Name *</label>
-          <input type="text" name="medicine_name_${courseId}_${medId}" class="w-full border rounded px-2 py-2 text-sm" required>
+          <select name="medicine_name_${courseId}_${medId}" class="medicine-name-dropdown w-full border rounded px-2 py-2 text-sm" required>
+            <option value="">Select Medicine</option>
+          </select>
         </div>
       </div>
       
@@ -2274,6 +2279,9 @@ function addMedicineToRow(courseId) {
   `;
   
   document.getElementById(`medicines-container-${courseId}`).insertAdjacentHTML('beforeend', html);
+  
+  // Populate medicine dropdown with available medicines
+  populateMedicineDropdowns();
 }
 
 // Remove a medicine from a course
@@ -4411,3 +4419,197 @@ document.addEventListener('DOMContentLoaded', async () => {
     patientSelect.addEventListener('change', displayPatientInfo);
   }
 });
+
+// ==================== MEDICINE MANAGEMENT FUNCTIONS ====================
+
+let allMedicines = [];
+
+// Show medicine modal
+function showMedicineModal() {
+    document.getElementById('medicine-modal').classList.remove('hidden');
+    loadMedicines();
+}
+
+// Close medicine modal
+function closeMedicineModal() {
+    document.getElementById('medicine-modal').classList.add('hidden');
+    resetMedicineForm();
+}
+
+// Load all medicines
+async function loadMedicines() {
+    try {
+        const res = await axios.get(`${API_BASE}/medicines`);
+        allMedicines = res.data.data || [];
+        renderMedicineList(allMedicines);
+    } catch (error) {
+        console.error('Load medicines error:', error);
+        document.getElementById('medicine-list').innerHTML = 
+            '<p class="text-center text-red-500 py-4">Error loading medicines</p>';
+    }
+}
+
+// Render medicine list in modal
+function renderMedicineList(medicines) {
+    const container = document.getElementById('medicine-list');
+    
+    if (medicines.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-500 py-4">No medicines found. Add your first medicine!</p>';
+        return;
+    }
+    
+    const html = medicines.map(medicine => `
+        <div class="border rounded-lg p-3 hover:bg-gray-50 flex justify-between items-start medicine-item" data-medicine-name="${medicine.name.toLowerCase()}">
+            <div class="flex-1">
+                <h5 class="font-semibold text-gray-800">${medicine.name}</h5>
+                ${medicine.category ? `<p class="text-xs text-gray-500 mt-1"><i class="fas fa-tag mr-1"></i>${medicine.category}</p>` : ''}
+                ${medicine.description ? `<p class="text-sm text-gray-600 mt-1">${medicine.description}</p>` : ''}
+            </div>
+            <div class="flex gap-2 ml-3">
+                <button onclick="editMedicine(${medicine.id})" class="text-blue-600 hover:text-blue-800 p-2" title="Edit">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteMedicine(${medicine.id}, '${medicine.name.replace(/'/g, "\\'")}')" class="text-red-600 hover:text-red-800 p-2" title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = html;
+}
+
+// Filter medicine list (search functionality)
+function filterMedicineList() {
+    const searchTerm = document.getElementById('medicine-search').value.toLowerCase();
+    const items = document.querySelectorAll('.medicine-item');
+    
+    items.forEach(item => {
+        const medicineName = item.getAttribute('data-medicine-name');
+        if (medicineName.includes(searchTerm)) {
+            item.style.display = '';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Save medicine (create or update)
+async function saveMedicine(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('medicine-id').value;
+    const name = document.getElementById('medicine-name').value.trim();
+    const description = document.getElementById('medicine-description').value.trim();
+    const category = document.getElementById('medicine-category').value.trim();
+    
+    if (!name) {
+        alert('Please enter medicine name');
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        if (id) {
+            // Update existing medicine
+            await axios.put(`${API_BASE}/medicines/${id}`, {
+                name,
+                description,
+                category
+            });
+            alert('✅ Medicine updated successfully!');
+        } else {
+            // Create new medicine
+            await axios.post(`${API_BASE}/medicines`, {
+                name,
+                description,
+                category
+            });
+            alert('✅ Medicine added successfully!');
+        }
+        
+        resetMedicineForm();
+        await loadMedicines();
+    } catch (error) {
+        console.error('Save medicine error:', error);
+        alert(`❌ Error: ${error.response?.data?.error || error.message}`);
+    } finally {
+        hideLoading();
+    }
+}
+
+// Reset medicine form
+function resetMedicineForm() {
+    document.getElementById('medicine-form').reset();
+    document.getElementById('medicine-id').value = '';
+    document.getElementById('medicine-btn-text').textContent = 'Add Medicine';
+    document.getElementById('medicine-name').focus();
+}
+
+// Edit medicine
+async function editMedicine(id) {
+    try {
+        showLoading();
+        const res = await axios.get(`${API_BASE}/medicines/${id}`);
+        const medicine = res.data.data;
+        
+        document.getElementById('medicine-id').value = medicine.id;
+        document.getElementById('medicine-name').value = medicine.name;
+        document.getElementById('medicine-description').value = medicine.description || '';
+        document.getElementById('medicine-category').value = medicine.category || '';
+        document.getElementById('medicine-btn-text').textContent = 'Update Medicine';
+        
+        // Scroll to form
+        document.querySelector('#medicine-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (error) {
+        console.error('Load medicine error:', error);
+        alert('Error loading medicine details');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Delete medicine
+async function deleteMedicine(id, name) {
+    if (!confirm(`Are you sure you want to delete "${name}"?\n\nThis action cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        showLoading();
+        await axios.delete(`${API_BASE}/medicines/${id}`);
+        alert('✅ Medicine deleted successfully!');
+        await loadMedicines();
+    } catch (error) {
+        console.error('Delete medicine error:', error);
+        alert(`❌ Error: ${error.response?.data?.error || error.message}`);
+    } finally {
+        hideLoading();
+    }
+}
+
+// Populate medicine dropdowns
+function populateMedicineDropdowns() {
+    const dropdowns = document.querySelectorAll('.medicine-name-dropdown');
+    dropdowns.forEach(dropdown => {
+        // Store current value
+        const currentValue = dropdown.value;
+        
+        // Clear existing options except first
+        dropdown.innerHTML = '<option value="">Select Medicine</option>';
+        
+        // Add medicines from allMedicines array
+        allMedicines.forEach(medicine => {
+            const option = document.createElement('option');
+            option.value = medicine.name;
+            option.textContent = medicine.name;
+            dropdown.appendChild(option);
+        });
+        
+        // Restore previous value if it exists
+        if (currentValue) {
+            dropdown.value = currentValue;
+        }
+    });
+}
