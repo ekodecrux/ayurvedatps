@@ -840,7 +840,7 @@ function removeDiseaseRow(id) {
   document.querySelector(`.disease-row[data-id="${id}"]`)?.remove();
 }
 
-function showPatientModal(patient = null, viewMode = false) {
+async function showPatientModal(patient = null, viewMode = false) {
   const modal = document.getElementById('patient-modal');
   const title = document.getElementById('patient-modal-title');
   const form = document.getElementById('patient-form');
@@ -865,8 +865,8 @@ function showPatientModal(patient = null, viewMode = false) {
     saveBtn.style.display = viewMode ? 'none' : '';
   }
   
-  // Load diseases for dropdown
-  loadDiseases().catch(err => console.error('Error loading diseases:', err));
+  // Load diseases for dropdown - AWAIT to ensure diseases are loaded before adding rows
+  await loadDiseases().catch(err => console.error('Error loading diseases:', err));
   
   // Clear diseases container
   document.getElementById('diseases-container').innerHTML = '';
@@ -1149,7 +1149,7 @@ async function editPatient(id) {
   try {
     showLoading();
     const res = await axios.get(`${API_BASE}/patients/${id}`);
-    showPatientModal(res.data.data);
+    await showPatientModal(res.data.data);
   } catch (error) {
     console.error('Load patient error:', error);
     alert('Error loading patient details');
@@ -1162,7 +1162,7 @@ async function viewPatient(id) {
   try {
     showLoading();
     const res = await axios.get(`${API_BASE}/patients/${id}`);
-    showPatientModal(res.data.data, true); // Pass viewMode=true
+    await showPatientModal(res.data.data, true); // Pass viewMode=true
   } catch (error) {
     console.error('Load patient error:', error);
     alert('Error loading patient details');
