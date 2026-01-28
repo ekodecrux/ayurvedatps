@@ -1,239 +1,366 @@
-# 🚀 Ayurveda Clinic - Production Deployment Guide
+# 🚀 Production Deployment Guide
 
-## 📦 Download Project
-Download the project backup from: **https://www.genspark.ai/api/files/s/JfLrpFJ4**
+## Overview
+This guide covers deploying the latest updates to both production sites:
+- **Primary**: https://tpsdhanvantariayurveda.in
+- **Secondary**: https://tpsdhanvantariayurveda.com
 
-Extract the tar.gz file to get the complete project.
+## 📦 What's Being Deployed
 
----
+### 1. Medicine Management System (Commit: 89c8468)
+- **Medicines Button** in Herbs & Roots section
+- **Medicine Management Modal** with split view:
+  - Left: Add/Edit medicine form (Name, Category, Description)
+  - Right: Medicine list with search, edit, delete
+- **Medicine Dropdown** in New/Edit Herbs & Roots prescription
+- **15 Pre-loaded Medicines**: Triphala Churna, Ashwagandha Capsules, Brahmi Ghrita, etc.
+- **Auto-updating Dropdowns**: Changes sync immediately across all forms
 
-## 🔧 Prerequisites
+### 2. Patient Disease Numbering (Commit: 6d52627)
+- **Disease 1, Disease 2, Disease 3**, etc. labeling
+- **Visual Improvements**:
+  - Disease icon (🦠) with number
+  - Blue-purple gradient background
+  - Remove button in header
+  - Clear visual separation between diseases
 
-1. **Node.js** (v18 or higher)
-2. **Cloudflare Account** (free account is fine)
-3. **Cloudflare API Token** (already configured in your account)
+### 3. Patient Edit - Disease Dropdown Fix (Commit: 32a7bd4)
+- **Fixed**: Disease dropdown now loads properly in edit mode
+- **Solution**: Made `showPatientModal` async and await `loadDiseases()`
+- **Impact**: All 21 diseases now available in dropdown when editing patients
 
----
+### 4. Backup Error Handling (Commit: 841c4fa)
+- **Improved Error Messages**: Clear guidance when backup API unavailable
+- **Informative UI**: Blue info box with production setup instructions
+- **User-Friendly**: Explains sandbox vs production differences
 
-## 📝 Step-by-Step Deployment
+### 5. Backup Filter Dropdown Fix (Commit: ceab4f4)
+- **Fixed**: Dropdown now shows correct selected filter
+- **Filters Available**: Recent 2, Today, Yesterday, Last 7 Days, Last 30 Days, All Backups
+- **Visual Feedback**: Shows count for each filter (e.g., "Last 7 Days (6)")
 
-### Step 1: Install Dependencies
+### 6. Backup List Loading Fix (Commit: 13d8000)
+- **Fixed**: Backup list loads immediately when opening Settings
+- **Solution**: Properly await `loadBackupList()` in `loadSettings()`
+- **Impact**: No more infinite "Loading backups..." spinner
+
+## 🎯 Latest Commit
+**Commit**: `13d8000` - Fix backup list not loading on initial page load  
+**Branch**: `main`  
+**Repository**: https://github.com/ekodecrux/ayurvedatps.git
+
+## 📋 Deployment Steps
+
+### Option 1: Automated Deployment (Recommended)
+
+Run the automated deployment script:
 
 ```bash
-cd webapp
+cd /home/user/webapp
+./deploy_to_production_both_sites.sh
+```
+
+The script will:
+1. Connect to production server
+2. Pull latest code from GitHub
+3. Install/update dependencies if needed
+4. Build the project
+5. Apply database migrations
+6. Restart PM2 application
+7. Reload Nginx
+8. Verify both .in and .com sites
+
+### Option 2: Manual Deployment
+
+If you prefer manual control:
+
+```bash
+# SSH to production server
+ssh root@88.222.244.84
+
+# Navigate to project directory
+cd /var/www/ayurveda
+
+# Pull latest code
+git pull origin main
+
+# Install dependencies (if package.json changed)
 npm install
+
+# Build project
+npm run build
+
+# Apply migrations
+npx wrangler d1 migrations apply ayurveda-db --local
+
+# Stop PM2 app
+pm2 stop ayurveda-clinic
+
+# Clean port
+fuser -k 3001/tcp 2>/dev/null || true
+sleep 2
+
+# Start PM2 app
+pm2 start ecosystem.config.cjs
+
+# Reload Nginx
+nginx -t && systemctl reload nginx
+
+# Save PM2 config
+pm2 save
+
+# Test
+curl http://localhost:3001
+curl https://tpsdhanvantariayurveda.in
+curl https://tpsdhanvantariayurveda.com
 ```
 
-### Step 2: Login to Cloudflare
+## ✅ Post-Deployment Verification
 
+### 1. Check Both Sites Are Live
 ```bash
-npx wrangler login
+# Test .in site
+curl -I https://tpsdhanvantariayurveda.in
+
+# Test .com site
+curl -I https://tpsdhanvantariayurveda.com
 ```
 
-This will open a browser window to authenticate with Cloudflare.
+Both should return `HTTP/2 200 OK`
 
-### Step 3: Create Production D1 Database
-
+### 2. Verify Application Loaded Correctly
 ```bash
-npx wrangler d1 create ayurveda-db-prod
+# Check .in title
+curl -s https://tpsdhanvantariayurveda.in | grep -i "TPS DHANVANTARI AYURVEDA"
+
+# Check .com title
+curl -s https://tpsdhanvantariayurveda.com | grep -i "TPS DHANVANTARI AYURVEDA"
 ```
 
-**Copy the database_id from the output!** It will look like: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
+### 3. Test Medicine API
+```bash
+# Check medicines endpoint
+curl https://tpsdhanvantariayurveda.in/api/medicines | jq 'length'
+```
 
-### Step 4: Update wrangler.jsonc
+Should return `15` (15 pre-loaded medicines)
 
-Edit `wrangler.jsonc` and add the D1 database configuration:
+### 4. Test Disease API
+```bash
+# Check diseases endpoint
+curl https://tpsdhanvantariayurveda.in/api/diseases | jq '.data | length'
+```
 
-```jsonc
-{
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "ayurveda-clinic",
-  "compatibility_date": "2025-12-17",
-  "pages_build_output_dir": "./dist",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "ayurveda-db-prod",
-      "database_id": "YOUR_DATABASE_ID_HERE"
-    }
-  ]
+Should return `21` (21 diseases including patient-specific ones)
+
+### 5. Manual Testing Checklist
+
+Login to both sites:
+- Email: `Shankaranherbaltreatment@gmail.com`
+- Password: `123456`
+
+Test on **.in site**:
+- [ ] Login successful
+- [ ] Navigate to **Herbs & Roots**
+- [ ] Click **Medicines** button → Medicine Management modal opens
+- [ ] Add a new medicine → Should appear in list
+- [ ] Edit a medicine → Changes saved
+- [ ] Delete a medicine (test medicine only) → Removed from list
+- [ ] Click **New Record** → Medicine dropdown shows all medicines
+- [ ] Navigate to **Patients**
+- [ ] Add Patient → Click **Add Disease** multiple times → Should show "Disease 1", "Disease 2", etc.
+- [ ] Edit existing patient → Disease dropdown shows all 21 diseases
+- [ ] Navigate to **Admin** → **Settings** → **Backup & Restore**
+- [ ] Backup list loads immediately (no infinite spinner)
+- [ ] Filter dropdown works (Today, Last 7 Days, All Backups)
+- [ ] Selected filter displays correctly
+
+Test on **.com site**:
+- [ ] Repeat all above tests
+- [ ] Verify both sites have identical functionality
+
+## 🔧 Troubleshooting
+
+### Issue: Sites not responding
+```bash
+# Check PM2 status
+ssh root@88.222.244.84 'pm2 list'
+
+# Check logs
+ssh root@88.222.244.84 'pm2 logs ayurveda-clinic --lines 50'
+
+# Restart if needed
+ssh root@88.222.244.84 'pm2 restart ayurveda-clinic'
+```
+
+### Issue: Port conflict
+```bash
+# Kill process on port 3001
+ssh root@88.222.244.84 'fuser -k 3001/tcp && pm2 restart ayurveda-clinic'
+```
+
+### Issue: Nginx errors
+```bash
+# Test Nginx config
+ssh root@88.222.244.84 'nginx -t'
+
+# Reload Nginx
+ssh root@88.222.244.84 'systemctl reload nginx'
+```
+
+### Issue: Database migrations not applied
+```bash
+# SSH to server
+ssh root@88.222.244.84
+
+# Navigate to project
+cd /var/www/ayurveda
+
+# Check migrations
+npx wrangler d1 migrations list ayurveda-db --local
+
+# Apply migrations
+npx wrangler d1 migrations apply ayurveda-db --local
+
+# Restart app
+pm2 restart ayurveda-clinic
+```
+
+### Issue: Old cached version showing
+1. Clear browser cache: **Ctrl+Shift+R** (hard reload)
+2. Or clear all browser data for the domain
+3. Try incognito/private browsing mode
+
+## 📊 Database Migrations Included
+
+### Migration: `0018_create_medicines_master_table.sql`
+Creates `medicines_master` table with:
+- `id` (Primary Key)
+- `name` (Medicine name - required)
+- `description` (Optional description)
+- `category` (Optional category: Churna, Capsule, Tablet, etc.)
+- `created_at`, `updated_at` (Timestamps)
+
+Seeds 15 Ayurvedic medicines.
+
+## 🌟 New Features Available After Deployment
+
+### For Clinic Staff:
+
+1. **Medicine Master Management**
+   - Go to Herbs & Roots → Click "Medicines" button
+   - Add new medicines to master list
+   - Edit existing medicines
+   - Delete medicines (with confirmation)
+   - Search/filter medicines
+
+2. **Simplified Prescription Entry**
+   - When creating/editing Herbs & Roots prescription
+   - Medicine name is now a dropdown (not free text)
+   - Select from master list
+   - Ensures consistency and prevents typos
+
+3. **Better Patient Disease Tracking**
+   - Add multiple diseases to a patient
+   - Clearly labeled as "Disease 1", "Disease 2", etc.
+   - Visual separation between diseases
+   - All 21 diseases available in dropdown
+
+4. **Improved Backup Management**
+   - Backup list loads immediately
+   - Filter by date range (Today, Last 7/30 Days, All)
+   - Clear error messages when API unavailable
+   - Better user guidance
+
+## 📝 Configuration Files
+
+### ecosystem.config.cjs
+```javascript
+module.exports = {
+  apps: [{
+    name: 'ayurveda-clinic',
+    script: 'npx',
+    args: 'wrangler pages dev dist --d1=ayurveda-db --local --ip 0.0.0.0 --port 3001',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3001
+    },
+    instances: 1,
+    exec_mode: 'fork',
+    watch: false,
+    max_memory_restart: '500M',
+    error_file: './logs/err.log',
+    out_file: './logs/out.log',
+    log_file: './logs/combined.log',
+    time: true
+  }]
 }
 ```
 
-Replace `YOUR_DATABASE_ID_HERE` with the database_id you copied in Step 3.
+### Nginx Configuration
+Both sites should have similar config:
 
-### Step 5: Apply Database Migrations
+```nginx
+server {
+    listen 80;
+    listen [::]:80;
+    server_name tpsdhanvantariayurveda.in www.tpsdhanvantariayurveda.in;
+    return 301 https://$server_name$request_uri;
+}
 
-```bash
-npx wrangler d1 migrations apply ayurveda-db-prod
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name tpsdhanvantariayurveda.in www.tpsdhanvantariayurveda.in;
+
+    # SSL certificates
+    ssl_certificate /etc/letsencrypt/live/tpsdhanvantariayurveda.in/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/tpsdhanvantariayurveda.in/privkey.pem;
+
+    # Proxy to PM2 app
+    location / {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
 ```
 
-This will create all the necessary tables in production.
+## 🔒 Security Notes
 
-### Step 6: Create Admin User in Production
-
-```bash
-npx wrangler d1 execute ayurveda-db-prod --command="
-INSERT INTO admin_users (email, name, password_hash, created_at, updated_at) 
-VALUES (
-  'tpsdhanvantari@gmail.com', 
-  'Nilesh',
-  'e38ad214943daad1d64c102faec29de4afe9da3d',
-  datetime('now'),
-  datetime('now')
-)"
-```
-
-**Login Credentials:**
-- Email: `tpsdhanvantari@gmail.com`
-- Password: `123456`
-
-### Step 7: Build for Production
-
-```bash
-npm run build
-```
-
-This creates the `dist/` folder with production-ready files.
-
-### Step 8: Create Cloudflare Pages Project
-
-```bash
-npx wrangler pages project create ayurveda-clinic --production-branch main
-```
-
-### Step 9: Deploy to Production
-
-```bash
-npx wrangler pages deploy dist --project-name ayurveda-clinic
-```
-
-**You will receive a URL like:**
-- Production: `https://ayurveda-clinic.pages.dev`
-
----
-
-## 🌐 Connect Your Domain (tpsdhanvantariayurveda.com)
-
-### Option A: Via Cloudflare Dashboard (Easiest)
-
-1. Go to: https://dash.cloudflare.com/
-2. Navigate to: **Workers & Pages** → **ayurveda-clinic**
-3. Click: **Custom domains** tab
-4. Click: **Set up a custom domain**
-5. Enter: `tpsdhanvantariayurveda.com`
-6. Follow the DNS instructions provided
-
-### Option B: Via Wrangler CLI
-
-```bash
-npx wrangler pages domain add tpsdhanvantariayurveda.com --project-name ayurveda-clinic
-```
-
-### Configure DNS in Hostinger
-
-1. Login to Hostinger control panel
-2. Go to **DNS/Name Servers** for `tpsdhanvantariayurveda.com`
-3. Add these DNS records (provided by Cloudflare after adding domain):
-
-**Example DNS Records:**
-```
-Type: CNAME
-Name: @
-Value: ayurveda-clinic.pages.dev
-Proxy: Yes (Orange cloud)
-```
-
-**Wait 24-48 hours for DNS propagation** (usually takes 1-2 hours)
-
----
-
-## 📊 Bind D1 Database to Pages Project
-
-After deployment, bind the database:
-
-```bash
-npx wrangler pages deployment tail --project-name ayurveda-clinic
-```
-
-**Or via Cloudflare Dashboard:**
-1. Go to **Workers & Pages** → **ayurveda-clinic** → **Settings**
-2. Click **Functions** → **D1 database bindings**
-3. Add binding:
-   - Variable name: `DB`
-   - D1 database: `ayurveda-db-prod`
-
----
-
-## ✅ Verification
-
-1. Visit: `https://ayurveda-clinic.pages.dev`
-2. Login with:
-   - Email: `tpsdhanvantari@gmail.com`
-   - Password: `123456`
-3. Test all features:
-   - Patient management
-   - Herbs & Roots records
-   - Appointments
-   - Reminders
-
----
-
-## 🔄 Future Updates
-
-To deploy updates:
-
-```bash
-npm run build
-npx wrangler pages deploy dist --project-name ayurveda-clinic
-```
-
----
-
-## 🆘 Troubleshooting
-
-### Database not connected
-```bash
-# Check database binding in dashboard
-# Or add via CLI:
-npx wrangler pages deployment tail --project-name ayurveda-clinic
-```
-
-### Domain not working
-- Wait 24-48 hours for DNS propagation
-- Check DNS settings in Hostinger match Cloudflare instructions
-- Ensure CNAME points to: `ayurveda-clinic.pages.dev`
-
-### Can't login
-- Verify admin user exists:
-```bash
-npx wrangler d1 execute ayurveda-db-prod --command="SELECT email, name FROM admin_users"
-```
-
----
+1. **Default Admin Password**: Change the default password after first login
+2. **API Keys**: Ensure backup API keys are secure
+3. **Database**: Regular backups are configured (daily at 2:00 AM)
+4. **SSL Certificates**: Auto-renewed by Let's Encrypt
 
 ## 📞 Support
 
-If you encounter issues:
-1. Check Cloudflare Pages deployment logs
-2. Verify D1 database binding
-3. Confirm DNS settings are correct
+If you encounter any issues:
+1. Check PM2 logs: `pm2 logs ayurveda-clinic`
+2. Check Nginx logs: `tail -f /var/log/nginx/error.log`
+3. Verify database: `npx wrangler d1 execute ayurveda-db --local --command="SELECT COUNT(*) FROM medicines_master"`
+
+## 🎉 Success Criteria
+
+Deployment is successful when:
+- ✅ Both .in and .com sites are accessible
+- ✅ Both sites show correct application (not MySchool)
+- ✅ Medicine Management works on both sites
+- ✅ Patient Disease numbering displays correctly
+- ✅ Backup & Restore page loads properly
+- ✅ All API endpoints respond correctly
+- ✅ PM2 shows ayurveda-clinic as "online"
+- ✅ No errors in PM2 logs
 
 ---
 
-## 🎉 Success!
-
-Once deployed, your application will be live at:
-- **Production URL**: `https://ayurveda-clinic.pages.dev`
-- **Custom Domain**: `https://tpsdhanvantariayurveda.com` (after DNS setup)
-
-**All features working:**
-✅ Admin authentication
-✅ Patient management
-✅ Herbs & Roots tracking
-✅ Appointments & Reminders
-✅ PDF/Excel exports
-✅ WhatsApp integration (configure in Settings)
+**Deployment Date**: January 28, 2026  
+**Latest Commit**: 13d8000  
+**Version**: 2.5.0  
+**Status**: ✅ Ready for Production
