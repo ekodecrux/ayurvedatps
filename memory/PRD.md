@@ -51,13 +51,19 @@ Deploy the GitHub repository `https://github.com/ekodecrux/ayurvedatps` to produ
 ## Recent Fixes (February 2, 2026)
 
 ### Fix 1: "Entire Course" Value Display (P0 - FIXED)
-**Issue**: The "Entire Course" column in Herbs & Roots list was displaying values like "6.0" or "Course 1" instead of clean integers like "6".
+**Issue**: 
+1. "Entire Course" column was showing same value as "Completed Months"
+2. In edit modal, "Entire Course" dropdown wasn't showing the saved value
 
-**Root Cause**: The frontend was using the raw `hr.course` field from the database (which contained inconsistent values) instead of the calculated `hr.total_course_months`.
+**Root Cause**: 
+1. The code was using `hr.total_course_months` (calculated from active medicines) instead of `hr.course` (user-selected value)
+2. The dropdown value wasn't being parsed correctly from "10.0" string to integer 10
 
 **Fix Applied**:
-- Updated `/var/www/ayurveda/public/static/app.js` to use `hr.total_course_months` in list view, Excel export, PDF export, and summary view
-- Bumped cache version from 3.1.0 to 3.2.0 in `/var/www/ayurveda/src/index.tsx`
+- Updated list view to use `parseInt(hr.course) || hr.total_course_months || 0`
+- Updated edit modal to use `parseInt(hr.course) || 1` for dropdown
+- Updated Excel export, PDF export, and summary view similarly
+- Bumped cache version to 3.3.0
 
 ### Fix 2: Payment Collections Not Showing in Edit Modal (P0 - FIXED)
 **Issue**: When editing a prescription in "Herbs & Roots", previously collected payment data was not displayed in the edit modal.
