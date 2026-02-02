@@ -73,10 +73,10 @@ Deploy the GitHub repository `https://github.com/ekodecrux/ayurvedatps` to produ
 - ~~Fix "Entire Course" value display~~ ✅
 - ~~Fix payment collections not showing in edit modal~~ ✅
 
-### P1 (High Priority) - PENDING
-- Patient and Prescription delete functionality (reported regression)
-- Restore functionality (reported regression)
-- Verify `view` and `print` actions in "Herbs & Roots" section
+### P1 (High Priority)
+- ~~Patient and Prescription delete functionality~~ ✅ FIXED (cascade delete implemented)
+- Restore functionality (reported regression) - PENDING
+- Verify `view` and `print` actions in "Herbs & Roots" section - PENDING
 
 ### P2 (Medium Priority)
 - Consider password hashing best practices (bcrypt)
