@@ -68,6 +68,25 @@ Deploy the GitHub repository `https://github.com/ekodecrux/ayurvedatps` to produ
 - Updated `/var/www/ayurveda/public/static/app.js` to normalize `course_id` values using `String(parseInt(collection.course_id) || 1)` for consistent matching
 - Added console logging for debugging
 
+### Fix 3: Patient and Prescription Delete (P1 - FIXED)
+**Issue**: Delete buttons for both Patients and Herbs & Roots were not working due to foreign key constraints in SQLite.
+
+**Root Cause**: The DELETE API endpoints were only deleting the main record without first removing related records (medicines_tracking, payment_collections, appointments, etc.), causing SQLite foreign key constraint failures.
+
+**Fix Applied**:
+- Updated `DELETE /api/patients/:id` endpoint in `/var/www/ayurveda/src/index.tsx` to cascade delete:
+  - medicines_tracking for all herbs_routes
+  - payment_collections for all herbs_routes
+  - herbs_routes
+  - appointments
+  - patient_diseases
+  - reminders
+  - Then finally the patient record
+- Updated `DELETE /api/prescriptions/:id` endpoint to cascade delete:
+  - medicines_tracking
+  - payment_collections
+  - Then the herbs_routes record
+
 ## Backlog (P0/P1/P2)
 ### P0 (Critical) - COMPLETED
 - ~~Fix "Entire Course" value display~~ ✅
