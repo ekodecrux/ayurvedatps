@@ -105,6 +105,23 @@ Deploy the GitHub repository `https://github.com/ekodecrux/ayurvedatps` to produ
 - Fixed `loadSettings()` in `/var/www/ayurveda/public/static/app.js` to handle both array and object responses
 - Bumped cache version to 3.4.0
 
+### Fix 5: Restore Missing Data (P1 - FIXED)
+**Issue**: After restoring a backup, some data was missing (medicines_tracking, payment_collections, reminders).
+
+**Root Cause**: The restore script (`/var/www/ayurveda/restore_from_backup.py`) was incomplete:
+- Only restoring patients, prescriptions (partial columns), and appointments
+- Missing: medicines_tracking, payment_collections, reminders
+- herbs_routes INSERT was missing many columns
+
+**Fix Applied**:
+- Completely rewrote `/var/www/ayurveda/restore_from_backup.py` to restore ALL tables:
+  - patients (16 columns)
+  - herbs_routes/prescriptions (28 columns)
+  - medicines_tracking (31 columns)
+  - payment_collections (8 columns)
+  - appointments (7 columns)
+  - reminders (12 columns)
+
 ## Backlog (P0/P1/P2)
 ### P0 (Critical) - COMPLETED
 - ~~Fix "Entire Course" value display~~ ✅
