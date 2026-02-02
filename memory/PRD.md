@@ -99,8 +99,8 @@ Deploy the GitHub repository `https://github.com/ekodecrux/ayurvedatps` to produ
 - ~~Fix payment collections not showing in edit modal~~ ✅
 
 ### P1 (High Priority)
-- ~~Patient and Prescription delete functionality~~ ✅ FIXED (cascade delete implemented)
-- Restore functionality (reported regression) - PENDING
+- ~~Patient and Prescription delete functionality~~ ✅ FIXED
+- ~~Restore/Backup functionality~~ ✅ FIXED (nginx proxy + loadSettings error)
 - Verify `view` and `print` actions in "Herbs & Roots" section - PENDING
 
 ### P2 (Medium Priority)
