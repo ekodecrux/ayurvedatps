@@ -48,7 +48,38 @@ Deploy the GitHub repository `https://github.com/ekodecrux/ayurvedatps` to produ
 - ✅ Dashboard accessible
 - ✅ PM2 process stable
 
-## Backlog (P0/P1)
-- P1: Fix `/api/stats` endpoint returning 500 error
-- P2: Consider password hashing best practices (bcrypt)
-- P2: Add backup/restore functionality verification
+## Recent Fixes (February 2, 2026)
+
+### Fix 1: "Entire Course" Value Display (P0 - FIXED)
+**Issue**: The "Entire Course" column in Herbs & Roots list was displaying values like "6.0" or "Course 1" instead of clean integers like "6".
+
+**Root Cause**: The frontend was using the raw `hr.course` field from the database (which contained inconsistent values) instead of the calculated `hr.total_course_months`.
+
+**Fix Applied**:
+- Updated `/var/www/ayurveda/public/static/app.js` to use `hr.total_course_months` in list view, Excel export, PDF export, and summary view
+- Bumped cache version from 3.1.0 to 3.2.0 in `/var/www/ayurveda/src/index.tsx`
+
+### Fix 2: Payment Collections Not Showing in Edit Modal (P0 - FIXED)
+**Issue**: When editing a prescription in "Herbs & Roots", previously collected payment data was not displayed in the edit modal.
+
+**Root Cause**: The `course_id` stored in `payment_collections` table could be "1" or "1.0" (TEXT type with inconsistent format). The frontend matching logic used strict string comparison, causing "1.0" != "1" mismatch.
+
+**Fix Applied**:
+- Updated `/var/www/ayurveda/public/static/app.js` to normalize `course_id` values using `String(parseInt(collection.course_id) || 1)` for consistent matching
+- Added console logging for debugging
+
+## Backlog (P0/P1/P2)
+### P0 (Critical) - COMPLETED
+- ~~Fix "Entire Course" value display~~ ✅
+- ~~Fix payment collections not showing in edit modal~~ ✅
+
+### P1 (High Priority) - PENDING
+- Patient and Prescription delete functionality (reported regression)
+- Restore functionality (reported regression)
+- Verify `view` and `print` actions in "Herbs & Roots" section
+
+### P2 (Medium Priority)
+- Consider password hashing best practices (bcrypt)
+- Automated offsite backups
+- SSL certificate renewal monitoring
+- Frontend architecture refactor (stop editing built files directly)
