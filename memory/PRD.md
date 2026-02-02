@@ -93,6 +93,18 @@ Deploy the GitHub repository `https://github.com/ekodecrux/ayurvedatps` to produ
   - payment_collections
   - Then the herbs_routes record
 
+### Fix 4: Backup & Restore Page Loading (P1 - FIXED)
+**Issue**: The Backup & Restore section in Settings was showing "Loading backups..." indefinitely.
+
+**Root Causes**:
+1. The `.in` domain's nginx config was missing the proxy rule for `/api/backups/` to route to port 5000
+2. The `loadSettings()` function had a bug where it expected `settings` to be an array, but the API returned an empty object `{}`, causing `settings.forEach is not a function` error which blocked `loadBackupList()` from executing
+
+**Fix Applied**:
+- Added `/api/backups/` proxy rule to `/etc/nginx/sites-available/tpsdhanvantari`
+- Fixed `loadSettings()` in `/var/www/ayurveda/public/static/app.js` to handle both array and object responses
+- Bumped cache version to 3.4.0
+
 ## Backlog (P0/P1/P2)
 ### P0 (Critical) - COMPLETED
 - ~~Fix "Entire Course" value display~~ ✅
