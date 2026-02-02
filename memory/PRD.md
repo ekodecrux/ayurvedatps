@@ -105,22 +105,25 @@ Deploy the GitHub repository `https://github.com/ekodecrux/ayurvedatps` to produ
 - Fixed `loadSettings()` in `/var/www/ayurveda/public/static/app.js` to handle both array and object responses
 - Bumped cache version to 3.4.0
 
-### Fix 5: Restore Missing Data (P1 - FIXED)
-**Issue**: After restoring a backup, some data was missing (medicines_tracking, payment_collections, reminders).
+### Fix 6: Backup Creation Showing "undefined" (P1 - FIXED)
+**Issue**: When creating a backup, the popup showed "undefined" for Patients, Prescriptions, Medicines counts.
 
-**Root Cause**: The restore script (`/var/www/ayurveda/restore_from_backup.py`) was incomplete:
-- Only restoring patients, prescriptions (partial columns), and appointments
-- Missing: medicines_tracking, payment_collections, reminders
-- herbs_routes INSERT was missing many columns
+**Root Cause**: The frontend expected `response.data.patients` but the API was returning counts inside a `counts` object.
 
 **Fix Applied**:
-- Completely rewrote `/var/www/ayurveda/restore_from_backup.py` to restore ALL tables:
-  - patients (16 columns)
-  - herbs_routes/prescriptions (28 columns)
-  - medicines_tracking (31 columns)
-  - payment_collections (8 columns)
-  - appointments (7 columns)
-  - reminders (12 columns)
+- Updated `/var/www/ayurveda/backup_api_server.py` to return proper counts in API response
+- Updated `/var/www/ayurveda/public/static/app.js` to read from `response.data.counts.patients` etc.
+- Both backup and restore APIs now return detailed counts
+
+### Fix 7: Complete Backup/Restore with Direct Database Access (P0 - FIXED)
+**Issue**: Backups were missing data because they used API which didn't return all fields.
+
+**Root Cause**: Original backup script used HTTP API which returned limited data; restore script was also incomplete.
+
+**Fix Applied**:
+- Rewrote `/var/www/ayurveda/daily_backup.py` to read directly from SQLite database (all tables, all columns)
+- Rewrote `/var/www/ayurveda/restore_from_backup.py` with dynamic column detection
+- Now backs up and restores: patients, prescriptions, medicines_tracking, payment_collections, appointments, reminders, diseases, settings
 
 ## Backlog (P0/P1/P2)
 ### P0 (Critical) - COMPLETED
