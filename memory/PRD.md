@@ -48,7 +48,6 @@ Deploy the GitHub repository `https://github.com/ekodecrux/ayurvedatps` to produ
 #### Fix 1: "Entire Course" Value Display ✅
 - **Issue**: "Entire Course" column showing same value as "Completed Months"
 - **Fix**: Updated code to use `parseInt(hr.course)` for user-selected value
-- **Bumped cache version to 3.3.0**
 
 #### Fix 2: Payment Collections Not Showing in Edit Modal ✅
 - **Issue**: Payment data not displayed in edit modal
@@ -56,9 +55,7 @@ Deploy the GitHub repository `https://github.com/ekodecrux/ayurvedatps` to produ
 
 #### Fix 3: Patient and Prescription Delete ✅
 - **Issue**: Delete buttons not working due to foreign key constraints
-- **Fix**: Added cascade delete in backend for:
-  - Patients: deletes medicines_tracking, payment_collections, herbs_routes, appointments, patient_diseases, reminders
-  - Prescriptions: deletes medicines_tracking, payment_collections
+- **Fix**: Added cascade delete in backend for patients and prescriptions
 
 #### Fix 4: Backup & Restore Page Loading ✅
 - **Issue**: Backup section showing "Loading backups..." indefinitely
@@ -72,16 +69,26 @@ Deploy the GitHub repository `https://github.com/ekodecrux/ayurvedatps` to produ
 - Changed "MG Value" label to "MG Value/Units"
 - Added "Client Discussion" text field to patient form
 
-### Feature Additions (February 3, 2026)
+### Feature Additions (February 3-4, 2026)
 
-#### "Patient Added Date" Feature ✅ (VERIFIED)
-- **Implemented in**:
-  - New Record form (shows when selecting patient)
-  - Edit Modal (Patient Information section)
-  - View Modal (Treatment Summary)
-  - Print functionality
-- **Backend**: Joins `patients.created_at` as `patient_created_at`
-- **Frontend**: Formats as "DD MMM YYYY" in green color
+#### "Patient Added Date" Feature ✅ (VERIFIED - Auto Mode)
+- Implemented in New Record, Edit Modal, View Modal, Print
+- Backend joins `patients.created_at` as `patient_created_at`
+- Frontend formats as "DD MMM YYYY" in green color
+
+#### "Patient Added Date" - Manual Input (February 4, 2026) ✅
+- **NEW**: Added manual date picker field at top of patient form
+- Defaults to today's date for new patients
+- Preserves existing date when editing
+- Added `patient_added_date` column to database
+- Updated backend INSERT and UPDATE queries
+- Cache version: 3.9.0
+
+#### Frequency Checkboxes - Mutual Exclusion (February 4, 2026) ✅
+- **NEW**: "Daily" and "Alternate-day" now mutually exclusive
+- Clicking one automatically unchecks the other
+- Works in both New Record and Edit forms
+- Added `handleFrequencyChange()` JavaScript function
 
 ---
 
@@ -118,16 +125,20 @@ Deploy the GitHub repository `https://github.com/ekodecrux/ayurvedatps` to produ
 - `/api/backups/list`, `/api/backups/create`, `/api/backups/restore` - Backup management
 
 ## DB Schema
-- **patients**: {id, patient_id, name, phone, client_discussion, created_at, ...}
+- **patients**: {id, patient_id, name, phone, client_discussion, created_at, patient_added_date, ...}
 - **herbs_routes**: {id, patient_fk, diagnosis, course, next_followup_date, ...}
 - **payment_collections**: {id, herbs_route_id, course_id, collection_date, amount, ...}
 - **appointments**: {id, patient_id, appointment_date, appointment_time, ...}
-- **medicines_tracking**: {id, herbs_route_id, roman_id, medicine_id, ...}
+- **medicines_tracking**: {id, herbs_route_id, roman_id, medicine_id, is_daily, is_alternate_day, ...}
 
 ---
+
+## Current Cache Version
+**app.js?v=3.9.0** (Updated February 4, 2026)
 
 ## Status
 - ✅ Site is LIVE at https://tpsdhanvantariayurveda.in
 - ✅ All reported bugs fixed
-- ✅ "Patient Added Date" feature complete and verified
+- ✅ "Patient Added Date" manual input implemented
+- ✅ Frequency checkbox mutual exclusion implemented
 - ⚠️ High regression risk due to direct built-file editing
